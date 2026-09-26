@@ -43,6 +43,11 @@ export default defineConfig([
     },
   },
   {
+    // Playwright fixtures call `use()`, which is not a React hook.
+    files: ["tests/e2e/**/*.ts"],
+    rules: { "react-hooks/rules-of-hooks": "off" },
+  },
+  {
     rules: {
       "@typescript-eslint/no-unused-vars": [
         "error",

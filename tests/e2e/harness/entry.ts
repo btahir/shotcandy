@@ -5,7 +5,6 @@
  */
 import {
   Exporter,
-  MapAssetResolver,
   RenderCache,
   exportScene,
   importImage,
