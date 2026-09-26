@@ -27,6 +27,16 @@ describe("size presets", () => {
       "instagram-square": [1080, 1080],
       "instagram-portrait": [1080, 1350],
       "instagram-story": [1080, 1920],
+      "x-post": [1920, 1080],
+      "x-card": [1200, 628],
+      "linkedin-post": [1200, 628],
+      "linkedin-square": [1200, 1200],
+      "linkedin-portrait": [720, 900],
+      "appstore-iphone-69": [1320, 2868],
+      "appstore-iphone-65": [1284, 2778],
+      "appstore-iphone-55": [1242, 2208],
+      "appstore-ipad-13": [2064, 2752],
+      "appstore-ipad-129": [2048, 2732],
     };
     for (const [id, [w, h]] of Object.entries(want)) {
       expect(getSizePreset(id)!.size).toMatchObject({ kind: "fixed", width: w, height: h });
