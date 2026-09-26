@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Orbitkit — Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#101116;--nav:#0D0E12;--panel:#15171D;--card:#181A21;--line:#23262E;--line2:#2C2F39;--ink:#E7E9EF;--ink2:#A6ABB8;--ink3:#6D7280;--ink4:#4A4E59;--acc:#6D7CFF;--acc2:#8B96FF;--accbg:rgba(109,124,255,.12)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1100px;height:720px;overflow:hidden}
+  body{font-family:Geist,Inter,system-ui,sans-serif;font-size:13px;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;display:flex}
+  svg{display:block;flex:none}
+  nav{width:224px;flex:none;background:var(--nav);border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column}
+  .acct{display:flex;align-items:center;gap:10px;padding:6px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .logo{width:28px;height:28px;border-radius:8px;background:radial-gradient(circle at 30% 30%,#A5AEFF,#5A66F0 60%,#3B43B8);display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+  .acct b{font-weight:600;font-size:13.5px}
+  .acct small{display:block;color:var(--ink3);font-size:11.5px}
+  .grp{font-size:11px;font-weight:500;color:var(--ink3);padding:12px 10px 6px;letter-spacing:.02em}
+  .ni{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:7px;color:var(--ink2);font-weight:500}
+  .ni svg{color:var(--ink3)}
+  .ni.on{background:#1B1D25;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line2)}
+  .ni.on svg{color:var(--acc2)}
+  .ni .tag{margin-left:auto;font-size:10.5px;color:var(--acc2);background:var(--accbg);padding:1px 6px;border-radius:5px;font-weight:600}
+  .navfoot{margin-top:auto;display:flex;align-items:center;gap:8px;color:var(--ink3);font-size:11.5px;padding:0 10px}
+  .navfoot i{width:7px;height:7px;border-radius:50%;background:#3FCF8E;box-shadow:0 0 0 3px rgba(63,207,142,.15)}
+  main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .top{height:60px;flex:none;display:flex;align-items:center;padding:0 28px;border-bottom:1px solid var(--line)}
+  .top h1{font-size:17px;font-weight:600;letter-spacing:-.015em}
+  .top p{color:var(--ink3);font-size:12.5px;margin-top:2px}
+  .top .r{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .kbd{font-family:"JetBrains Mono",monospace;font-size:11px;min-width:22px;height:22px;padding:0 6px;border-radius:6px;background:#1D2029;border:1px solid var(--line2);border-bottom-width:2px;display:inline-grid;place-items:center;color:var(--ink2)}
+  .x{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--ink2);border:1px solid var(--line2)}
+  .content{flex:1;display:grid;grid-template-columns:1fr 300px;gap:24px;padding:22px 28px 24px;min-height:0}
+  h3{font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+  .hint{color:var(--ink3);font-size:12.5px;margin-top:3px}
+  .themes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+  .th{border-radius:11px;padding:6px;border:1px solid var(--line2);background:var(--card)}
+  .th.on{border-color:var(--acc);box-shadow:0 0 0 3px rgba(109,124,255,.22)}
+  .prev{height:78px;border-radius:7px;overflow:hidden;display:flex;position:relative}
+  .th .lbl{display:flex;align-items:center;gap:8px;padding:8px 4px 2px;font-weight:500}
+  .radio{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--ink4);display:grid;place-items:center}
+  .th.on .radio{border-color:var(--acc);background:var(--acc)}
+  .th.on .radio::after{content:"";width:5px;height:5px;border-radius:50%;background:#fff}
+  .rows{margin-top:20px;border-top:1px solid var(--line)}
+  .row{display:flex;align-items:center;gap:16px;min-height:58px;border-bottom:1px solid var(--line);padding:10px 0}
+  .row .t{flex:1;min-width:0}
+  .row b{font-weight:500;font-size:13.5px;display:block}
+  .row small{color:var(--ink3);font-size:12.5px;display:block;margin-top:2px}
+  .sw{display:flex;gap:8px}
+  .sw i{width:22px;height:22px;border-radius:50%;display:block;position:relative;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+  .sw i.on{box-shadow:0 0 0 2px var(--bg),0 0 0 4px currentColor}
+  .seg{display:flex;background:#0E0F14;border:1px solid var(--line2);border-radius:9px;padding:3px;gap:2px}
+  .seg span{height:26px;padding:0 12px;display:grid;place-items:center;border-radius:6px;color:var(--ink2);font-weight:500;font-size:12.5px}
+  .seg span.on{background:#252834;color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 1px 2px rgba(0,0,0,.4)}
+  .tg{width:36px;height:21px;border-radius:99px;background:#2A2D37;position:relative;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
+  .tg::after{content:"";position:absolute;top:2.5px;left:2.5px;width:16px;height:16px;border-radius:50%;background:#C9CCD6;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+  .tg.on{background:var(--acc)}
+  .tg.on::after{left:17.5px;background:#fff}
+  .slider{width:170px;display:flex;align-items:center;gap:10px;color:var(--ink3);font-size:11.5px}
+  .track{flex:1;height:4px;border-radius:9px;background:#2A2D37;position:relative}
+  .track i{position:absolute;left:0;top:0;bottom:0;width:40%;background:var(--acc);border-radius:9px}
+  .track b{position:absolute;left:40%;top:50%;width:14px;height:14px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 0 3px rgba(109,124,255,.3),0 1px 3px rgba(0,0,0,.5)}
+  .side{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;min-height:0}
+  .side .hd{display:flex;align-items:center}
+  .side .hd a{margin-left:auto;color:var(--acc2);font-size:12px;font-weight:500}
+  .ssearch{margin-top:12px;height:32px;border-radius:8px;background:#0F1015;border:1px solid var(--line2);display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--ink3);font-size:12.5px}
+  .sc{display:flex;align-items:center;height:36px;border-bottom:1px solid #1F2229;color:var(--ink2)}
+  .sc:last-child{border-bottom:0}
+  .sc .keys{margin-left:auto;display:flex;gap:4px}
+  .sc.edit{background:var(--accbg);margin:0 -8px;padding:0 8px;border-radius:7px;border-bottom-color:transparent;color:var(--ink)}
+  .sc.edit .kbd{border-color:rgba(139,150,255,.5);color:#C9CEFF;background:rgba(109,124,255,.15)}
+  .scgrp{font-size:11px;color:var(--ink3);font-weight:500;margin:14px 0 2px;letter-spacing:.02em}
+  .foot{display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:12px;font-size:12px;color:var(--ink3)}
+  .btn{height:32px;padding:0 12px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;font-weight:500;border:1px solid var(--line2);background:#1B1D25;color:var(--ink)}
+  .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 8px rgba(109,124,255,.35)}
+</style>
+</head>
+<body>
+<nav>
+  <div class="acct">
+    <div class="logo"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.6"><circle cx="8" cy="8" r="2.4" fill="#fff" stroke="none"/><ellipse cx="8" cy="8" rx="6.5" ry="3" transform="rotate(-30 8 8)"/></svg></div>
+    <div><b>Orbitkit</b><small>Personal workspace</small></div>
+  </div>
+  <div class="grp">Preferences</div>
+  <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="2"/><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M3.6 12.4l1.2-1.2M11.2 4.8l1.2-1.2"/></svg>General</div>
+  <div class="ni on"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2a6 6 0 1 0 0 12c.9 0 1.3-.6 1.3-1.2 0-.8-.6-1-.6-1.8 0-.7.6-1.2 1.3-1.2H11a3 3 0 0 0 3-3C14 4.2 11.3 2 8 2Z"/><circle cx="5.2" cy="7" r=".8" fill="currentColor"/><circle cx="8" cy="5" r=".8" fill="currentColor"/><circle cx="10.8" cy="6.5" r=".8" fill="currentColor"/></svg>Appearance</div>
+  <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1.5" y="4" width="13" height="8.5" rx="2"/><path d="M4 7h.01M6.5 7h.01M9 7h.01M11.5 7h.01M5 10h6"/></svg>Keyboard</div>
+  <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3L4 11ZM6.5 14h3"/></svg>Notifications</div>
+  <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 10 10 6M7 4.5l1.3-1.3a2.8 2.8 0 0 1 4 4L11.5 8.5M9 11.5l-1.3 1.3a2.8 2.8 0 0 1-4-4L4.5 7.5"/></svg>Integrations<span class="tag">New</span></div>
+  <div class="grp">Account</div>
+  <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c.8-2.5 2.6-3.5 5-3.5s4.2 1 5 3.5"/></svg>Profile</div>
+  <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 1.8 13 4v4c0 3-2.2 5.2-5 6.2C5.2 13.2 3 11 3 8V4Z"/></svg>Security</div>
+  <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1.5" y="3.5" width="13" height="9" rx="2"/><path d="M1.5 6.5h13M4 10h2"/></svg>Billing</div>
+  <div class="navfoot"><i></i>Synced just now · v3.8.2</div>
+</nav>
+
+<main>
+  <div class="top">
+    <div><h1>Appearance</h1><p>Customise how Orbitkit looks on this device.</p></div>
+    <div class="r"><span class="kbd">esc</span><div class="x"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="m4.5 4.5 7 7M11.5 4.5l-7 7"/></svg></div></div>
+  </div>
+
+  <div class="content">
+    <div>
+      <h3>Theme</h3>
+      <div class="hint">Pick a theme, or match your system setting.</div>
+      <div class="themes">
+        <div class="th">
+          <div class="prev" style="background:#F4F5F8">
+            <div style="width:30%;background:#E8EAF0;padding:8px 6px"><i style="display:block;height:5px;width:70%;border-radius:3px;background:#C4C8D4"></i><i style="display:block;height:5px;width:50%;border-radius:3px;background:#D3D6DF;margin-top:6px"></i><i style="display:block;height:5px;width:60%;border-radius:3px;background:#D3D6DF;margin-top:6px"></i></div>
+            <div style="flex:1;padding:9px 8px"><i style="display:block;height:7px;width:55%;border-radius:3px;background:#2A2D37"></i><i style="display:block;height:5px;width:85%;border-radius:3px;background:#D3D6DF;margin-top:8px"></i><i style="display:block;height:5px;width:70%;border-radius:3px;background:#D3D6DF;margin-top:5px"></i><i style="display:block;height:12px;width:34%;border-radius:4px;background:#6D7CFF;margin-top:9px"></i></div>
+          </div>
+          <div class="lbl"><span class="radio"></span>Light</div>
+        </div>
+        <div class="th on">
+          <div class="prev" style="background:#15171D">
+            <div style="width:30%;background:#0D0E12;padding:8px 6px"><i style="display:block;height:5px;width:70%;border-radius:3px;background:#3A3E4A"></i><i style="display:block;height:5px;width:50%;border-radius:3px;background:#2A2D37;margin-top:6px"></i><i style="display:block;height:5px;width:60%;border-radius:3px;background:#2A2D37;margin-top:6px"></i></div>
+            <div style="flex:1;padding:9px 8px"><i style="display:block;height:7px;width:55%;border-radius:3px;background:#E7E9EF"></i><i style="display:block;height:5px;width:85%;border-radius:3px;background:#2F323D;margin-top:8px"></i><i style="display:block;height:5px;width:70%;border-radius:3px;background:#2F323D;margin-top:5px"></i><i style="display:block;height:12px;width:34%;border-radius:4px;background:#6D7CFF;margin-top:9px"></i></div>
+          </div>
+          <div class="lbl"><span class="radio"></span>Dark</div>
+        </div>
+        <div class="th">
+          <div class="prev" style="background:linear-gradient(90deg,#F4F5F8 50%,#15171D 50%)">
+            <div style="width:30%;background:#E8EAF0;padding:8px 6px"><i style="display:block;height:5px;width:70%;border-radius:3px;background:#C4C8D4"></i><i style="display:block;height:5px;width:50%;border-radius:3px;background:#D3D6DF;margin-top:6px"></i></div>
+            <div style="flex:1;padding:9px 8px"><i style="display:block;height:7px;width:55%;border-radius:3px;background:#2A2D37"></i><i style="display:block;height:5px;width:85%;border-radius:3px;background:linear-gradient(90deg,#D3D6DF 30%,#2F323D 30%);margin-top:8px"></i><i style="display:block;height:12px;width:34%;border-radius:4px;background:#6D7CFF;margin-top:14px;margin-left:44%"></i></div>
+          </div>
+          <div class="lbl"><span class="radio"></span>System</div>
+        </div>
+      </div>
+
+      <div class="rows">
+        <div class="row">
+          <div class="t"><b>Accent colour</b><small>Used for buttons, links and focus rings.</small></div>
+          <div class="sw">
+            <i class="on" style="background:#6D7CFF;color:#6D7CFF"></i><i style="background:#A274FF"></i><i style="background:#F062A8"></i><i style="background:#FF7A59"></i><i style="background:#F5B83D"></i><i style="background:#3FCF8E"></i><i style="background:#2FC1D6"></i><i style="background:#8B909E"></i>
+          </div>
+        </div>
+        <div class="row">
+          <div class="t"><b>Interface density</b><small>Adjust spacing in lists and tables.</small></div>
+          <div class="seg"><span>Compact</span><span class="on">Default</span><span>Comfy</span></div>
+        </div>
+        <div class="row">
+          <div class="t"><b>Text size</b><small>Scales text across the whole app.</small></div>
+          <div class="slider"><span style="font-size:11px">A</span><div class="track"><i></i><b></b></div><span style="font-size:15px">A</span></div>
+        </div>
+        <div class="row">
+          <div class="t"><b>Translucent sidebar</b><small>Let the desktop show through the sidebar.</small></div>
+          <div class="tg on"></div>
+        </div>
+        <div class="row">
+          <div class="t"><b>Reduce motion</b><small>Minimise animations and transitions.</small></div>
+          <div class="tg"></div>
+        </div>
+        <div class="row" style="border-bottom:0">
+          <div class="t"><b>Show keyboard hints</b><small>Display shortcuts next to menu items.</small></div>
+          <div class="tg on"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="hd"><h3>Keyboard shortcuts</h3><a>Customise</a></div>
+      <div class="ssearch"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>Search shortcuts</div>
+      <div class="scgrp">General</div>
+      <div class="sc">Command menu<span class="keys"><span class="kbd">⌘</span><span class="kbd">K</span></span></div>
+      <div class="sc">New item<span class="keys"><span class="kbd">C</span></span></div>
+      <div class="sc edit">Toggle theme<span class="keys"><span class="kbd">⌘</span><span class="kbd">⇧</span><span class="kbd">L</span></span></div>
+      <div class="sc">Open settings<span class="keys"><span class="kbd">⌘</span><span class="kbd">,</span></span></div>
+      <div class="scgrp">Navigation</div>
+      <div class="sc">Go to inbox<span class="keys"><span class="kbd">G</span><span class="kbd">I</span></span></div>
+      <div class="sc">Toggle sidebar<span class="keys"><span class="kbd">⌘</span><span class="kbd">\</span></span></div>
+      <div class="sc">Search<span class="keys"><span class="kbd">/</span></span></div>
+      <div class="scgrp">Editing</div>
+      <div class="sc">Duplicate<span class="keys"><span class="kbd">⌘</span><span class="kbd">D</span></span></div>
+      <div class="sc">Move up<span class="keys"><span class="kbd">⌥</span><span class="kbd">↑</span></span></div>
+      <div class="foot"><span style="display:flex;align-items:center;gap:6px"><i style="width:6px;height:6px;border-radius:50%;background:var(--acc2);box-shadow:0 0 0 3px rgba(109,124,255,.2)"></i>Recording… press new keys</span><span style="margin-left:auto"></span><span class="btn">Reset</span></div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

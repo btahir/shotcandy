@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Habitlane — Today</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#FFF8F5;--card:#FFFFFF;--line:#F2E7E2;--ink:#1F1A18;--ink2:#5E5550;--ink3:#A0948E;--c:#FF6B57;--c2:#FF8A5B;--cbg:#FFEDE8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:393px;height:852px;overflow:hidden}
+  body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;position:relative;font-size:15px}
+  svg{display:block;flex:none}
+  .num{font-variant-numeric:tabular-nums}
+  .status{height:50px;display:flex;align-items:center;justify-content:space-between;padding:4px 30px 0 40px;font-weight:600;font-size:16.5px;letter-spacing:-.01em}
+  .status .ic{display:flex;gap:6px;align-items:center}
+  .top{display:flex;align-items:center;padding:6px 20px 0}
+  .top small{font-size:13.5px;color:var(--ink3);font-weight:500;letter-spacing:.01em}
+  .top h1{font-size:28px;font-weight:700;letter-spacing:-.03em;margin-top:2px}
+  .top .r{margin-left:auto;display:flex;gap:10px;align-items:center}
+  .circ{width:40px;height:40px;border-radius:50%;background:var(--card);display:grid;place-items:center;box-shadow:0 1px 2px rgba(80,40,30,.06),0 0 0 1px var(--line);color:var(--ink2);position:relative}
+  .circ .pip{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 0 2px #fff}
+  .me{width:40px;height:40px;border-radius:50%;background:linear-gradient(145deg,#FFB38A,#FF6B57);display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px}
+  .week{display:flex;justify-content:space-between;padding:14px 16px 0}
+  .day{width:44px;height:64px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+  .day small{font-size:12px;color:var(--ink3);font-weight:500}
+  .day b{font-size:16px;font-weight:600}
+  .day i{width:5px;height:5px;border-radius:50%;background:var(--c);opacity:.9}
+  .day i.part{background:#FFC2B6}
+  .day i.none{background:transparent}
+  .day.on{background:var(--ink);color:#fff;box-shadow:0 6px 14px rgba(31,26,24,.18)}
+  .day.on small{color:rgba(255,255,255,.6)}
+  .day.on i{background:var(--c2)}
+  .day.fut b{color:var(--ink3)}
+  .hero{margin:16px 16px 0;background:linear-gradient(150deg,#FF7A5C 0%,#FF5E62 55%,#F2497A 100%);border-radius:24px;padding:16px 16px 16px 18px;display:flex;align-items:center;gap:16px;color:#fff;position:relative;overflow:hidden;box-shadow:0 10px 24px rgba(255,94,98,.28)}
+  .hero::before{content:"";position:absolute;width:220px;height:220px;border-radius:50%;right:-70px;top:-90px;background:radial-gradient(circle,rgba(255,255,255,.22),rgba(255,255,255,0) 70%)}
+  .ring{position:relative;width:100px;height:100px;flex:none}
+  .ring .t{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring .t b{font-size:26px;font-weight:700;letter-spacing:-.03em;line-height:1}
+  .ring .t small{font-size:11.5px;opacity:.85;margin-top:3px;font-weight:500}
+  .hero h2{font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+  .hero p{font-size:13.5px;opacity:.9;margin-top:4px;line-height:1.35}
+  .chips{display:flex;gap:8px;margin-top:12px}
+  .chip{white-space:nowrap;height:26px;padding:0 9px;border-radius:99px;background:rgba(255,255,255,.2);display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;backdrop-filter:blur(4px)}
+  .sh{display:flex;align-items:baseline;padding:18px 20px 10px}
+  .sh h3{font-size:18px;font-weight:700;letter-spacing:-.02em}
+  .sh span{margin-left:auto;font-size:14px;color:var(--c);font-weight:600}
+  .list{padding:0 16px;display:flex;flex-direction:column;gap:8px}
+  .h{background:var(--card);border-radius:18px;height:60px;display:flex;align-items:center;gap:12px;padding:0 14px 0 12px;box-shadow:0 1px 2px rgba(80,40,30,.05),0 0 0 1px var(--line)}
+  .tile{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+  .h .txt{flex:1;min-width:0}
+  .h b{font-size:15.5px;font-weight:600;letter-spacing:-.01em;display:block}
+  .h small{font-size:13px;color:var(--ink3);display:flex;align-items:center;gap:6px;margin-top:2px}
+  .streak{display:inline-flex;align-items:center;gap:2px;color:#E8763A;font-weight:600}
+  .done{width:30px;height:30px;border-radius:50%;background:var(--c);display:grid;place-items:center;box-shadow:0 3px 8px rgba(255,107,87,.35)}
+  .todo{width:30px;height:30px;border-radius:50%;border:2px solid #EADBD5}
+  .h.isdone b{color:var(--ink2)}
+  .tabbar{position:absolute;left:0;right:0;bottom:0;height:84px;background:rgba(255,255,255,.92);border-top:1px solid var(--line);backdrop-filter:blur(20px);display:flex;justify-content:space-around;align-items:flex-start;padding:10px 12px 0}
+  .tab{width:64px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#B5A9A3}
+  .tab.on{color:var(--c)}
+  .fab{width:54px;height:54px;border-radius:18px;background:var(--ink);display:grid;place-items:center;margin-top:-22px;box-shadow:0 8px 18px rgba(31,26,24,.25)}
+  .homeind{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:99px;background:#1F1A18}
+</style>
+</head>
+<body>
+  <div class="status">
+    <span class="num">9:41</span>
+    <span class="ic">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="#1F1A18"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="#1F1A18" stroke-width="1.9" stroke-linecap="round"><path d="M1.2 4.3a10 10 0 0 1 13.6 0M3.7 7a6.3 6.3 0 0 1 8.6 0"/><circle cx="8" cy="10" r="1.3" fill="#1F1A18" stroke="none"/></svg>
+      <svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.8" stroke="#1F1A18" stroke-opacity=".4"/><rect x="2" y="2" width="17" height="9" rx="2.4" fill="#1F1A18"/><path d="M25 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2Z" fill="#1F1A18" fill-opacity=".45"/></svg>
+    </span>
+  </div>
+
+  <div class="top">
+    <div>
+      <small>Friday, September 26</small>
+      <h1>Good morning, Sam</h1>
+    </div>
+    <div class="r">
+      <div class="circ"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13.5V9a5 5 0 0 1 10 0v4.5l1.3 1.8H3.7Z"/><path d="M8.3 17.5h3.4"/></svg><span class="pip"></span></div>
+    </div>
+  </div>
+
+  <div class="week num">
+    <div class="day"><small>Mon</small><b>22</b><i></i></div>
+    <div class="day"><small>Tue</small><b>23</b><i></i></div>
+    <div class="day"><small>Wed</small><b>24</b><i class="part"></i></div>
+    <div class="day"><small>Thu</small><b>25</b><i></i></div>
+    <div class="day on"><small>Fri</small><b>26</b><i></i></div>
+    <div class="day fut"><small>Sat</small><b>27</b><i class="none"></i></div>
+    <div class="day fut"><small>Sun</small><b>28</b><i class="none"></i></div>
+  </div>
+
+  <div class="hero">
+    <div class="ring">
+      <svg width="100" height="100" viewBox="0 0 108 108">
+        <circle cx="54" cy="54" r="45" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="11"/>
+        <circle cx="54" cy="54" r="45" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-dasharray="282.7" stroke-dashoffset="94.2" transform="rotate(-90 54 54)"/>
+      </svg>
+      <div class="t num"><b>4/6</b><small>completed</small></div>
+    </div>
+    <div style="position:relative">
+      <h2>Two more to go</h2>
+      <p>Finish reading and your stretch to keep this week perfect.</p>
+      <div class="chips num">
+        <span class="chip"><svg width="13" height="13" viewBox="0 0 16 16" fill="#fff"><path d="M8.6 1.2c.4 2.3-.6 3.6-1.8 4.9C5.6 7.4 4.3 8.8 4.3 10.9A3.7 3.7 0 0 0 8 14.8a3.9 3.9 0 0 0 3.9-3.9c0-1.5-.6-2.6-1.3-3.4.1 1.1-.3 2-1.1 2.4.3-2.7-.2-6.2-.9-8.7Z"/></svg>12 day streak</span>
+        <span class="chip">86% week</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sh"><h3>Today’s habits</h3><span>Edit</span></div>
+  <div class="list">
+    <div class="h isdone">
+      <div class="tile" style="background:#E7F1FF"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s-6 6.4-6 10.5a6 6 0 0 0 12 0c0-4.1-6-10.5-6-10.5Z"/><path d="M9.3 14.5a2.8 2.8 0 0 0 2.7 2.5"/></svg></div>
+      <div class="txt"><b>Drink water</b><small class="num">8 of 8 glasses · <span class="streak"><svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M8.6 1.2c.4 2.3-.6 3.6-1.8 4.9C5.6 7.4 4.3 8.8 4.3 10.9A3.7 3.7 0 0 0 8 14.8a3.9 3.9 0 0 0 3.9-3.9c0-1.5-.6-2.6-1.3-3.4.1 1.1-.3 2-1.1 2.4.3-2.7-.2-6.2-.9-8.7Z"/></svg>21</span></small></div>
+      <div class="done"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.3 2.9 2.9 6-6.4"/></svg></div>
+    </div>
+    <div class="h isdone">
+      <div class="tile" style="background:#EDE9FE"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/><circle cx="12" cy="12" r="2.5"/></svg></div>
+      <div class="txt"><b>Meditate</b><small class="num">10 min · 7:05 am · <span class="streak"><svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M8.6 1.2c.4 2.3-.6 3.6-1.8 4.9C5.6 7.4 4.3 8.8 4.3 10.9A3.7 3.7 0 0 0 8 14.8a3.9 3.9 0 0 0 3.9-3.9c0-1.5-.6-2.6-1.3-3.4.1 1.1-.3 2-1.1 2.4.3-2.7-.2-6.2-.9-8.7Z"/></svg>12</span></small></div>
+      <div class="done"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.3 2.9 2.9 6-6.4"/></svg></div>
+    </div>
+    <div class="h isdone">
+      <div class="tile" style="background:#DCFCE7"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4.8" r="1.8"/><path d="m9 21 2.2-5.2 2.8 2.2V22M7 11.5l3-3.5h3.2l2.3 3.5 3 1M11.2 15.8l1.3-5.8"/></svg></div>
+      <div class="txt"><b>Morning walk</b><small class="num">6,420 steps · <span class="streak"><svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M8.6 1.2c.4 2.3-.6 3.6-1.8 4.9C5.6 7.4 4.3 8.8 4.3 10.9A3.7 3.7 0 0 0 8 14.8a3.9 3.9 0 0 0 3.9-3.9c0-1.5-.6-2.6-1.3-3.4.1 1.1-.3 2-1.1 2.4.3-2.7-.2-6.2-.9-8.7Z"/></svg>5</span></small></div>
+      <div class="done"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.3 2.9 2.9 6-6.4"/></svg></div>
+    </div>
+    <div class="h">
+      <div class="tile" style="background:#FFF1DB"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10 5 7.4 4.5 4 4.5v13c3.4 0 6 .5 8 2 2-1.5 4.6-2 8-2v-13c-3.4 0-6 .5-8 2ZM12 6.5v13"/></svg></div>
+      <div class="txt"><b>Read 20 pages</b><small class="num">12 of 20 pages · <span class="streak"><svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M8.6 1.2c.4 2.3-.6 3.6-1.8 4.9C5.6 7.4 4.3 8.8 4.3 10.9A3.7 3.7 0 0 0 8 14.8a3.9 3.9 0 0 0 3.9-3.9c0-1.5-.6-2.6-1.3-3.4.1 1.1-.3 2-1.1 2.4.3-2.7-.2-6.2-.9-8.7Z"/></svg>9</span></small></div>
+      <svg width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="12.5" fill="none" stroke="#F4E6E1" stroke-width="3"/><circle cx="15" cy="15" r="12.5" fill="none" stroke="#FF6B57" stroke-width="3" stroke-linecap="round" stroke-dasharray="78.5" stroke-dashoffset="31.4" transform="rotate(-90 15 15)"/></svg>
+    </div>
+    <div class="h">
+      <div class="tile" style="background:#FCE7F3"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DB2777" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.8" r="1.8"/><path d="M5 9.5c2.5 1 4.5 1.3 7 1.3s4.5-.3 7-1.3M12 10.8v4.2M12 15l-3.5 5.5M12 15l3.5 5.5"/></svg></div>
+      <div class="txt"><b>Evening stretch</b><small class="num">15 min · 9:30 pm</small></div>
+      <div class="todo"></div>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="4"/><path d="M3.5 9.5h17M8 2.5v4M16 2.5v4"/><path d="m9 14.5 2 2 4-4"/></svg>Today</div>
+    <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V12M10 20V6M15 20v-9M20 20V4"/></svg>Progress</div>
+    <div class="fab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+    <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h10l3 3v14H6Z"/><path d="M9.5 10h6M9.5 14h6M9.5 18h3"/></svg>Journal</div>
+    <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>Profile</div>
+  </div>
+  <div class="homeind"></div>
+</body>
+</html>

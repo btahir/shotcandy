@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Quokka — Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F7FA; --panel:#FFFFFF; --line:#E8E8EF; --line2:#F0F0F5;
+    --ink:#16161D; --ink2:#4A4A57; --ink3:#8A8A99; --ink4:#B4B4C2;
+    --acc:#5B4CF0; --acc2:#7C6CF7; --accbg:#EFEDFE; --accline:#DAD5FD;
+    --up:#15925B; --upbg:#E6F6EE; --down:#D1433C; --downbg:#FDECEB;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1440px;height:900px;overflow:hidden}
+  body{font-family:Inter,system-ui,sans-serif;font-size:13px;color:var(--ink);background:var(--bg);
+    -webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01";display:flex}
+  .num{font-variant-numeric:tabular-nums}
+  svg{display:block}
+  /* sidebar */
+  aside{width:236px;flex:none;height:100%;background:#FBFBFD;border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px 12px 12px}
+  .ws{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;height:40px}
+  .logo{width:26px;height:26px;border-radius:8px;background:linear-gradient(145deg,#7C6CF7,#4B3BDB);display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 1px 2px rgba(75,59,219,.35)}
+  .ws b{font-weight:600;font-size:14px;letter-spacing:-.01em}
+  .ws small{display:block;color:var(--ink3);font-size:11.5px;margin-top:1px}
+  .ws .chev{margin-left:auto;color:var(--ink3)}
+  .navsec{margin-top:18px}
+  .navsec h6{font-size:11px;font-weight:500;color:var(--ink3);letter-spacing:.02em;padding:0 10px 6px}
+  .ni{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:7px;color:var(--ink2);font-weight:500}
+  .ni svg{color:var(--ink3);flex:none}
+  .ni.on{background:var(--panel);color:var(--ink);box-shadow:0 0 0 1px var(--line),0 1px 2px rgba(20,20,40,.04)}
+  .ni.on svg{color:var(--acc)}
+  .ni .badge{margin-left:auto;font-size:11px;color:var(--ink3);font-weight:500}
+  .ni .dot{width:8px;height:8px;border-radius:3px;flex:none;margin:0 3px}
+  .side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:12px}
+  .usage{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+  .usage p{font-size:12px;color:var(--ink2);display:flex;justify-content:space-between}
+  .usage p b{font-weight:600;color:var(--ink)}
+  .bar{height:6px;background:var(--line2);border-radius:99px;margin-top:8px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc2),var(--acc));border-radius:99px}
+  .me{display:flex;align-items:center;gap:10px;padding:4px 6px}
+  .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:600;color:#fff;flex:none}
+  .me b{font-size:13px;font-weight:500}
+  .me small{display:block;font-size:11.5px;color:var(--ink3)}
+  /* main */
+  main{flex:1;min-width:0;display:flex;flex-direction:column}
+  header{height:56px;flex:none;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.7)}
+  .crumbs{display:flex;align-items:center;gap:8px;color:var(--ink3);font-weight:500}
+  .crumbs b{color:var(--ink);font-weight:600}
+  .search{margin-left:auto;width:300px;height:34px;border:1px solid var(--line);background:var(--panel);border-radius:8px;display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--ink3)}
+  .kbd{margin-left:auto;font-size:11px;border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--ink3);background:#FAFAFC}
+  .btn{height:34px;display:inline-flex;align-items:center;gap:7px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font-weight:500;color:var(--ink);box-shadow:0 1px 2px rgba(20,20,40,.04)}
+  .btn svg{color:var(--ink3)}
+  .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:0 1px 2px rgba(75,59,219,.4),inset 0 1px 0 rgba(255,255,255,.18)}
+  .btn.pri svg{color:#fff}
+  .icon-btn{width:34px;height:34px;border:1px solid var(--line);border-radius:8px;display:grid;place-items:center;background:var(--panel);color:var(--ink2);position:relative}
+  .icon-btn .pip{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 2px #fff}
+  .content{padding:22px 24px 24px;display:flex;flex-direction:column;gap:16px;flex:1;min-height:0}
+  .titlerow{display:flex;align-items:flex-end;gap:12px}
+  .titlerow h1{font-size:22px;font-weight:600;letter-spacing:-.02em}
+  .titlerow p{color:var(--ink3);margin-top:4px}
+  .titlerow .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .seg{display:flex;background:#EFEFF4;border-radius:8px;padding:3px;gap:2px}
+  .seg span{height:28px;padding:0 11px;display:grid;place-items:center;border-radius:6px;font-weight:500;color:var(--ink2);font-size:12.5px}
+  .seg span.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(20,20,40,.08),0 0 0 1px rgba(20,20,40,.04)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 2px rgba(20,20,40,.03)}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .kpi{padding:16px 16px 14px;position:relative}
+  .kpi .lbl{color:var(--ink2);font-weight:500;display:flex;align-items:center;gap:6px}
+  .kpi .lbl svg{color:var(--ink4)}
+  .kpi .row{display:flex;align-items:flex-end;justify-content:space-between;margin-top:10px}
+  .kpi .val{font-size:26px;font-weight:600;letter-spacing:-.025em;line-height:1}
+  .kpi .val small{font-size:15px;color:var(--ink3);font-weight:500;margin-left:1px}
+  .delta{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600;padding:2px 6px;border-radius:6px;margin-top:10px}
+  .delta.up{color:var(--up);background:var(--upbg)}
+  .delta.down{color:var(--down);background:var(--downbg)}
+  .kpi .vs{color:var(--ink3);font-size:12px;margin-left:6px}
+  .chartcard{padding:18px 20px 12px;flex:none}
+  .ch-head{display:flex;align-items:flex-start;gap:24px}
+  .ch-head h3{font-size:14px;font-weight:600;letter-spacing:-.01em}
+  .ch-head p{color:var(--ink3);margin-top:3px;font-size:12.5px}
+  .legend{margin-left:auto;display:flex;gap:16px;align-items:center;color:var(--ink2);font-size:12.5px;font-weight:500}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .legend i.dash{height:0;border-top:2px dashed #B9B9C8;width:14px;border-radius:0;vertical-align:3px}
+  .bottom{display:grid;grid-template-columns:1fr 392px;gap:16px;flex:1;min-height:0}
+  .tcard{padding:0;overflow:hidden}
+  .tcard .th{display:flex;align-items:center;padding:14px 16px 12px}
+  .tcard h3{font-size:14px;font-weight:600}
+  .tcard .th a{margin-left:auto;color:var(--acc);font-weight:500;font-size:12.5px}
+  table{width:100%;border-collapse:collapse}
+  thead td{font-size:11.5px;color:var(--ink3);font-weight:500;padding:8px 16px;border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);background:#FBFBFD}
+  tbody td{padding:0 16px;height:40px;border-bottom:1px solid var(--line2)}
+  tbody tr:last-child td{border-bottom:0}
+  td.r{text-align:right}
+  .path{font-family:"Inter";font-weight:500;color:var(--ink);display:flex;align-items:center;gap:10px}
+  .fav{width:20px;height:20px;border-radius:5px;background:var(--accbg);display:grid;place-items:center;color:var(--acc);flex:none}
+  .minibar{width:110px;height:6px;border-radius:99px;background:var(--line2);overflow:hidden;display:inline-block;vertical-align:middle;margin-right:10px}
+  .minibar i{display:block;height:100%;border-radius:99px;background:var(--acc2)}
+  .muted{color:var(--ink3)}
+  .src{padding:14px 16px}
+  .src .th{display:flex;align-items:center;margin-bottom:12px}
+  .src h3{font-size:14px;font-weight:600}
+  .src .th span{margin-left:auto;color:var(--ink3);font-size:12px}
+  .srow{display:flex;align-items:center;gap:10px;height:34px}
+  .srow .nm{width:92px;font-weight:500;color:var(--ink2);display:flex;align-items:center;gap:8px}
+  .srow .track{flex:1;height:22px;border-radius:6px;background:#F5F5F9;position:relative;overflow:hidden}
+  .srow .track i{position:absolute;inset:0 auto 0 0;border-radius:6px;background:linear-gradient(90deg,#E4E0FE,#D3CCFD)}
+  .srow .track i.hi{background:linear-gradient(90deg,#8E80F8,#6B5BF3)}
+  .srow .v{width:56px;text-align:right;font-weight:500}
+  .srow .p{width:40px;text-align:right;color:var(--ink3);font-size:12px}
+</style>
+</head>
+<body>
+<aside>
+  <div class="ws">
+    <div class="logo"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 10.5 5.2 6l2.6 2.6L12 3" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div><b>Quokka</b><small>Harbor Labs · Pro</small></div>
+    <svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 6l3-3 3 3M5 10l3 3 3-3"/></svg>
+  </div>
+
+  <div class="navsec" style="margin-top:14px">
+    <div class="ni on"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="5" rx="1.2"/></svg>Overview</div>
+    <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13 6 8l3 3 5-7"/></svg>Insights</div>
+    <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 3h11M4.5 6.5h7M6.5 10h3M7.5 13.5h1"/></svg>Funnels</div>
+    <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5"/><path d="M8 5v3l2 1.5"/></svg>Retention</div>
+    <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="3.5" cy="4" r="1.5"/><circle cx="12.5" cy="12" r="1.5"/><path d="M5 4h4.5a2.5 2.5 0 0 1 0 5h-3a2.5 2.5 0 0 0 0 5H11"/></svg>Journeys</div>
+    <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 4 9h4l-1 5 5-7H8l1-5Z"/></svg>Events<span class="badge num">1.2M</span></div>
+    <div class="ni"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="5.5" r="2.5"/><path d="M1.5 13.5c.6-2.3 2.3-3.5 4.5-3.5s3.9 1.2 4.5 3.5M11 3.2a2.4 2.4 0 0 1 0 4.6M12.5 10.3c1 .5 1.7 1.6 2 3.2"/></svg>People</div>
+  </div>
+
+  <div class="navsec">
+    <h6>Saved reports</h6>
+    <div class="ni"><span class="dot" style="background:#7C6CF7"></span>Weekly growth</div>
+    <div class="ni"><span class="dot" style="background:#F59E0B"></span>Checkout drop-off</div>
+    <div class="ni"><span class="dot" style="background:#10B981"></span>Onboarding cohort</div>
+    <div class="ni"><span class="dot" style="background:#EC4899"></span>Pricing page A/B</div>
+  </div>
+
+  <div class="side-foot">
+    <div class="usage">
+      <p><span>Monthly events</span><b class="num">1.24M <span class="muted" style="font-weight:500">/ 2M</span></b></p>
+      <div class="bar"><i style="width:62%"></i></div>
+    </div>
+    <div class="me">
+      <div class="av" style="background:linear-gradient(145deg,#F59E0B,#EA580C)">MA</div>
+      <div><b>Maya</b><small>maya@harborlabs.dev</small></div>
+    </div>
+  </div>
+</aside>
+
+<main>
+  <header>
+    <div class="crumbs">
+      <span>harborlabs.dev</span>
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m6 3 5 5-5 5"/></svg>
+      <b>Overview</b>
+    </div>
+    <div class="search">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search reports, events, people…</span>
+      <span class="kbd">⌘K</span>
+    </div>
+    <div class="icon-btn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3L4 11ZM6.5 14h3"/></svg><span class="pip"></span></div>
+    <div class="av" style="background:linear-gradient(145deg,#F59E0B,#EA580C);width:32px;height:32px">MA</div>
+  </header>
+
+  <div class="content">
+    <div class="titlerow">
+      <div>
+        <h1>Overview</h1>
+        <p>Live traffic and conversion for harborlabs.dev · updated 2 min ago</p>
+      </div>
+      <div class="right">
+        <div class="seg"><span>24h</span><span>7d</span><span class="on">30d</span><span>90d</span><span>12m</span></div>
+        <div class="btn"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg><span class="num">Aug 28 – Sep 26, 2026</span></div>
+        <div class="btn"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 4h10M5 8h6M7 12h2"/></svg>Filter</div>
+        <div class="btn pri"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13.5h10"/></svg>Export</div>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="card kpi">
+        <div class="lbl">Unique visitors</div>
+        <div class="row">
+          <div><div class="val num">48,219</div><div><span class="delta up">↑ 12.4%</span><span class="vs">vs prev. 30d</span></div></div>
+          <svg class="spark" data-seed="3" data-trend="1" width="96" height="40"></svg>
+        </div>
+      </div>
+      <div class="card kpi">
+        <div class="lbl">Sessions</div>
+        <div class="row">
+          <div><div class="val num">71,904</div><div><span class="delta up">↑ 8.1%</span><span class="vs">vs prev. 30d</span></div></div>
+          <svg class="spark" data-seed="11" data-trend=".7" width="96" height="40"></svg>
+        </div>
+      </div>
+      <div class="card kpi">
+        <div class="lbl">Conversion rate</div>
+        <div class="row">
+          <div><div class="val num">3.62<small>%</small></div><div><span class="delta up">↑ 0.4 pt</span><span class="vs">vs prev. 30d</span></div></div>
+          <svg class="spark" data-seed="23" data-trend=".5" width="96" height="40"></svg>
+        </div>
+      </div>
+      <div class="card kpi">
+        <div class="lbl">Avg. session</div>
+        <div class="row">
+          <div><div class="val num">4m 12s</div><div><span class="delta down">↓ 3.2%</span><span class="vs">vs prev. 30d</span></div></div>
+          <svg class="spark" data-seed="41" data-trend="-.6" data-neg="1" width="96" height="40"></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="card chartcard">
+      <div class="ch-head">
+        <div>
+          <h3>Visitors</h3>
+          <p>Daily unique visitors, last 30 days compared with the previous period</p>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--acc)"></i>This period</span>
+          <span><i class="dash"></i>Previous period</span>
+          <div class="seg" style="margin-left:8px"><span class="on">Daily</span><span>Weekly</span></div>
+        </div>
+      </div>
+      <svg id="chart" width="1128" height="236" style="margin-top:8px"></svg>
+    </div>
+
+    <div class="bottom">
+      <div class="card tcard">
+        <div class="th"><h3>Top pages</h3><a>View all 184 →</a></div>
+        <table>
+          <thead><tr><td>Page</td><td>Share of views</td><td class="r">Visitors</td><td class="r">Views</td><td class="r">Bounce</td><td class="r">Avg. time</td></tr></thead>
+          <tbody class="num">
+            <tr><td><div class="path"><span class="fav"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5 8 3l5.5 4.5V13H2.5Z"/></svg></span>/</div></td><td><span class="minibar"><i style="width:92%"></i></span><span class="muted">31.4%</span></td><td class="r">18,402</td><td class="r">26,911</td><td class="r">38.2%</td><td class="r">1m 48s</td></tr>
+            <tr><td><div class="path"><span class="fav">$</span>/pricing</div></td><td><span class="minibar"><i style="width:48%"></i></span><span class="muted">16.2%</span></td><td class="r">9,736</td><td class="r">13,880</td><td class="r">29.5%</td><td class="r">2m 31s</td></tr>
+            <tr><td><div class="path"><span class="fav"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3h10v10H3zM6 6.5h4M6 9.5h4"/></svg></span>/docs/getting-started</div></td><td><span class="minibar"><i style="width:34%"></i></span><span class="muted">11.7%</span></td><td class="r">6,118</td><td class="r">10,024</td><td class="r">21.8%</td><td class="r">4m 06s</td></tr>
+            <tr><td><div class="path"><span class="fav"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 2.5h8M4 6h8M4 9.5h5"/></svg></span>/blog/shipping-faster</div></td><td><span class="minibar"><i style="width:22%"></i></span><span class="muted">7.3%</span></td><td class="r">4,590</td><td class="r">6,257</td><td class="r">54.1%</td><td class="r">3m 12s</td></tr>
+            <tr><td><div class="path"><span class="fav"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4l2.5 1.5M13.5 8A5.5 5.5 0 1 1 8 2.5"/></svg></span>/changelog</div></td><td><span class="minibar"><i style="width:15%"></i></span><span class="muted">5.1%</span></td><td class="r">3,207</td><td class="r">4,368</td><td class="r">41.7%</td><td class="r">1m 55s</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card src">
+        <div class="th"><h3>Traffic sources</h3><span>Visitors</span></div>
+        <div class="srow"><div class="nm">Direct</div><div class="track"><i class="hi" style="width:78%"></i></div><div class="v num">16,395</div><div class="p num">34%</div></div>
+        <div class="srow"><div class="nm">Search</div><div class="track"><i style="width:62%"></i></div><div class="v num">13,019</div><div class="p num">27%</div></div>
+        <div class="srow"><div class="nm">Referral</div><div class="track"><i style="width:37%"></i></div><div class="v num">7,715</div><div class="p num">16%</div></div>
+        <div class="srow"><div class="nm">Newsletter</div><div class="track"><i style="width:28%"></i></div><div class="v num">5,786</div><div class="p num">12%</div></div>
+        <div class="srow"><div class="nm">Social</div><div class="track"><i style="width:16%"></i></div><div class="v num">3,375</div><div class="p num">7%</div></div>
+        <div class="srow"><div class="nm">Paid ads</div><div class="track"><i style="width:9%"></i></div><div class="v num">1,929</div><div class="p num">4%</div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  function rng(seed){let s=seed>>>0||1;return()=>{s^=s<<13;s^=s>>>17;s^=s<<5;return((s>>>0)%10000)/10000}}
+  function smooth(pts){ // monotone-ish catmull-rom -> bezier
+    let d=`M${pts[0][0]},${pts[0][1]}`;
+    for(let i=0;i<pts.length-1;i++){
+      const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2,t=.18;
+      const c1=[p1[0]+(p2[0]-p0[0])*t,p1[1]+(p2[1]-p0[1])*t];
+      const c2=[p2[0]-(p3[0]-p1[0])*t,p2[1]-(p3[1]-p1[1])*t];
+      d+=` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+    }
+    return d;
+  }
+  const NS='http://www.w3.org/2000/svg';
+  // sparklines
+  document.querySelectorAll('.spark').forEach(svg=>{
+    const r=rng(+svg.dataset.seed),tr=+svg.dataset.trend,neg=svg.dataset.neg;
+    const W=96,H=40,n=16,vals=[];let v=.5-tr*.25;
+    for(let i=0;i<n;i++){v+=tr*.035+(r()-.5)*.16;vals.push(v)}
+    const mn=Math.min(...vals),mx=Math.max(...vals);
+    const pts=vals.map((y,i)=>[2+i*(W-4)/(n-1),4+(1-(y-mn)/(mx-mn))*(H-10)]);
+    const col=neg?'#D1433C':'#5B4CF0',id='g'+svg.dataset.seed;
+    const line=smooth(pts);
+    svg.innerHTML=`<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".18"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${line} L${W-2},${H} L2,${H} Z" fill="url(#${id})"/>
+    <path d="${line}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linecap="round"/>
+    <circle cx="${pts[n-1][0]}" cy="${pts[n-1][1]}" r="2.6" fill="#fff" stroke="${col}" stroke-width="1.6"/>`;
+  });
+  // main chart
+  (function(){
+    const svg=document.getElementById('chart');
+    const W=1128,H=236,L=44,R=8,T=12,B=26,n=30;
+    const r=rng(7),r2=rng(99);
+    const start=new Date(2026,7,28);
+    const cur=[],prev=[];
+    for(let i=0;i<n;i++){
+      const d=new Date(start);d.setDate(d.getDate()+i);
+      const wk=d.getDay(),weekend=wk===0||wk===6;
+      const base=1320+i*14+(weekend?-360:0)+(r()-.5)*170+(i===17?420:0)+(i===18?160:0);
+      cur.push(Math.round(base));
+      const pb=1270+i*4+(weekend?-330:0)+(r2()-.5)*150;
+      prev.push(Math.round(pb));
+    }
+    const max=2400,min=0;
+    const x=i=>L+i*(W-L-R)/(n-1), y=v=>T+(1-(v-min)/(max-min))*(H-T-B);
+    let g='';
+    [0,600,1200,1800,2400].forEach(t=>{
+      g+=`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="${t===0?'#E3E3EB':'#F0F0F5'}" ${t===0?'':'stroke-dasharray="0"'}/>`;
+      g+=`<text x="${L-12}" y="${y(t)+4}" text-anchor="end" font-size="11" fill="#9A9AA8" font-family="Inter" style="font-variant-numeric:tabular-nums">${t>=1000?(t/1000).toFixed(1).replace('.0','')+'k':t}</text>`;
+    });
+    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    for(let i=0;i<n;i+=4){const d=new Date(start);d.setDate(d.getDate()+i);
+      g+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle" font-size="11" fill="#9A9AA8" font-family="Inter">${months[d.getMonth()]} ${d.getDate()}</text>`}
+    const pc=cur.map((v,i)=>[x(i),y(v)]),pp=prev.map((v,i)=>[x(i),y(v)]);
+    const lc=smooth(pc),lp=smooth(pp);
+    const hi=21,hx=x(hi),hy=y(cur[hi]);
+    const hd=new Date(start);hd.setDate(hd.getDate()+hi);
+    svg.innerHTML=`<defs>
+      <linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6B5BF3" stop-opacity=".22"/><stop offset=".7" stop-color="#6B5BF3" stop-opacity=".04"/><stop offset="1" stop-color="#6B5BF3" stop-opacity="0"/></linearGradient>
+      <filter id="sh" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#1A1840" flood-opacity=".12"/></filter>
+    </defs>${g}
+    <path d="${lp}" fill="none" stroke="#BDBDCB" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <path d="${lc} L${x(n-1)},${y(0)} L${x(0)},${y(0)} Z" fill="url(#area)"/>
+    <path d="${lc}" fill="none" stroke="#5B4CF0" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="${hx}" x2="${hx}" y1="${T}" y2="${y(0)}" stroke="#5B4CF0" stroke-opacity=".35" stroke-dasharray="3 3"/>
+    <circle cx="${hx}" cy="${y(prev[hi])}" r="3.5" fill="#fff" stroke="#BDBDCB" stroke-width="1.5"/>
+    <circle cx="${hx}" cy="${hy}" r="8" fill="#5B4CF0" fill-opacity=".14"/>
+    <circle cx="${hx}" cy="${hy}" r="4" fill="#fff" stroke="#5B4CF0" stroke-width="2"/>
+    <g filter="url(#sh)" transform="translate(${hx+14},${Math.max(T,hy-78)})">
+      <rect width="168" height="78" rx="9" fill="#fff" stroke="#E8E8EF"/>
+      <text x="12" y="21" font-size="11.5" fill="#8A8A99" font-family="Inter" font-weight="500">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][hd.getDay()]}, ${months[hd.getMonth()]} ${hd.getDate()}</text>
+      <rect x="12" y="34" width="8" height="8" rx="2.5" fill="#5B4CF0"/>
+      <text x="26" y="42" font-size="12" fill="#4A4A57" font-family="Inter">This period</text>
+      <text x="156" y="42" text-anchor="end" font-size="12" fill="#16161D" font-family="Inter" font-weight="600" style="font-variant-numeric:tabular-nums">${cur[hi].toLocaleString('en-US')}</text>
+      <rect x="12" y="54" width="8" height="8" rx="2.5" fill="#C9C9D6"/>
+      <text x="26" y="62" font-size="12" fill="#4A4A57" font-family="Inter">Previous</text>
+      <text x="156" y="62" text-anchor="end" font-size="12" fill="#16161D" font-family="Inter" font-weight="600" style="font-variant-numeric:tabular-nums">${prev[hi].toLocaleString('en-US')}</text>
+    </g>`;
+  })();
+</script>
+</body>
+</html>

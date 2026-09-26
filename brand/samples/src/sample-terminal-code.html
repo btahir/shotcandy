@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tidewater — parse.ts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E1016; --side:#0B0D12; --panel:#12151D; --line:#1C202B; --line2:#252A38; --hover:#181C27;
+    --ink:#D3DAEA; --ink2:#9AA3B8; --ink3:#626B82; --ink4:#434A5C;
+    --acc:#7C8CFF; --acc2:#A78BFA;
+    --kw:#B79BFF; --fn:#7AB0FF; --str:#9FDDB0; --ty:#6ED7E6; --num:#F6B38A; --cm:#586079; --pun:#8790A8; --prop:#D3DAEA; --re:#F0A6CA;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1200px;height:760px;overflow:hidden}
+  body{font-family:Inter,system-ui,sans-serif;font-size:12.5px;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
+  svg{display:block;flex:none}
+  .mono{font-family:"JetBrains Mono",monospace;font-feature-settings:"calt" 1,"liga" 1}
+  .top{height:38px;flex:none;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--line);background:var(--side);gap:12px}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px}
+  .logo{width:20px;height:20px;border-radius:6px;background:linear-gradient(145deg,#8FA0FF,#7A5AF5);display:grid;place-items:center}
+  .cmd{margin:0 auto;width:380px;height:26px;border-radius:7px;background:#151924;border:1px solid var(--line2);display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--ink3);font-size:12px;transform:translateX(-40px)}
+  .cmd .kb{margin-left:auto;font-size:10.5px;color:var(--ink4)}
+  .top .r{display:flex;gap:10px;align-items:center;color:var(--ink2)}
+  .branch{display:flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:6px;background:#151924;border:1px solid var(--line2);font-size:11.5px;color:var(--ink2)}
+  .run{height:24px;padding:0 10px;border-radius:6px;background:linear-gradient(180deg,#8494FF,#6D76F2);color:#fff;font-weight:600;font-size:11.5px;display:flex;align-items:center;gap:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+  .body{flex:1;display:flex;min-height:0}
+  .act{width:46px;flex:none;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding-top:10px;gap:6px;color:var(--ink3)}
+  .act span{width:32px;height:32px;display:grid;place-items:center;border-radius:8px;position:relative}
+  .act span.on{color:var(--ink);background:var(--hover)}
+  .act span.on::before{content:"";position:absolute;left:-7px;top:8px;bottom:8px;width:2px;border-radius:2px;background:var(--acc)}
+  .act .badge{position:absolute;top:4px;right:3px;min-width:14px;height:14px;border-radius:7px;background:var(--acc);color:#0E1016;font-size:9px;font-weight:700;display:grid;place-items:center;padding:0 3px}
+  .tree{position:relative;width:228px;flex:none;background:var(--side);border-right:1px solid var(--line);padding:10px 0;overflow:hidden}
+  .tree h6{font-size:10.5px;font-weight:600;letter-spacing:.06em;color:var(--ink3);padding:0 14px 8px;display:flex;align-items:center;text-transform:uppercase}
+  .tree h6 span{margin-left:auto;display:flex;gap:6px}
+  .f{height:24px;display:flex;align-items:center;gap:6px;padding-left:calc(10px + var(--d,0) * 14px);padding-right:12px;color:var(--ink2);white-space:nowrap}
+  .f .ch{width:12px;color:var(--ink4)}
+  .f.on{background:#1A1F2E;color:var(--ink);box-shadow:inset 2px 0 0 var(--acc)}
+  .f .st{margin-left:auto;font-size:11px;font-weight:600}
+  .f .m{color:#E6C07B}.f .a{color:#8BD5A0}
+  .ts{width:14px;height:14px;border-radius:3px;display:grid;place-items:center;font-size:7.5px;font-weight:800;color:#0E1016;background:#6EA8FF;font-family:Inter;letter-spacing:-.02em}
+  .ts.tt{background:#6ED7E6}
+  .ts.j{background:#E6C07B}
+  .ts.md{background:#8790A8}
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .tabs{height:36px;flex:none;display:flex;background:var(--side);border-bottom:1px solid var(--line)}
+  .tab{height:36px;display:flex;align-items:center;gap:7px;padding:0 14px;color:var(--ink3);border-right:1px solid var(--line);white-space:nowrap}
+  .tab.on{background:var(--bg);color:var(--ink);box-shadow:inset 0 1.5px 0 var(--acc);position:relative}
+  .tab.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--bg)}
+  .tab .x{color:var(--ink3);margin-left:4px}
+  .tab .dot{width:7px;height:7px;border-radius:50%;background:var(--ink2);margin-left:6px}
+  .crumbs{height:26px;flex:none;display:flex;align-items:center;gap:6px;padding:0 16px;color:var(--ink3);font-size:12px}
+  .crumbs b{color:var(--ink2);font-weight:500}
+  .editor{flex:1;display:flex;min-height:0;position:relative;overflow:hidden}
+  .gut{width:56px;flex:none;text-align:right;padding-right:16px;color:var(--ink4);font-size:12.5px;line-height:20px;padding-top:4px;position:relative}
+  .gut div{position:relative}
+  .gut div.cur{color:var(--ink2)}
+  .gut div.add::after{content:"";position:absolute;right:-12px;top:2px;bottom:2px;width:3px;border-radius:1px;background:#4FAF78}
+  .gut div.mod::after{content:"";position:absolute;right:-12px;top:2px;bottom:2px;width:3px;border-radius:1px;background:#6E86F7}
+  pre{flex:1;font-size:12.5px;line-height:20px;padding-top:4px;color:var(--prop);position:relative;tab-size:2}
+  pre .ln{display:block;height:20px;white-space:pre;position:relative}
+  pre .ln.cur{background:rgba(124,140,255,.07);margin-left:-8px;padding-left:8px;box-shadow:inset 0 0 0 1px rgba(124,140,255,.08)}
+  .guide{position:absolute;top:0;bottom:0;width:1px;background:#1B1F2B}
+  .caret{display:inline-block;width:2px;height:17px;background:#A9B4FF;vertical-align:-4px;margin:0 -1px;box-shadow:0 0 6px rgba(169,180,255,.6)}
+  .hint{display:inline-block;margin-left:14px;font-family:Inter;font-size:11px;color:var(--ink3);background:#161A25;border:1px solid var(--line2);border-radius:5px;padding:0 6px;height:17px;line-height:15px;vertical-align:1px}
+  .k{color:var(--kw)}.fn{color:var(--fn)}.s{color:var(--str)}.t{color:var(--ty)}.n{color:var(--num)}.c{color:var(--cm);font-style:italic}.p{color:var(--pun)}.r{color:var(--re)}
+  .mini{width:84px;flex:none;padding:8px 12px 0 10px;border-left:1px solid #151924;position:relative}
+  .mini i{display:block;height:2px;border-radius:1px;margin:0 0 2px;opacity:.55}
+  .mini .view{position:absolute;left:4px;right:4px;top:6px;height:108px;background:rgba(124,140,255,.07);border-radius:3px}
+  .term{height:282px;flex:none;border-top:1px solid var(--line2);background:#0C0E13;display:flex;flex-direction:column}
+  .th{height:34px;flex:none;display:flex;align-items:center;gap:18px;padding:0 16px;font-size:11.5px;font-weight:500;color:var(--ink3);letter-spacing:.01em}
+  .th .on{color:var(--ink);position:relative}
+  .th .on::after{content:"";position:absolute;left:0;right:0;bottom:-10px;height:1.5px;background:var(--acc)}
+  .th .cnt{display:inline-grid;place-items:center;min-width:16px;height:15px;padding:0 4px;border-radius:8px;background:#1A1F2C;color:var(--ink2);font-size:10px;margin-left:5px}
+  .th .r{margin-left:auto;display:flex;gap:12px;align-items:center;color:var(--ink3)}
+  .th .sh{display:flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:5px;background:#151924;color:var(--ink2)}
+  .out{flex:1;padding:4px 16px 0;font-size:12px;line-height:18px;color:#AEB6C9;white-space:pre;overflow:hidden}
+  .g{color:#7DDB9C}.gb{color:#0C0E13;background:#7DDB9C;font-weight:600;padding:0 5px;border-radius:3px}.dim{color:#586079}.y{color:#E6C07B}.b{color:#8FA8FF}.w{color:#E6EAF4;font-weight:600}.pp{color:#B79BFF}
+  .status{height:24px;flex:none;display:flex;align-items:center;gap:14px;padding:0 10px;font-size:11px;background:linear-gradient(90deg,#5C5FE0,#7A55E8);color:rgba(255,255,255,.92)}
+  .status span{display:flex;align-items:center;gap:5px}
+  .status .rt{margin-left:auto;display:flex;gap:14px}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand"><div class="logo"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M2 6c2-2 4-2 6 0s4 2 6 0M2 11c2-2 4-2 6 0s4 2 6 0"/></svg></div>Tidewater</div>
+  <div class="cmd"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>csv-toolkit<span class="kb mono">⌘P</span></div>
+  <div class="r">
+    <div class="branch mono"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="4.5" cy="3.5" r="1.5"/><circle cx="4.5" cy="12.5" r="1.5"/><circle cx="11.5" cy="5.5" r="1.5"/><path d="M4.5 5v6M11.5 7c0 3-7 2-7 4"/></svg>feat/quoted-fields</div>
+    <div class="run"><svg width="10" height="10" viewBox="0 0 10 10" fill="#fff"><path d="M2 1.2v7.6L8.5 5Z"/></svg>Run tests</div>
+  </div>
+</div>
+
+<div class="body">
+  <div class="act">
+    <span class="on"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M5 2.5h6.5L15 6v11.5H5Z"/><path d="M11.5 2.5V6H15"/></svg></span>
+    <span><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="9" r="5.5"/><path d="m13 13 4 4"/></svg></span>
+    <span><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6" cy="4.5" r="2"/><circle cx="6" cy="15.5" r="2"/><circle cx="14" cy="7" r="2"/><path d="M6 6.5v7M14 9c0 3.5-8 2.5-8 4.5"/></svg><i class="badge">3</i></span>
+    <span><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M7 3.5h6M8 3.5v4.5L4 15.5a1.2 1.2 0 0 0 1 1.8h10a1.2 1.2 0 0 0 1-1.8L12 8V3.5"/><path d="M6 12.5h8"/></svg></span>
+    <span><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5"/></svg></span>
+  </div>
+
+  <div class="tree">
+    <h6>Explorer<span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9 2.5H4v11h8V5.5ZM8 7.5v4M6 9.5h4"/></svg><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M13 8A5 5 0 1 1 11.5 4.5M13 2.5v2.5h-2.5"/></svg></span></h6>
+    <div class="f"><span class="ch"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 3l3 4 3-4z" fill="currentColor"/></svg></span><b style="font-weight:600;color:var(--ink)">csv-toolkit</b></div>
+    <div class="f" style="--d:1"><span class="ch"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 2l4 3-4 3z" fill="currentColor"/></svg></span>scripts</div>
+    <div class="f" style="--d:1"><span class="ch"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 3l3 4 3-4z" fill="currentColor"/></svg></span>src</div>
+    <div class="f" style="--d:2"><span class="ch"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 3l3 4 3-4z" fill="currentColor"/></svg></span>csv</div>
+    <div class="f on" style="--d:3"><span class="ch"></span><span class="ts">TS</span>parse.ts<span class="st m">M</span></div>
+    <div class="f" style="--d:3"><span class="ch"></span><span class="ts tt">TS</span>parse.test.ts<span class="st m">M</span></div>
+    <div class="f" style="--d:3"><span class="ch"></span><span class="ts">TS</span>stringify.ts</div>
+    <div class="f" style="--d:3"><span class="ch"></span><span class="ts">TS</span>types.ts</div>
+    <div class="f" style="--d:2"><span class="ch"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 2l4 3-4 3z" fill="currentColor"/></svg></span>fixtures</div>
+    <div class="f" style="--d:2"><span class="ch"></span><span class="ts">TS</span>index.ts</div>
+    <div class="f" style="--d:2"><span class="ch"></span><span class="ts">TS</span>stream.ts<span class="st a">A</span></div>
+    <div class="f" style="--d:1"><span class="ch"></span><span class="ts j">{}</span>package.json</div>
+    <div class="f" style="--d:1"><span class="ch"></span><span class="ts j">{}</span>tsconfig.json</div>
+    <div class="f" style="--d:1"><span class="ch"></span><span class="ts md">M↓</span>README.md</div>
+    <div class="f" style="--d:1"><span class="ch"></span><span class="ts md" style="background:#586079">≡</span>LICENSE</div>
+    <div style="position:absolute;left:0;right:0;bottom:0;border-top:1px solid var(--line)">
+      <h6 style="padding:8px 10px;margin:0;border-bottom:1px solid var(--line)"><svg width="10" height="10" viewBox="0 0 10 10" style="margin-right:6px;color:var(--ink4)"><path d="M3 2l4 3-4 3z" fill="currentColor"/></svg>Outline</h6>
+      <h6 style="padding:8px 10px;margin:0"><svg width="10" height="10" viewBox="0 0 10 10" style="margin-right:6px;color:var(--ink4)"><path d="M3 2l4 3-4 3z" fill="currentColor"/></svg>Timeline</h6>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="tabs">
+      <div class="tab on"><span class="ts">TS</span>parse.ts<span class="x"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="m4.5 4.5 7 7M11.5 4.5l-7 7"/></svg></span></div>
+      <div class="tab"><span class="ts tt">TS</span>parse.test.ts<span class="dot"></span></div>
+      <div class="tab"><span class="ts">TS</span>types.ts</div>
+    </div>
+    <div class="crumbs mono"><span>src</span>›<span>csv</span>›<b>parse.ts</b>›<span style="color:var(--fn)">ƒ parseCsv</span></div>
+    <div class="editor mono">
+      <div class="gut" id="gut"></div>
+      <pre id="code"></pre>
+      <div class="mini" id="mini"><div class="view"></div></div>
+    </div>
+
+    <div class="term mono">
+      <div class="th" style="font-family:Inter">
+        <span class="on">Terminal</span><span>Problems<span class="cnt">0</span></span><span>Output</span><span>Debug console</span>
+        <span class="r"><span class="sh mono"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 4 4 4-4 4M8.5 12.5h5"/></svg>zsh</span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="m4.5 4.5 7 7M11.5 4.5l-7 7"/></svg></span>
+      </div>
+<div class="out"><span class="pp">~/code/csv-toolkit</span> <span class="b">feat/quoted-fields</span> <span class="dim">❯</span> <span class="w">tide test</span> <span class="dim">src/csv</span>
+ <span class="gb">RUN</span> <span class="dim">v2.4.1  ~/code/csv-toolkit</span>
+ <span class="g">✓</span> src/csv/parse.test.ts <span class="dim">(9 tests)</span> <span class="y">18ms</span>
+   <span class="g">✓</span> parses a header row into object keys
+   <span class="g">✓</span> keeps commas inside quoted fields
+   <span class="g">✓</span> trims whitespace unless <span class="b">trim: false</span>
+ <span class="g">✓</span> src/csv/stringify.test.ts <span class="dim">(11 tests)</span> <span class="y">9ms</span>
+ <span class="g">✓</span> src/csv/stream.test.ts <span class="dim">(4 tests)</span> <span class="y">31ms</span>
+
+ <span class="dim"> Test Files </span> <span class="g">3 passed</span> <span class="dim">(3)</span>
+ <span class="dim">      Tests </span> <span class="g">24 passed</span> <span class="dim">(24)</span>
+ <span class="dim">   Duration </span> 412ms <span class="dim">(transform 38ms, collect 61ms, tests 58ms)</span>
+<span class="pp">~/code/csv-toolkit</span> <span class="b">feat/quoted-fields</span> <span class="dim">❯</span> <span class="caret" style="height:14px;vertical-align:-2px;width:7px;background:#A9B4FF;box-shadow:none;opacity:.85"></span></div>
+    </div>
+  </div>
+</div>
+
+<div class="status">
+  <span><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="4.5" cy="3.5" r="1.5"/><circle cx="4.5" cy="12.5" r="1.5"/><circle cx="11.5" cy="5.5" r="1.5"/><path d="M4.5 5v6M11.5 7c0 3-7 2-7 4"/></svg>feat/quoted-fields</span>
+  <span><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8.5 3 3 7-7"/></svg>24 passed</span>
+  <span>0 problems</span>
+  <div class="rt"><span>Ln 12, Col 58</span><span>Spaces: 2</span><span>UTF-8</span><span>LF</span><span>TypeScript 5.6</span><span><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3Z"/></svg></span></div>
+</div>
+
+<script>
+const src = `import type { CsvOptions, Row } from "./types";
+
+/** Parse CSV text into objects keyed by the header row. */
+export function parseCsv(text: string, opts: CsvOptions = {}): Row[] {
+  const { delimiter = ",", trim = true } = opts;
+  const [header, ...lines] = text.split(/\\r?\\n/).filter(Boolean);
+  const keys = splitLine(header, delimiter);
+
+  return lines.map((line) => {
+    const cells = splitLine(line, delimiter);
+    return Object.fromEntries(
+      keys.map((key, i) => [key, clean(cells[i], trim)]),
+    );
+  });
+}
+
+function splitLine(line: string, delimiter: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let quoted = false;
+  for (const ch of line) {
+    if (ch === '"') quoted = !quoted;
+    else if (ch === delimiter && !quoted) {
+      out.push(cur);
+      cur = "";
+    } else cur += ch;
+  }
+  return [...out, cur];
+}
+
+function clean(value = "", trim = true): string {
+  return trim ? value.trim() : value;
+}`;
+const KW = new Set("import type from export function const let return for of if else true false new".split(" "));
+const TY = new Set("string number boolean Row CsvOptions Object".split(" "));
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function hl(line){
+  const re=/(\/\*\*.*?\*\/|\/\/.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\/\\r\?\\n\/)|(\b\d+\b)|([A-Za-z_$][\w$]*)|(\s+)|(.)/g;
+  let out="",m;
+  while((m=re.exec(line))){
+    const [t,c,s,r,n,id,ws,p]=m;
+    if(c) out+=`<span class="c">${esc(c)}</span>`;
+    else if(s) out+=`<span class="s">${esc(s)}</span>`;
+    else if(r) out+=`<span class="r">${esc(r)}</span>`;
+    else if(n) out+=`<span class="n">${n}</span>`;
+    else if(id){
+      const rest=line.slice(re.lastIndex);
+      if(KW.has(id)) out+=`<span class="k">${id}</span>`;
+      else if(TY.has(id)) out+=`<span class="t">${id}</span>`;
+      else if(/^\s*\(/.test(rest)) out+=`<span class="fn">${id}</span>`;
+      else out+=id;
+    }
+    else if(ws) out+=ws;
+    else out+=`<span class="p">${esc(p)}</span>`;
+  }
+  return out;
+}
+const lines=src.split("\n");
+const CUR=12, adds=new Set([22,23,24,25,26]), mods=new Set([6,12]);
+let g="",c="";
+lines.forEach((l,i)=>{
+  const n=i+1;
+  g+=`<div class="${n===CUR?'cur ':''}${adds.has(n)?'add':mods.has(n)?'mod':''}">${n}</div>`;
+  let h=hl(l);
+  if(n===CUR){ // caret after the if condition
+    const idx=h.lastIndexOf('!');
+    h=h.replace('quoted</span>','quoted</span>');
+    h=h+`<span class="caret"></span><span class="hint">You · 2 min ago · trim cells via clean()</span>`;
+  }
+  c+=`<span class="ln${n===CUR?' cur':''}">${h||' '}</span>`;
+});
+document.getElementById('gut').innerHTML=g;
+document.getElementById('code').innerHTML=c+'<div class="guide" style="left:0ch"></div>';
+// indent guides
+const pre=document.getElementById('code');
+[2,4].forEach(ch=>{const d=document.createElement('div');d.className='guide';d.style.left=`calc(${ch}ch - 0px)`;pre.appendChild(d)});
+// minimap
+const cols={k:'#B79BFF',s:'#9FDDB0',fn:'#7AB0FF',t:'#6ED7E6',c:'#586079'};
+let mm='';
+lines.forEach(l=>{const ind=(l.match(/^\s*/)[0].length)*2.2;const w=Math.min(60,l.trim().length*1.2);
+  const col=/^\s*(import|export|function|const|let|return|if|for)/.test(l)?cols.k:/\/\*\*/.test(l)?cols.c:/"/.test(l)?cols.s:'#8790A8';
+  mm+=`<i style="margin-left:${ind}px;width:${w}px;background:${l.trim()?col:'transparent'}"></i>`});
+document.getElementById('mini').insertAdjacentHTML('beforeend',mm);
+</script>
+</body>
+</html>

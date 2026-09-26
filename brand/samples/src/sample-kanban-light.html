@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Marmalade — Website relaunch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#FBFAF8;--panel:#FFFFFF;--col:#F4F2EE;--line:#E9E5DF;--line2:#F0EDE8;--ink:#1C1917;--ink2:#57534E;--ink3:#8F8983;--ink4:#BDB7B0;--o:#F2701D;--o2:#FB8A3C;--obg:#FFF1E6;--oline:#FDD9BD}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1440px;height:900px;overflow:hidden}
+  body{font-family:Geist,Inter,system-ui,sans-serif;font-size:13px;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;display:flex}
+  svg{display:block;flex:none}
+  .num{font-variant-numeric:tabular-nums}
+  aside{width:228px;flex:none;border-right:1px solid var(--line);background:#F8F6F3;padding:12px 10px;display:flex;flex-direction:column}
+  .ws{display:flex;align-items:center;gap:10px;height:40px;padding:0 8px}
+  .logo{width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#FDA35A,#EA5F0E);display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 2px rgba(234,95,14,.35)}
+  .ws b{font-weight:600;font-size:14px;letter-spacing:-.01em}
+  .ws small{display:block;font-size:11.5px;color:var(--ink3)}
+  .it{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:7px;color:var(--ink2);font-weight:500}
+  .it svg{color:var(--ink3)}
+  .it .c{margin-left:auto;font-size:11.5px;color:var(--ink3)}
+  .it.on{background:#fff;color:var(--ink);box-shadow:0 0 0 1px var(--line),0 1px 2px rgba(28,25,23,.04)}
+  .sec{margin-top:18px}
+  .sec h6{font-size:11px;font-weight:500;color:var(--ink3);padding:0 10px 6px;display:flex;justify-content:space-between}
+  .sq{width:18px;height:18px;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;flex:none}
+  main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .top{height:52px;flex:none;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 24px;gap:12px;background:rgba(255,255,255,.6)}
+  .crumbs{display:flex;align-items:center;gap:8px;color:var(--ink3);font-weight:500}
+  .crumbs b{color:var(--ink);font-weight:600}
+  .search{margin-left:auto;width:260px;height:32px;border-radius:8px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--ink3)}
+  .search .k{margin-left:auto;font-size:11px;border:1px solid var(--line);border-radius:5px;padding:0 5px;background:#FAF9F7}
+  .ib{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink2);background:#fff}
+  .av{border-radius:50%;display:grid;place-items:center;font-weight:600;color:#fff;flex:none;box-shadow:0 0 0 2px #fff}
+  .head{padding:18px 24px 0;flex:none}
+  .h1row{display:flex;align-items:center;gap:12px}
+  .pic{width:36px;height:36px;border-radius:10px;background:var(--obg);border:1px solid var(--oline);display:grid;place-items:center;color:var(--o)}
+  h1{font-size:21px;font-weight:600;letter-spacing:-.02em}
+  .h1row .sub{color:var(--ink3);font-size:12.5px;margin-top:2px}
+  .h1row .r{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .stack{display:flex}
+  .stack .av{margin-left:-4px;width:28px;height:28px;font-size:10.5px;letter-spacing:-.02em}
+  .stack .more{background:#EFEBE6;color:var(--ink2)}
+  .btn{height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:#fff;display:inline-flex;align-items:center;gap:7px;font-weight:500;box-shadow:0 1px 2px rgba(28,25,23,.04)}
+  .btn svg{color:var(--ink3)}
+  .btn.pri{background:var(--o);border-color:#E3640F;color:#fff;box-shadow:0 1px 2px rgba(234,95,14,.35),inset 0 1px 0 rgba(255,255,255,.2)}
+  .btn.pri svg{color:#fff}
+  .tabs{display:flex;gap:4px;margin-top:14px;border-bottom:1px solid var(--line)}
+  .tab{height:36px;display:flex;align-items:center;gap:7px;padding:0 10px;color:var(--ink3);font-weight:500;position:relative}
+  .tab.on{color:var(--ink)}
+  .tab.on::after{content:"";position:absolute;left:6px;right:6px;bottom:-1px;height:2px;border-radius:2px;background:var(--o)}
+  .tab svg{color:currentColor}
+  .filters{display:flex;align-items:center;gap:8px;padding:12px 24px;flex:none}
+  .chip{height:28px;padding:0 10px;border-radius:7px;border:1px solid var(--line);background:#fff;display:inline-flex;align-items:center;gap:6px;color:var(--ink2);font-weight:500;font-size:12.5px}
+  .chip.on{background:var(--obg);border-color:var(--oline);color:#B8500C}
+  .chip .x{color:#D98A55}
+  .chip.dash{border-style:dashed;color:var(--ink3);background:transparent}
+  .filters .r{margin-left:auto;display:flex;gap:8px;align-items:center;color:var(--ink3);font-size:12.5px}
+  .board{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:0 24px 20px;min-height:0}
+  .col{background:var(--col);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:0}
+  .ch{display:flex;align-items:center;gap:8px;height:28px;padding:0 4px;font-weight:600}
+  .ch .dot{width:10px;height:10px;border-radius:50%;border:2px solid}
+  .ch .n{color:var(--ink3);font-weight:500;font-size:12px;background:#EAE6E0;border-radius:6px;padding:1px 6px}
+  .ch .r{margin-left:auto;display:flex;gap:6px;color:var(--ink3)}
+  .card{background:#fff;border-radius:10px;padding:12px;box-shadow:0 0 0 1px rgba(28,25,23,.06),0 1px 2px rgba(28,25,23,.05)}
+  .card.lift{box-shadow:0 0 0 1px rgba(242,112,29,.35),0 10px 24px -6px rgba(28,25,23,.18);transform:rotate(-1.2deg)}
+  .labels{display:flex;gap:6px;flex-wrap:wrap}
+  .lb{height:20px;padding:0 7px;border-radius:5px;font-size:11px;font-weight:600;display:inline-flex;align-items:center}
+  .card h4{font-size:13.5px;font-weight:500;line-height:1.4;letter-spacing:-.005em;margin-top:8px;color:var(--ink)}
+  .card p{font-size:12px;color:var(--ink3);line-height:1.45;margin-top:4px}
+  .meta{display:flex;align-items:center;gap:10px;margin-top:12px;color:var(--ink3);font-size:12px}
+  .meta span{display:flex;align-items:center;gap:4px}
+  .meta .due{padding:2px 6px;border-radius:5px;background:#F5F3EF;color:var(--ink2);font-weight:500}
+  .meta .due.warn{background:#FEEDEC;color:#C9362B}
+  .meta .due.soon{background:var(--obg);color:#B8500C}
+  .meta .avs{margin-left:auto;display:flex}
+  .meta .avs .av{width:22px;height:22px;font-size:9px;margin-left:-3px;letter-spacing:-.02em}
+  .prog{height:4px;background:#F0EDE8;border-radius:99px;margin-top:10px;overflow:hidden}
+  .prog i{display:block;height:100%;background:var(--o2);border-radius:99px}
+  .cover{height:74px;border-radius:7px;margin-bottom:10px;position:relative;overflow:hidden}
+  .add{height:32px;display:flex;align-items:center;gap:6px;padding:0 6px;color:var(--ink3);font-weight:500;border-radius:7px}
+  .done h4{color:var(--ink2);text-decoration:line-through;text-decoration-color:#CFC9C2}
+  .ok{width:16px;height:16px;border-radius:50%;background:#2E9E63;display:grid;place-items:center}
+</style>
+</head>
+<body>
+<aside>
+  <div class="ws">
+    <div class="logo"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"><rect x="2.5" y="3" width="3.2" height="10" rx="1"/><rect x="7.3" y="3" width="3.2" height="6.5" rx="1"/><rect x="12" y="3" width="1.5" height="4" rx=".75"/></svg></div>
+    <div><b>Marmalade</b><small>Fieldnote Studio</small></div>
+  </div>
+  <div style="margin-top:12px">
+    <div class="it"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9.5h3l1 2h3l1-2h3M2.5 9.5 4.5 3.5h7l2 6V13h-11Z"/></svg>Inbox<span class="c">6</span></div>
+    <div class="it"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><path d="m5.8 8 1.5 1.5 3-3"/></svg>My tasks<span class="c">14</span></div>
+    <div class="it"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10.5" rx="2"/><path d="M2.5 6.5h11M5.5 1.5v3M10.5 1.5v3"/></svg>Calendar</div>
+    <div class="it"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 13 6 8l3 3 5-7"/></svg>Reports</div>
+  </div>
+  <div class="sec">
+    <h6><span>Projects</span><span>+</span></h6>
+    <div class="it on"><span class="sq" style="background:#F2701D">W</span>Website relaunch</div>
+    <div class="it"><span class="sq" style="background:#8B5CF6">M</span>Mobile app 2.0</div>
+    <div class="it"><span class="sq" style="background:#10B981">B</span>Brand refresh</div>
+    <div class="it"><span class="sq" style="background:#0EA5E9">O</span>Onboarding emails</div>
+    <div class="it"><span class="sq" style="background:#E11D48">Q</span>Q4 campaign</div>
+  </div>
+  <div class="sec">
+    <h6><span>Teams</span></h6>
+    <div class="it"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="5.5" r="2.5"/><path d="M1.5 13.5c.6-2.3 2.3-3.5 4.5-3.5s3.9 1.2 4.5 3.5M11 3.2a2.4 2.4 0 0 1 0 4.6M12.5 10.3c1 .5 1.7 1.6 2 3.2"/></svg>Design</div>
+    <div class="it"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m5.5 4.5-3 3.5 3 3.5M10.5 4.5l3 3.5-3 3.5"/></svg>Engineering</div>
+  </div>
+  <div style="margin-top:auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px">
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink2)"><span>Sprint 14</span><b class="num" style="font-weight:600;color:var(--ink)">68%</b></div>
+    <div class="prog" style="margin-top:8px"><i style="width:68%"></i></div>
+    <div style="font-size:11.5px;color:var(--ink3);margin-top:8px">Ends Friday, Oct 3 · 17 of 25 done</div>
+  </div>
+</aside>
+
+<main>
+  <div class="top">
+    <div class="crumbs"><span>Projects</span><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m6 3 5 5-5 5"/></svg><b>Website relaunch</b></div>
+    <div class="search"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>Search tasks<span class="k">/</span></div>
+    <div class="ib"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3L4 11ZM6.5 14h3"/></svg></div>
+    <div class="av" style="width:32px;height:32px;font-size:12px;background:#F2701D;box-shadow:none">AM</div>
+  </div>
+
+  <div class="head">
+    <div class="h1row">
+      <div class="pic"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2 2 3 4.5 3 7s-1 5-3 7c-2-2-3-4.5-3-7s1-5 3-7Z"/></svg></div>
+      <div><h1>Website relaunch</h1><div class="sub">Sprint 14 · Sep 22 – Oct 3 · 25 tasks</div></div>
+      <div class="r">
+        <div class="stack">
+          <div class="av" style="background:#F2701D;margin-left:0">AM</div>
+          <div class="av" style="background:#8B5CF6">JO</div>
+          <div class="av" style="background:#10B981">LI</div>
+          <div class="av" style="background:#E11D48">RS</div>
+          <div class="av more">+3</div>
+        </div>
+        <div class="btn"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 10 10 6M7 4.5l1.3-1.3a2.8 2.8 0 0 1 4 4L11.5 8.5M9 11.5l-1.3 1.3a2.8 2.8 0 0 1-4-4L4.5 7.5"/></svg>Share</div>
+        <div class="btn pri"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>New task</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab on"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2.5" width="3.5" height="11" rx="1"/><rect x="6.3" y="2.5" width="3.5" height="7" rx="1"/><rect x="10.5" y="2.5" width="3.5" height="9" rx="1"/></svg>Board</div>
+      <div class="tab"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></svg>List</div>
+      <div class="tab"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4h6M5 8h7M3.5 12h5"/></svg>Timeline</div>
+      <div class="tab"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 4.5h4l1.5 1.5h5.5v7h-11Z"/></svg>Files</div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <span class="chip on"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c.8-2.5 2.6-3.5 5-3.5s4.2 1 5 3.5"/></svg>Assignee: Anyone on Design<span class="x">×</span></span>
+    <span class="chip on"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10.5" rx="2"/><path d="M2.5 6.5h11"/></svg>Due: This sprint<span class="x">×</span></span>
+    <span class="chip"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M2.5 2.5h5l6 6-5 5-6-6Z"/><circle cx="5.5" cy="5.5" r=".8" fill="currentColor"/></svg>Label</span>
+    <span class="chip"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 13V3M3 3h8l-1.5 3L11 9H3"/></svg>Priority</span>
+    <span class="chip dash">+ Add filter</span>
+    <div class="r"><span>Group by</span><span class="chip">Status<svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m4 6 4 4 4-4"/></svg></span></div>
+  </div>
+
+  <div class="board">
+    <!-- TO DO -->
+    <div class="col">
+      <div class="ch"><span class="dot" style="border-color:#B5AEA6"></span>To do<span class="n">4</span><span class="r"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="3.5" cy="8" r="1.2"/><circle cx="8" cy="8" r="1.2"/><circle cx="12.5" cy="8" r="1.2"/></svg></span></div>
+      <div class="card">
+        <div class="labels"><span class="lb" style="background:#F3EEFF;color:#6D3FD8">Content</span></div>
+        <h4>Rewrite pricing page FAQ for the new plans</h4>
+        <div class="meta"><span class="due num"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10.5" rx="2"/><path d="M2.5 6.5h11"/></svg>Oct 1</span><span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 3.5h11v7.5H7l-3 2.5V11H2.5Z"/></svg>3</span><div class="avs"><div class="av" style="background:#E11D48">RS</div></div></div>
+      </div>
+      <div class="card">
+        <div class="labels"><span class="lb" style="background:#E7F6EE;color:#1E8753">SEO</span><span class="lb" style="background:#F5F3EF;color:var(--ink2)">Low</span></div>
+        <h4>Set up redirects from old blog URLs</h4>
+        <p>118 posts moving to /journal. Map list is in the shared sheet.</p>
+        <div class="meta"><span class="due num"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10.5" rx="2"/><path d="M2.5 6.5h11"/></svg>Oct 2</span><span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 4.5 5.5 9a1.6 1.6 0 0 0 2.3 2.3l5-5a3 3 0 0 0-4.3-4.3l-5 5a4.4 4.4 0 0 0 6.2 6.2L13 9"/></svg>1</span><div class="avs"><div class="av" style="background:#10B981">LI</div></div></div>
+      </div>
+      <div class="card">
+        <div class="labels"><span class="lb" style="background:#E8F3FD;color:#1F6FB8">Design</span></div>
+        <h4>Empty states for the search results page</h4>
+        <div class="meta"><span class="due num"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10.5" rx="2"/><path d="M2.5 6.5h11"/></svg>Oct 3</span><div class="avs"><div class="av" style="background:#F2701D">AM</div><div class="av" style="background:#8B5CF6">JO</div></div></div>
+      </div>
+      <div class="card">
+        <div class="labels"><span class="lb" style="background:#FFF1E6;color:#B8500C">Engineering</span><span class="lb" style="background:#F5F3EF;color:var(--ink2)">Low</span></div>
+        <h4>Lazy-load the testimonial carousel</h4>
+        <div class="meta"><span class="due num"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10.5" rx="2"/><path d="M2.5 6.5h11"/></svg>Oct 3</span><div class="avs"><div class="av" style="background:#0EA5E9">SK</div></div></div>
+      </div>
+      <div class="add"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Add task</div>
+    </div>
+
+    <!-- IN PROGRESS -->
+    <div class="col">
+      <div class="ch"><span class="dot" style="border-color:#F2701D;background:conic-gradient(#F2701D 0 50%,transparent 0)"></span>In progress<span class="n">3</span><span class="r"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="3.5" cy="8" r="1.2"/><circle cx="8" cy="8" r="1.2"/><circle cx="12.5" cy="8" r="1.2"/></svg></span></div>
+      <div class="card">
+        <div class="cover" style="background:linear-gradient(135deg,#FFD7B0,#FF9A5A 55%,#F2701D)">
+          <svg width="100%" height="74" viewBox="0 0 260 74" preserveAspectRatio="none" style="position:absolute;inset:0"><rect x="16" y="14" width="96" height="8" rx="4" fill="#fff" fill-opacity=".85"/><rect x="16" y="28" width="64" height="6" rx="3" fill="#fff" fill-opacity=".55"/><rect x="16" y="44" width="42" height="16" rx="5" fill="#1C1917" fill-opacity=".8"/><rect x="150" y="10" width="94" height="54" rx="8" fill="#fff" fill-opacity=".35"/><rect x="160" y="20" width="50" height="6" rx="3" fill="#fff" fill-opacity=".9"/><rect x="160" y="32" width="74" height="4" rx="2" fill="#fff" fill-opacity=".6"/><rect x="160" y="41" width="60" height="4" rx="2" fill="#fff" fill-opacity=".6"/></svg>
+        </div>
+        <div class="labels"><span class="lb" style="background:#E8F3FD;color:#1F6FB8">Design</span><span class="lb" style="background:#FEEDEC;color:#C9362B">High</span></div>
+        <h4>New homepage hero and product screenshots</h4>
+        <div class="prog"><i style="width:60%"></i></div>
+        <div class="meta"><span class="due soon num"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10.5" rx="2"/><path d="M2.5 6.5h11"/></svg>Tomorrow</span><span class="num"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2.5" y="2.5" width="11" height="11" rx="3"/><path d="m5.5 8 1.8 1.8 3.2-3.5"/></svg>3/5</span><span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 3.5h11v7.5H7l-3 2.5V11H2.5Z"/></svg>8</span><div class="avs"><div class="av" style="background:#F2701D">AM</div><div class="av" style="background:#0EA5E9">SK</div></div></div>
+      </div>
+      <div class="card lift">
+        <div class="labels"><span class="lb" style="background:#FFF1E6;color:#B8500C">Engineering</span></div>
+        <h4>Migrate contact form to the new API</h4>
+        <div class="meta"><span class="due num"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10.5" rx="2"/><path d="M2.5 6.5h11"/></svg>Sep 30</span><span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 3.5h11v7.5H7l-3 2.5V11H2.5Z"/></svg>2</span><div class="avs"><div class="av" style="background:#8B5CF6">JO</div></div></div>
+      </div>
+      <div class="card">
+        <div class="labels"><span class="lb" style="background:#F3EEFF;color:#6D3FD8">Content</span></div>
+        <h4>Customer stories: interview notes into three case studies</h4>
+        <div class="prog"><i style="width:33%"></i></div>
+        <div class="meta"><span class="due num"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10.5" rx="2"/><path d="M2.5 6.5h11"/></svg>Oct 2</span><span class="num"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2.5" y="2.5" width="11" height="11" rx="3"/><path d="m5.5 8 1.8 1.8 3.2-3.5"/></svg>1/3</span><div class="avs"><div class="av" style="background:#E11D48">RS</div><div class="av" style="background:#10B981">LI</div></div></div>
+      </div>
+    </div>
+
+    <!-- REVIEW -->
+    <div class="col">
+      <div class="ch"><span class="dot" style="border-color:#8B5CF6;background:conic-gradient(#8B5CF6 0 75%,transparent 0)"></span>Review<span class="n">3</span><span class="r"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="3.5" cy="8" r="1.2"/><circle cx="8" cy="8" r="1.2"/><circle cx="12.5" cy="8" r="1.2"/></svg></span></div>
+      <div class="card">
+        <div class="labels"><span class="lb" style="background:#FFF1E6;color:#B8500C">Engineering</span><span class="lb" style="background:#FEEDEC;color:#C9362B">High</span></div>
+        <h4>Cookie banner: respect saved preferences on every page</h4>
+        <p>Regression from the router upgrade. PR #412 has the fix.</p>
+        <div class="meta"><span class="due warn num"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.3M8 10.8h.01"/></svg>Overdue 1d</span><span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 3.5h11v7.5H7l-3 2.5V11H2.5Z"/></svg>5</span><div class="avs"><div class="av" style="background:#8B5CF6">JO</div><div class="av" style="background:#F2701D">AM</div></div></div>
+      </div>
+      <div class="card">
+        <div class="labels"><span class="lb" style="background:#E8F3FD;color:#1F6FB8">Design</span></div>
+        <h4>Footer and navigation for small screens</h4>
+        <div class="meta"><span class="due num"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10.5" rx="2"/><path d="M2.5 6.5h11"/></svg>Sep 29</span><span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 4.5 5.5 9a1.6 1.6 0 0 0 2.3 2.3l5-5a3 3 0 0 0-4.3-4.3l-5 5a4.4 4.4 0 0 0 6.2 6.2L13 9"/></svg>4</span><div class="avs"><div class="av" style="background:#F2701D">AM</div></div></div>
+      </div>
+      <div class="card">
+        <div class="labels"><span class="lb" style="background:#E7F6EE;color:#1E8753">SEO</span></div>
+        <h4>Meta titles and social cards for all top-level pages</h4>
+        <div class="meta"><span class="due soon num"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10.5" rx="2"/><path d="M2.5 6.5h11"/></svg>Today</span><span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 3.5h11v7.5H7l-3 2.5V11H2.5Z"/></svg>1</span><div class="avs"><div class="av" style="background:#10B981">LI</div></div></div>
+      </div>
+      <div class="add"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Add task</div>
+    </div>
+
+    <!-- DONE -->
+    <div class="col">
+      <div class="ch"><span class="ok"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m2.5 6.2 2.3 2.3 4.7-5"/></svg></span>Done<span class="n">12</span><span class="r"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="3.5" cy="8" r="1.2"/><circle cx="8" cy="8" r="1.2"/><circle cx="12.5" cy="8" r="1.2"/></svg></span></div>
+      <div class="card done">
+        <div class="labels"><span class="lb" style="background:#E8F3FD;color:#1F6FB8">Design</span></div>
+        <h4>Type scale and colour tokens</h4>
+        <div class="meta"><span style="color:#2E9E63;font-weight:500"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8.5 3 3 7-7"/></svg>Sep 24</span><div class="avs"><div class="av" style="background:#F2701D">AM</div></div></div>
+      </div>
+      <div class="card done">
+        <div class="labels"><span class="lb" style="background:#FFF1E6;color:#B8500C">Engineering</span></div>
+        <h4>Image pipeline with responsive sizes</h4>
+        <div class="meta"><span style="color:#2E9E63;font-weight:500"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8.5 3 3 7-7"/></svg>Sep 23</span><div class="avs"><div class="av" style="background:#8B5CF6">JO</div></div></div>
+      </div>
+      <div class="card done">
+        <div class="labels"><span class="lb" style="background:#F3EEFF;color:#6D3FD8">Content</span></div>
+        <h4>About page copy, round two</h4>
+        <div class="meta"><span style="color:#2E9E63;font-weight:500"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8.5 3 3 7-7"/></svg>Sep 22</span><div class="avs"><div class="av" style="background:#E11D48">RS</div></div></div>
+      </div>
+      <div class="card done">
+        <div class="labels"><span class="lb" style="background:#E7F6EE;color:#1E8753">SEO</span></div>
+        <h4>Sitemap and robots rules for staging</h4>
+        <div class="meta"><span style="color:#2E9E63;font-weight:500"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8.5 3 3 7-7"/></svg>Sep 22</span><div class="avs"><div class="av" style="background:#10B981">LI</div></div></div>
+      </div>
+      <div class="add" style="justify-content:center">Show 8 more</div>
+    </div>
+  </div>
+</main>
+</body>
+</html>
