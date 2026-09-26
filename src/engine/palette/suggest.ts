@@ -69,7 +69,7 @@ function radial(set: HueSet, i: number): BackgroundFill {
     stops: [
       { offset: 0, color: c(0.93, 0.06, set.h0) },
       { offset: 0.55, color: c(0.78, 0.12, set.h0) },
-      { offset: 1, color: c(0.55, 0.14, set.h1) },
+      { offset: 1, color: c(0.66, 0.13, set.h1) },
     ],
   };
 }
