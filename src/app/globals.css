@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+/* Neutral functional shell. The visual identity lives in docs/design and brand/. */
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}

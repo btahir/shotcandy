@@ -19,3 +19,8 @@ test-results/
 .env*
 .DS_Store
 *.log
+
+# Tooling
+*.tsbuildinfo
+next-env.d.ts
+tests/e2e/.harness/

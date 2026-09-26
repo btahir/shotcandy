@@ -1,0 +1,10 @@
+.next
+out
+coverage
+playwright-report
+test-results
+pnpm-lock.yaml
+tests/e2e/**/*-snapshots
+tests/e2e/.harness
+docs/design
+brand

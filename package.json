@@ -1,0 +1,51 @@
+{
+  "name": "shotcandy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Turn any screenshot into a beautiful, share-ready image. Free, open source, runs entirely in your browser.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "serve": "node scripts/serve-static.mjs out",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:update": "playwright test --update-snapshots",
+    "bench": "playwright test --project=bench",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "packageManager": "pnpm@11.1.1",
+  "dependencies": {
+    "idb": "^8.0.3",
+    "next": "16.3.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^1.0.9",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^24.13.6",
+    "@types/pngjs": "^6.0.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitest/coverage-v8": "^5.0.1",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.3.6",
+    "eslint-config-prettier": "^10.1.8",
+    "fake-indexeddb": "^6.2.5",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
+    "prettier": "^3.9.9",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.1"
+  }
+}
