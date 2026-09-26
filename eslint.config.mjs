@@ -60,5 +60,10 @@ export default defineConfig([
     "playwright-report/**",
     "test-results/**",
     "tests/e2e/.harness/**",
+    // Design and launch material is not app code.
+    "docs/**",
+    "brand/**",
+    "notes/**",
+    "public/**",
   ]),
 ]);
