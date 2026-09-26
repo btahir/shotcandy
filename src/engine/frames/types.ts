@@ -2,10 +2,10 @@
  * Frame system types.
  *
  * Frames are data: a FrameSpec says *what* a frame looks like (proportions and
- * colours per theme); a FrameKind knows *how* to lay out and draw one family of
- * frames (window, browser, device, laptop). The design team can refine or add
- * frames by editing specs.ts without touching drawing code, and new families
- * can be registered at runtime.
+ * colours per theme) and mirrors `brand/frames/frames.json`, the design team's
+ * single source of truth. A FrameKind knows *how* to lay out and draw one
+ * family of frames (window, browser, device, laptop). Specs can be refined or
+ * added without touching drawing code, and new families can be registered.
  */
 import type { Radii, Rect, Size } from "../math/geometry";
 import type { Ctx2D } from "../render/env";
@@ -19,20 +19,22 @@ export interface Shape {
 }
 
 export interface FrameGeometry {
-  /** Bounding box of the whole frame (including buttons, laptop base, etc.). */
+  /** Bounding box of the whole frame (including buttons, laptop deck, etc.). */
   size: Size;
   /** Where the screen/content plate sits. */
   screen: Rect;
   /** Clip radii for the screen area. */
   screenRadii: Radii;
   screenSmoothing: number;
-  /** Silhouette used for shadows and the border ring. */
+  /** Silhouette used for shadows and the border ring (buttons excluded). */
   outline: Shape[];
 }
 
 export interface FrameLayoutInput {
   /** Size of the plate (content + inset) in card units. */
   plate: Size;
+  /** Size of the content alone, in card units. */
+  content: Size;
   /** The user's corner radius (cu); window-like frames use it for their corners. */
   radius: number;
   smoothing: number;
@@ -41,43 +43,67 @@ export interface FrameLayoutInput {
 export interface FrameDrawInput {
   ref: FrameRef;
   geometry: FrameGeometry;
-  /** Card units -> the context's current units is already applied by the caller. */
+  /** Size of the content alone, in card units. */
+  content: Size;
+  /** Length of one output pixel at 1x, in card units (for hairlines). */
+  onePx: number;
   fontFamily: string;
 }
 
 // ----------------------------------------------------------------------------
-// Specs per family (all lengths are in card units unless stated otherwise)
+// Specs per family (mirroring brand/frames/frames.json)
 // ----------------------------------------------------------------------------
 
-export interface WindowPalette {
-  bar: string;
-  barBottom: string;
-  separator: string;
-  body: string;
-  outline: string;
-  title: string;
-  controls: [string, string, string];
-  controlBorder: string;
+export interface LightColor {
+  fill: string;
+  stroke: string;
 }
 
+export interface TrafficLightsSpec {
+  /** All in chrome units (ch). */
+  diameter: number;
+  spacing: number;
+  firstCenterX: number;
+  stroke: number;
+  colors: LightColor[];
+  mono: LightColor[];
+}
+
+export interface WindowTheme {
+  barTop: string;
+  barBottom: string;
+  separator: string;
+  border: string;
+  title: string;
+  topHighlight: string | null;
+}
+
+/**
+ * macOS-style window. Lengths are chrome units:
+ * 1 ch = min(1, 1.6 * contentWidth / contentLongSide) cu.
+ */
 export interface WindowSpec {
   kind: "window";
   id: string;
   label: string;
-  /** Title bar height (cu). */
   barHeight: number;
-  controlSize: number;
-  controlGap: number;
-  controlInset: number;
-  titleSize: number;
-  outlineWidth: number;
-  themes: Record<FrameTheme, WindowPalette>;
+  hairline: number;
+  trafficLights: TrafficLightsSpec;
+  title: { size: number; weight: number; maxWidthFraction: number };
+  themes: Record<FrameTheme, WindowTheme>;
 }
 
-export interface BrowserPalette extends WindowPalette {
-  address: string;
-  addressText: string;
-  icon: string;
+export interface BrowserTheme {
+  barTop: string;
+  barBottom: string;
+  separator: string;
+  border: string;
+  field: string;
+  fieldBorder: string;
+  url: string;
+  lock: string;
+  nav: string;
+  topHighlight: string | null;
 }
 
 export interface BrowserSpec {
@@ -85,77 +111,92 @@ export interface BrowserSpec {
   id: string;
   label: string;
   barHeight: number;
-  controlSize: number;
-  controlGap: number;
-  controlInset: number;
-  addressHeight: number;
-  /** Address pill width as a fraction of the window width (0..1). */
-  addressWidth: number;
-  addressTextSize: number;
-  outlineWidth: number;
-  themes: Record<FrameTheme, BrowserPalette>;
+  hairline: number;
+  trafficLights: TrafficLightsSpec;
+  nav: { backX: number; forwardX: number; size: number; stroke: number };
+  address: {
+    widthFraction: number;
+    maxWidth: number;
+    height: number;
+    radius: number;
+    textSize: number;
+    lockSize: number;
+    lockGap: number;
+  };
+  themes: Record<FrameTheme, BrowserTheme>;
 }
 
-export interface DevicePalette {
-  body: string;
-  bodyEdge: string;
+export interface DeviceTheme {
+  /** Horizontal rim gradient stops (evenly spaced). */
+  rim: string[];
+  rimHighlight: string;
   bezel: string;
   button: string;
-  island: string;
   camera: string;
+  lens: string;
 }
 
 export interface DeviceButton {
   side: "left" | "right" | "top";
-  /** Offset from the top (or left, for "top") of the body, as a fraction of body height (width). */
-  at: number;
-  /** Length as a fraction of body height (width). */
-  length: number;
+  /** Fractions of body height (left/right) or body width (top). */
+  from: number;
+  to: number;
 }
 
-/** Phones and tablets. Lengths are fractions of the screen's shorter side. */
+/** Phones and tablets. Lengths are fractions of the unit side (see `unit`). */
 export interface DeviceSpec {
   kind: "device";
   id: string;
   label: string;
-  /** Visible body rim outside the bezel. */
-  rim: number;
-  /** Black bezel between rim and screen. */
+  /** "width": fractions of the screen width (phone); "short": of the shorter side (tablet). */
+  unit: "width" | "short";
   bezel: number;
-  /** Screen corner radius. */
+  rim: number;
   screenRadius: number;
-  smoothing: number;
-  island: { width: number; height: number; top: number } | null;
-  camera: { size: number } | null;
+  buttonProtrusion: number;
+  /** Reserve button room on all four sides (true) or only left/right (false). */
+  padAllSides: boolean;
+  camera: { placement: "screen" | "bezel"; diameter: number; offset?: number };
   buttons: DeviceButton[];
-  buttonThickness: number;
-  themes: Record<FrameTheme, DevicePalette>;
+  smoothing: number;
+  themes: Record<FrameTheme, DeviceTheme>;
 }
 
-export interface LaptopPalette extends DevicePalette {
-  base: string;
-  baseEdge: string;
-  baseShadow: string;
+export interface LaptopTheme {
+  rim: string;
+  bezel: string;
+  camera: string;
+  hinge: string;
+  deckTop: string;
+  deckBottom: string;
+  deckHighlight: string;
+  notch: string;
 }
 
-/** Laptops. Lengths are fractions of the screen's width. */
+/** Laptops. Lengths are fractions of the screen width. */
 export interface LaptopSpec {
   kind: "laptop";
   id: string;
   label: string;
-  bezelTop: number;
   bezelSide: number;
+  bezelTop: number;
   bezelBottom: number;
-  lidRadius: number;
-  screenRadius: number;
-  /** Base (keyboard deck) height as a fraction of screen width. */
-  baseHeight: number;
-  /** How far the base extends past the lid on each side. */
-  baseOverhang: number;
-  notchWidth: number;
-  notchDepth: number;
-  camera: { size: number } | null;
-  themes: Record<FrameTheme, LaptopPalette>;
+  rim: number;
+  lidRadiusTop: number;
+  lidRadiusBottom: number;
+  screenRadiusTop: number;
+  camera: { diameter: number };
+  hinge: { widthRatio: number; height: number };
+  deck: {
+    widthRatio: number;
+    height: number;
+    /** Fraction of deck height. */
+    bottomRadius: number;
+    notchWidth: number;
+    /** Fraction of deck height. */
+    notchDepth: number;
+  };
+  themes: Record<FrameTheme, LaptopTheme>;
 }
 
 export type FrameSpec = WindowSpec | BrowserSpec | DeviceSpec | LaptopSpec;
@@ -163,9 +204,13 @@ export type FrameSpec = WindowSpec | BrowserSpec | DeviceSpec | LaptopSpec;
 /** Implementation of one frame family. */
 export interface FrameKind<S extends FrameSpec = FrameSpec> {
   kind: S["kind"];
+  /** Whether the card inset plate applies inside this frame (devices: no). */
+  supportsInset: boolean;
+  /** Whether card.radius shapes this frame's corners (windows: yes). */
+  usesCardRadius: boolean;
   layout(spec: S, input: FrameLayoutInput): FrameGeometry;
   /** Draw everything behind the content (body, bars, bezels). */
   drawBack(ctx: Ctx2D, spec: S, input: FrameDrawInput): void;
-  /** Draw everything on top of the content (islands, glass, cameras). */
+  /** Draw everything on top of the content (cameras, hairline borders). */
   drawFront?(ctx: Ctx2D, spec: S, input: FrameDrawInput): void;
 }

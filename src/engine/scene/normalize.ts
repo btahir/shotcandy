@@ -302,6 +302,10 @@ function card(c: Ctx, v: unknown): CardStyle {
       theme: oneOf(c, "card.frame.theme", fr.theme, ["light", "dark"] as const, d.frame.theme),
       title: str(c, "card.frame.title", fr.title, d.frame.title, 200),
       url: str(c, "card.frame.url", fr.url, d.frame.url, 500),
+      ...(fr.lights !== undefined
+        ? { lights: oneOf(c, "card.frame.lights", fr.lights, ["color", "mono"] as const, "color") }
+        : {}),
+      ...(typeof fr.camera === "boolean" ? { camera: fr.camera } : {}),
     },
     radius: num(c, "card.radius", o.radius, d.radius, 0, 500),
     smoothing: num(c, "card.smoothing", o.smoothing, d.smoothing, 0, 1),

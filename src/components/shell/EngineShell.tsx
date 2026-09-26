@@ -11,8 +11,11 @@ import {
   DEFAULT_FILENAME_PATTERN,
   EXPORT_FORMATS,
   Exporter,
-  GRADIENT_PRESETS,
-  MESH_PRESETS,
+  BACKGROUND_PRESETS,
+  DEFAULT_STYLE_ID,
+  fetchBuiltinAsset,
+  getStylePreset,
+  isBuiltinAssetId,
   RenderCache,
   SHADOW_PRESETS,
   SIZE_PRESETS,
@@ -61,7 +64,7 @@ export function EngineShell() {
   const store = useMemo(
     () =>
       createEditorStore(
-        applyStylePatch(createScene(), STYLE_PRESETS[0]!.patch, STYLE_PRESETS[0]!.id),
+        applyStylePatch(createScene(), getStylePreset(DEFAULT_STYLE_ID)!.patch, DEFAULT_STYLE_ID),
       ),
     [],
   );
@@ -86,6 +89,20 @@ export function EngineShell() {
       store.update((s) => setIn(s, path, value), { coalesce: coalesce ?? path.join(".") }),
     [store],
   );
+
+  // Built-in wallpapers load on demand from public/backgrounds.
+  useEffect(() => {
+    const missing = sceneAssetIds(scene).filter((id) => isBuiltinAssetId(id) && !library.has(id));
+    for (const id of missing) {
+      void fetchBuiltinAsset(id)
+        .then((blob) => importImage(blob))
+        .then((img) => {
+          library.add({ ...img, id });
+          setAssetVersion((v) => v + 1);
+        })
+        .catch((e: unknown) => setStatus(String(e)));
+    }
+  }, [scene, library]);
 
   // Preview render.
   useEffect(() => {
@@ -283,15 +300,7 @@ export function EngineShell() {
   };
 
   const fills: { id: string; label: string; fill: BackgroundFill }[] = [
-    { id: "auto-mesh", label: "Auto mesh", fill: { kind: "auto", style: "mesh", variant: 0 } },
-    {
-      id: "auto-linear",
-      label: "Auto linear",
-      fill: { kind: "auto", style: "linear", variant: 0 },
-    },
-    { id: "auto-soft", label: "Auto soft", fill: { kind: "auto", style: "soft", variant: 0 } },
-    ...GRADIENT_PRESETS,
-    ...MESH_PRESETS,
+    ...BACKGROUND_PRESETS,
     { id: "none", label: "Transparent", fill: { kind: "none" } },
   ];
 

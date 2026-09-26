@@ -6,7 +6,9 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/copy-brand-assets.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-brand-assets.mjs",
     "build": "next build",
     "serve": "node scripts/serve-static.mjs out",
     "test": "vitest run",
@@ -17,7 +19,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint --max-warnings=0",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "sync:presets": "node scripts/sync-design-presets.mjs"
   },
   "packageManager": "pnpm@11.1.1",
   "dependencies": {

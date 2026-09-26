@@ -1,0 +1,949 @@
+{
+  "default": "sherbet",
+  "families": [
+    {
+      "id": "auto",
+      "label": "From your shot"
+    },
+    {
+      "id": "fruity",
+      "label": "Fruity"
+    },
+    {
+      "id": "pastel",
+      "label": "Pastel"
+    },
+    {
+      "id": "paper",
+      "label": "Paper"
+    },
+    {
+      "id": "deep",
+      "label": "Deep"
+    },
+    {
+      "id": "wallpaper",
+      "label": "Wallpaper"
+    },
+    {
+      "id": "device",
+      "label": "Device"
+    }
+  ],
+  "presets": [
+    {
+      "id": "sherbet",
+      "name": "Sherbet",
+      "family": "fruity",
+      "description": "Peachy-pink mesh, macOS window, floating shadow. The default.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 90
+        },
+        "background": {
+          "fill": "@sherbet"
+        },
+        "card": {
+          "radius": 18,
+          "shadow": {
+            "preset": "float",
+            "strength": 1,
+            "color": "#2A1408"
+          },
+          "frame": {
+            "id": "macos",
+            "theme": "light"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "mint-julep",
+      "name": "Mint Julep",
+      "family": "fruity",
+      "description": "Fresh mint gradient, no frame, soft shadow.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 80
+        },
+        "background": {
+          "fill": "@mint-julep"
+        },
+        "card": {
+          "radius": 14,
+          "shadow": {
+            "preset": "soft",
+            "strength": 1,
+            "color": "#2A1408"
+          },
+          "frame": {
+            "id": "none"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "lemonade",
+      "name": "Lemonade",
+      "family": "fruity",
+      "description": "Butter-yellow gradient in a light browser frame.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 80
+        },
+        "background": {
+          "fill": "@lemonade"
+        },
+        "card": {
+          "radius": 12,
+          "shadow": {
+            "preset": "float",
+            "strength": 1,
+            "color": "#6B4A00"
+          },
+          "frame": {
+            "id": "browser",
+            "theme": "light"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "tangerine",
+      "name": "Tangerine Dream",
+      "family": "fruity",
+      "description": "Hot citrus gradient, macOS window, deep shadow.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 96
+        },
+        "background": {
+          "fill": "@tangerine-dream"
+        },
+        "card": {
+          "radius": 16,
+          "shadow": {
+            "preset": "deep",
+            "strength": 0.9,
+            "color": "#7A1E00"
+          },
+          "frame": {
+            "id": "macos",
+            "theme": "light"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "cotton-candy",
+      "name": "Cotton Candy",
+      "family": "pastel",
+      "description": "Pink-to-sky pastel with a white inset plate.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 96
+        },
+        "background": {
+          "fill": "@cotton-candy"
+        },
+        "card": {
+          "radius": 20,
+          "shadow": {
+            "preset": "soft",
+            "strength": 1,
+            "color": "#2A1408"
+          },
+          "frame": {
+            "id": "none"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 14,
+            "color": "#FFFFFF"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "sea-glass",
+      "name": "Sea Glass",
+      "family": "pastel",
+      "description": "Cool pastel mesh, hairline border, hug shadow.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 84
+        },
+        "background": {
+          "fill": "@sea-glass"
+        },
+        "card": {
+          "radius": 16,
+          "shadow": {
+            "preset": "hug",
+            "strength": 1,
+            "color": "#1B3A4A"
+          },
+          "frame": {
+            "id": "none"
+          },
+          "border": {
+            "width": 2,
+            "color": "#FFFFFF99"
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "bubblegum",
+      "name": "Bubblegum",
+      "family": "pastel",
+      "description": "Pink and periwinkle mesh in a light browser frame.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 90
+        },
+        "background": {
+          "fill": "@bubblegum"
+        },
+        "card": {
+          "radius": 14,
+          "shadow": {
+            "preset": "soft",
+            "strength": 1,
+            "color": "#2A1408"
+          },
+          "frame": {
+            "id": "browser",
+            "theme": "light"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "paper",
+      "name": "Paper",
+      "family": "paper",
+      "description": "Warm cream solid, hairline border, contact shadow. Quiet and editorial.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 64
+        },
+        "background": {
+          "fill": "@cream"
+        },
+        "card": {
+          "radius": 12,
+          "shadow": {
+            "preset": "hug",
+            "strength": 1,
+            "color": "#2A1408"
+          },
+          "frame": {
+            "id": "none"
+          },
+          "border": {
+            "width": 1.5,
+            "color": "#2A1F1A1A"
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "snow",
+      "name": "Snow",
+      "family": "paper",
+      "description": "Pure white canvas, soft shadow; for docs and blog posts.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 72
+        },
+        "background": {
+          "fill": "@snow"
+        },
+        "card": {
+          "radius": 12,
+          "shadow": {
+            "preset": "soft",
+            "strength": 1,
+            "color": "#1B1F2A"
+          },
+          "frame": {
+            "id": "none"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "retro-pop",
+      "name": "Retro Pop",
+      "family": "paper",
+      "description": "Lemon solid, thick ink border and a hard offset shadow.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 80
+        },
+        "background": {
+          "fill": "@lemon"
+        },
+        "card": {
+          "radius": 10,
+          "shadow": {
+            "preset": "solid",
+            "strength": 1,
+            "color": "#2A1F1A"
+          },
+          "frame": {
+            "id": "none"
+          },
+          "border": {
+            "width": 4,
+            "color": "#2A1F1A"
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "grape-soda",
+      "name": "Grape Soda",
+      "family": "deep",
+      "description": "Deep violet gradient with a dark macOS window.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 100
+        },
+        "background": {
+          "fill": "@grape-soda"
+        },
+        "card": {
+          "radius": 16,
+          "shadow": {
+            "preset": "deep",
+            "strength": 1,
+            "color": "#0A0514"
+          },
+          "frame": {
+            "id": "macos",
+            "theme": "dark"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "midnight",
+      "name": "Midnight",
+      "family": "deep",
+      "description": "Dark halo with a pink glow around the card and fine grain.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 110
+        },
+        "background": {
+          "fill": "@midnight-halo",
+          "grain": {
+            "amount": 0.06
+          }
+        },
+        "card": {
+          "radius": 18,
+          "shadow": {
+            "preset": "glow",
+            "strength": 0.8,
+            "color": "#FF6A8F"
+          },
+          "frame": {
+            "id": "macos",
+            "theme": "dark"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "licorice",
+      "name": "Licorice",
+      "family": "deep",
+      "description": "Near-black, light hairline, dark browser frame.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 80
+        },
+        "background": {
+          "fill": "@licorice"
+        },
+        "card": {
+          "radius": 14,
+          "shadow": {
+            "preset": "deep",
+            "strength": 1,
+            "color": "#000000"
+          },
+          "frame": {
+            "id": "browser",
+            "theme": "dark"
+          },
+          "border": {
+            "width": 1.5,
+            "color": "#FFFFFF1F"
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "aurora-pop",
+      "name": "Aurora Pop",
+      "family": "deep",
+      "description": "Violet, pink and mint aurora mesh with grain.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 100
+        },
+        "background": {
+          "fill": "@aurora-pop",
+          "grain": {
+            "amount": 0.05
+          }
+        },
+        "card": {
+          "radius": 18,
+          "shadow": {
+            "preset": "deep",
+            "strength": 1,
+            "color": "#05020C"
+          },
+          "frame": {
+            "id": "none"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "satin",
+      "name": "Strawberry Satin",
+      "family": "wallpaper",
+      "description": "Silky strawberry wallpaper, macOS window, deep shadow.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 100
+        },
+        "background": {
+          "fill": "@img-strawberry-satin"
+        },
+        "card": {
+          "radius": 16,
+          "shadow": {
+            "preset": "deep",
+            "strength": 1,
+            "color": "#4A0A1A"
+          },
+          "frame": {
+            "id": "macos",
+            "theme": "light"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "dunes",
+      "name": "Peach Dunes",
+      "family": "wallpaper",
+      "description": "Golden-hour dunes behind a light browser window.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 96
+        },
+        "background": {
+          "fill": "@img-peach-dunes"
+        },
+        "card": {
+          "radius": 14,
+          "shadow": {
+            "preset": "float",
+            "strength": 1,
+            "color": "#5A2A10"
+          },
+          "frame": {
+            "id": "browser",
+            "theme": "light"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "aurora",
+      "name": "Grape Aurora",
+      "family": "wallpaper",
+      "description": "Glowing aurora wallpaper with a dark window and violet glow.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 110
+        },
+        "background": {
+          "fill": "@img-grape-aurora"
+        },
+        "card": {
+          "radius": 18,
+          "shadow": {
+            "preset": "glow",
+            "strength": 0.7,
+            "color": "#8B6CFF"
+          },
+          "frame": {
+            "id": "macos",
+            "theme": "dark"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "gummy",
+      "name": "Gummy",
+      "family": "wallpaper",
+      "description": "Glossy gummy blobs on cream, generous padding, big corners.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 120
+        },
+        "background": {
+          "fill": "@img-gummy-blobs"
+        },
+        "card": {
+          "radius": 22,
+          "shadow": {
+            "preset": "soft",
+            "strength": 1,
+            "color": "#5A3A1A"
+          },
+          "frame": {
+            "id": "none"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "tilted-taffy",
+      "name": "Tilted Taffy",
+      "family": "wallpaper",
+      "description": "Warm taffy mesh with a gentle 3D tilt.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 110
+        },
+        "background": {
+          "fill": "@taffy"
+        },
+        "card": {
+          "radius": 18,
+          "shadow": {
+            "preset": "deep",
+            "strength": 0.9,
+            "color": "#6A2A1A"
+          },
+          "frame": {
+            "id": "none"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 8,
+            "rotateY": -14,
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "from-your-shot",
+      "name": "From Your Shot",
+      "family": "auto",
+      "description": "Mesh background built from your screenshot's own colours.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 90
+        },
+        "background": {
+          "fill": "@auto-mesh"
+        },
+        "card": {
+          "radius": 16,
+          "shadow": {
+            "preset": "float",
+            "strength": 1,
+            "color": "#2A1408"
+          },
+          "frame": {
+            "id": "none"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "your-shot-soft",
+      "name": "Soft Echo",
+      "family": "auto",
+      "description": "Soft wash of your screenshot's palette with an auto inset plate.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 80
+        },
+        "background": {
+          "fill": "@auto-soft"
+        },
+        "card": {
+          "radius": 14,
+          "shadow": {
+            "preset": "soft",
+            "strength": 1,
+            "color": "#2A1408"
+          },
+          "frame": {
+            "id": "none"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 10,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "phone-sorbet",
+      "name": "Sorbet Phone",
+      "family": "device",
+      "description": "Sorbet mesh with a dark phone frame; best for mobile screenshots.",
+      "suits": "portrait",
+      "patch": {
+        "canvas": {
+          "padding": 140
+        },
+        "background": {
+          "fill": "@sorbet"
+        },
+        "card": {
+          "radius": 0,
+          "shadow": {
+            "preset": "deep",
+            "strength": 1,
+            "color": "#3A0A20"
+          },
+          "frame": {
+            "id": "phone",
+            "theme": "dark"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "tablet-seaglass",
+      "name": "Sea Glass Tablet",
+      "family": "device",
+      "description": "Sea glass mesh with a light tablet frame.",
+      "suits": "tablet",
+      "patch": {
+        "canvas": {
+          "padding": 120
+        },
+        "background": {
+          "fill": "@sea-glass"
+        },
+        "card": {
+          "radius": 0,
+          "shadow": {
+            "preset": "float",
+            "strength": 1,
+            "color": "#1B3A4A"
+          },
+          "frame": {
+            "id": "tablet",
+            "theme": "light"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "laptop-caramel",
+      "name": "Caramel Laptop",
+      "family": "device",
+      "description": "Caramel gradient with a laptop frame for desktop screenshots.",
+      "suits": "landscape",
+      "patch": {
+        "canvas": {
+          "padding": 110
+        },
+        "background": {
+          "fill": "@caramel"
+        },
+        "card": {
+          "radius": 0,
+          "shadow": {
+            "preset": "deep",
+            "strength": 1,
+            "color": "#3A1A00"
+          },
+          "frame": {
+            "id": "laptop",
+            "theme": "dark"
+          },
+          "border": {
+            "width": 0
+          },
+          "inset": {
+            "width": 0
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0
+          }
+        }
+      }
+    }
+  ]
+}

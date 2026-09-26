@@ -40,6 +40,8 @@ export const MAX_CANVAS_SIDE = 16384;
 export interface CardGeometry {
   /** Card bounds (including border ring), cu. */
   size: Size;
+  /** Effective inset width (0 inside device frames). */
+  inset: number;
   frame: { id: string; origin: Point; geometry: FrameGeometry } | null;
   /** Silhouette shapes (without the border ring), card-local cu. */
   outline: Shape[];
@@ -99,9 +101,10 @@ function growShape(s: Shape, d: number): Shape {
 export function computeCardGeometry(scene: Scene, contentPx: Size): CardGeometry {
   const { card } = scene;
   const c = contentUnits(contentPx);
-  const inset = card.inset.width;
-  const plate: Size = { width: c.width + 2 * inset, height: c.height + 2 * inset };
   const resolved = resolveFrame(card.frame.id);
+  // Device frames have no inset plate: the screen is the content.
+  const inset = resolved && !resolved.kind.supportsInset ? 0 : card.inset.width;
+  const plate: Size = { width: c.width + 2 * inset, height: c.height + 2 * inset };
 
   let outline: Shape[];
   let plateRect: Rect;
@@ -113,6 +116,7 @@ export function computeCardGeometry(scene: Scene, contentPx: Size): CardGeometry
   if (resolved) {
     const geo = resolved.kind.layout(resolved.spec, {
       plate,
+      content: c,
       radius: card.radius,
       smoothing: card.smoothing,
     });
@@ -155,6 +159,7 @@ export function computeCardGeometry(scene: Scene, contentPx: Size): CardGeometry
 
   return {
     size: { width: bounds.width, height: bounds.height },
+    inset,
     frame,
     outline,
     borderOutline,

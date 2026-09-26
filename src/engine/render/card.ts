@@ -40,7 +40,13 @@ export function drawCard(ctx: Ctx2D, scene: Scene, layout: SceneLayout, deps: Ca
   // 2. Frame body.
   const frame = card.frame ? resolveFrame(card.frame.id) : null;
   const frameInput = card.frame
-    ? { ref: style.frame, geometry: card.frame.geometry, fontFamily: fontStack(UI_FONT_ID) }
+    ? {
+        ref: style.frame,
+        geometry: card.frame.geometry,
+        content: { width: card.content.width, height: card.content.height },
+        onePx: 1 / layout.k,
+        fontFamily: fontStack(UI_FONT_ID),
+      }
     : null;
   if (frame && card.frame && frameInput) {
     withState(ctx, () => {
@@ -50,7 +56,7 @@ export function drawCard(ctx: Ctx2D, scene: Scene, layout: SceneLayout, deps: Ca
   }
 
   // 3. Inset plate.
-  if (style.inset.width > 0) {
+  if (card.inset > 0) {
     const color =
       style.inset.color === "auto" ? (deps.palette?.edge ?? "#ffffff") : style.inset.color;
     fillRoundedRect(ctx, card.plate, card.plateRadii, color, card.smoothing);

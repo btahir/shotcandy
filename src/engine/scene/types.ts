@@ -155,6 +155,10 @@ export interface FrameRef {
   title: string;
   /** Address bar text (browser) */
   url: string;
+  /** Window traffic lights in colour (default) or monochrome. */
+  lights?: "color" | "mono";
+  /** Device camera dot (default true). */
+  camera?: boolean;
 }
 
 export interface BorderSpec {

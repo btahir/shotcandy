@@ -93,10 +93,14 @@ export function removeAnnotation(scene: Scene, id: string): Scene {
   return { ...scene, annotations: scene.annotations.filter((a) => a.id !== id) };
 }
 
-/** Asset ids referenced by a scene (content + background image). */
-export function sceneAssetIds(scene: Scene): string[] {
+/**
+ * Asset ids referenced by a scene (content + background image). Built-in
+ * wallpapers (`builtin:*`) are included unless `includeBuiltin` is false.
+ */
+export function sceneAssetIds(scene: Scene, opts: { includeBuiltin?: boolean } = {}): string[] {
   const ids = new Set<string>();
   if (scene.content.kind === "image" && scene.content.assetId) ids.add(scene.content.assetId);
   if (scene.background.fill.kind === "image") ids.add(scene.background.fill.assetId);
-  return [...ids];
+  const all = [...ids];
+  return opts.includeBuiltin === false ? all.filter((id) => !id.startsWith("builtin:")) : all;
 }

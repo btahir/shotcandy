@@ -24,3 +24,6 @@ test-results/
 *.tsbuildinfo
 next-env.d.ts
 tests/e2e/.harness/
+
+# Generated from brand/ by scripts/copy-brand-assets.mjs
+public/backgrounds/

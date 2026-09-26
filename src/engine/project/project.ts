@@ -93,7 +93,8 @@ export async function createProjectFile(
   assets: ProjectAssetInput[],
   meta: { appVersion: string; now: Date },
 ): Promise<ProjectFile> {
-  const needed = new Set(sceneAssetIds(scene));
+  // Built-in wallpapers ship with the app and are never embedded.
+  const needed = new Set(sceneAssetIds(scene, { includeBuiltin: false }));
   const out: Record<string, ProjectAsset> = {};
   for (const a of assets) {
     if (!needed.has(a.id)) continue;
@@ -183,7 +184,7 @@ export async function parseProject(input: string | Blob): Promise<LoadedProject>
   const loaded = loadScene(sceneRaw);
   issues.push(...loaded.issues);
   const have = new Set(assets.map((a) => a.id));
-  for (const id of sceneAssetIds(loaded.scene))
+  for (const id of sceneAssetIds(loaded.scene, { includeBuiltin: false }))
     if (!have.has(id)) issues.push(`scene references missing asset ${id}`);
   return { scene: loaded.scene, assets, issues };
 }

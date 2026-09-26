@@ -1,0 +1,149 @@
+{
+  "shadows": [
+    {
+      "id": "none",
+      "name": "None",
+      "layers": []
+    },
+    {
+      "id": "hug",
+      "name": "Hug",
+      "description": "Tight contact shadow plus a hairline; for light backgrounds and Paper styles.",
+      "layers": [
+        {
+          "x": 0,
+          "y": 0,
+          "blur": 0,
+          "spread": 1,
+          "opacity": 0.06
+        },
+        {
+          "x": 0,
+          "y": 1,
+          "blur": 3,
+          "spread": 0,
+          "opacity": 0.14
+        },
+        {
+          "x": 0,
+          "y": 4,
+          "blur": 10,
+          "spread": -2,
+          "opacity": 0.1
+        }
+      ]
+    },
+    {
+      "id": "soft",
+      "name": "Soft",
+      "description": "Default gentle lift.",
+      "layers": [
+        {
+          "x": 0,
+          "y": 2,
+          "blur": 6,
+          "spread": 0,
+          "opacity": 0.08
+        },
+        {
+          "x": 0,
+          "y": 12,
+          "blur": 32,
+          "spread": -4,
+          "opacity": 0.14
+        }
+      ]
+    },
+    {
+      "id": "float",
+      "name": "Float",
+      "description": "Card hovering above the background; the default for Sherbet.",
+      "layers": [
+        {
+          "x": 0,
+          "y": 2,
+          "blur": 4,
+          "spread": 0,
+          "opacity": 0.1
+        },
+        {
+          "x": 0,
+          "y": 18,
+          "blur": 40,
+          "spread": -8,
+          "opacity": 0.2
+        },
+        {
+          "x": 0,
+          "y": 48,
+          "blur": 80,
+          "spread": -24,
+          "opacity": 0.22
+        }
+      ]
+    },
+    {
+      "id": "deep",
+      "name": "Deep",
+      "description": "Dramatic, for dark or busy backgrounds.",
+      "layers": [
+        {
+          "x": 0,
+          "y": 4,
+          "blur": 8,
+          "spread": 0,
+          "opacity": 0.16
+        },
+        {
+          "x": 0,
+          "y": 28,
+          "blur": 60,
+          "spread": -10,
+          "opacity": 0.32
+        },
+        {
+          "x": 0,
+          "y": 80,
+          "blur": 120,
+          "spread": -30,
+          "opacity": 0.38
+        }
+      ]
+    },
+    {
+      "id": "solid",
+      "name": "Solid",
+      "description": "Hard offset 'sticker' shadow with no blur. Colour usually ink.",
+      "layers": [
+        {
+          "x": 12,
+          "y": 12,
+          "blur": 0,
+          "spread": 0,
+          "opacity": 1
+        }
+      ]
+    },
+    {
+      "id": "glow",
+      "name": "Glow",
+      "description": "Coloured halo; shadow.color should be a light or saturated colour.",
+      "layers": [
+        {
+          "x": 0,
+          "y": 0,
+          "blur": 40,
+          "spread": 0,
+          "opacity": 0.45
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "blur": 100,
+          "spread": 10,
+          "opacity": 0.3
+        }
+      ]
+    }
+  ]
+}

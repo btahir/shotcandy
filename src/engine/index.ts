@@ -90,6 +90,12 @@ export {
 } from "./assets/types";
 export { AssetLibrary } from "./assets/library";
 export {
+  BUILTIN_PREFIX,
+  isBuiltinAssetId,
+  builtinAssetUrl,
+  fetchBuiltinAsset,
+} from "./assets/builtin";
+export {
   ACCEPT_ATTRIBUTE,
   ACCEPTED_MIME,
   ImportError,
@@ -123,7 +129,15 @@ export {
   type SizePreset,
   type SizeGroup,
 } from "./presets/sizes";
-export { STYLE_PRESETS, getStylePreset, type StylePreset } from "./presets/styles";
+export {
+  STYLE_PRESETS,
+  STYLE_FAMILIES,
+  STYLE_BASE,
+  DEFAULT_STYLE_ID,
+  getStylePreset,
+  completeStylePatch,
+  type StylePreset,
+} from "./presets/styles";
 export {
   SHADOW_PRESETS,
   getShadowPreset,
@@ -131,10 +145,15 @@ export {
   type ShadowPreset,
 } from "./presets/shadows";
 export {
+  BACKGROUND_PRESETS,
+  BACKGROUND_GROUPS,
   GRADIENT_PRESETS,
   MESH_PRESETS,
+  WALLPAPER_PRESETS,
   SOLID_PRESETS,
+  getBackgroundPreset,
   type BackgroundPreset,
+  type BackgroundGroup,
 } from "./presets/backgrounds";
 
 // Export

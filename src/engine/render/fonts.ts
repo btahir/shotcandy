@@ -39,7 +39,8 @@ export const UI_FONT_ID = "ui";
 const SYSTEM_UI =
   'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 
-registerFont({ id: "ui", label: "System UI", stack: SYSTEM_UI });
+// Frame chrome uses the brand UI face (Figtree) when loaded, else the system UI font.
+registerFont({ id: "ui", label: "UI", stack: `Figtree, ${SYSTEM_UI}` });
 registerFont({ id: "sans", label: "Sans", stack: SYSTEM_UI });
 registerFont({
   id: "serif",

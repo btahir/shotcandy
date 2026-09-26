@@ -1,0 +1,1505 @@
+{
+  "groups": [
+    {
+      "id": "auto",
+      "label": "From your shot"
+    },
+    {
+      "id": "solid",
+      "label": "Solid"
+    },
+    {
+      "id": "gradient",
+      "label": "Gradient"
+    },
+    {
+      "id": "mesh",
+      "label": "Mesh"
+    },
+    {
+      "id": "image",
+      "label": "Wallpaper"
+    }
+  ],
+  "backgrounds": [
+    {
+      "id": "cream",
+      "name": "Cream",
+      "group": "solid",
+      "tone": "light",
+      "fill": {
+        "kind": "solid",
+        "color": "#F6EEE2"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "paper",
+      "name": "Paper",
+      "group": "solid",
+      "tone": "light",
+      "fill": {
+        "kind": "solid",
+        "color": "#FBF7F1"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "snow",
+      "name": "Snow",
+      "group": "solid",
+      "tone": "light",
+      "fill": {
+        "kind": "solid",
+        "color": "#FFFFFF"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "blush",
+      "name": "Blush",
+      "group": "solid",
+      "tone": "light",
+      "fill": {
+        "kind": "solid",
+        "color": "#FFE3EA"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "mint-cream",
+      "name": "Mint Cream",
+      "group": "solid",
+      "tone": "light",
+      "fill": {
+        "kind": "solid",
+        "color": "#DDF6EA"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "butter",
+      "name": "Butter",
+      "group": "solid",
+      "tone": "light",
+      "fill": {
+        "kind": "solid",
+        "color": "#FFF1B8"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "sky",
+      "name": "Sky",
+      "group": "solid",
+      "tone": "light",
+      "fill": {
+        "kind": "solid",
+        "color": "#DCE9FF"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "lilac",
+      "name": "Lilac",
+      "group": "solid",
+      "tone": "light",
+      "fill": {
+        "kind": "solid",
+        "color": "#E6DEFF"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "cocoa",
+      "name": "Cocoa",
+      "group": "solid",
+      "tone": "dark",
+      "fill": {
+        "kind": "solid",
+        "color": "#241B17"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "licorice",
+      "name": "Licorice",
+      "group": "solid",
+      "tone": "dark",
+      "fill": {
+        "kind": "solid",
+        "color": "#121014"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "ink",
+      "name": "Ink",
+      "group": "solid",
+      "tone": "dark",
+      "fill": {
+        "kind": "solid",
+        "color": "#1B1F2A"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "strawberry",
+      "name": "Strawberry",
+      "group": "solid",
+      "tone": "vivid",
+      "fill": {
+        "kind": "solid",
+        "color": "#FF4F7B"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "tangerine",
+      "name": "Tangerine",
+      "group": "solid",
+      "tone": "vivid",
+      "fill": {
+        "kind": "solid",
+        "color": "#FF9A3C"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "lemon",
+      "name": "Lemon",
+      "group": "solid",
+      "tone": "vivid",
+      "fill": {
+        "kind": "solid",
+        "color": "#FFD84D"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "sherbet-linear",
+      "name": "Sherbet",
+      "group": "gradient",
+      "tone": "vivid",
+      "fill": {
+        "kind": "linear",
+        "angle": 135,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#FFB38A"
+          },
+          {
+            "offset": 0.5,
+            "color": "#FF8FAB"
+          },
+          {
+            "offset": 1,
+            "color": "#FF6F91"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "strawberry-milk",
+      "name": "Strawberry Milk",
+      "group": "gradient",
+      "tone": "light",
+      "fill": {
+        "kind": "linear",
+        "angle": 160,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#FFE9EF"
+          },
+          {
+            "offset": 1,
+            "color": "#FFB4C6"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "tangerine-dream",
+      "name": "Tangerine Dream",
+      "group": "gradient",
+      "tone": "vivid",
+      "fill": {
+        "kind": "linear",
+        "angle": 135,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#FFD84D"
+          },
+          {
+            "offset": 0.55,
+            "color": "#FF9A3C"
+          },
+          {
+            "offset": 1,
+            "color": "#FF5F6D"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "lemonade",
+      "name": "Lemonade",
+      "group": "gradient",
+      "tone": "light",
+      "fill": {
+        "kind": "linear",
+        "angle": 150,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#FFF6C9"
+          },
+          {
+            "offset": 1,
+            "color": "#FFD84D"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "mint-julep",
+      "name": "Mint Julep",
+      "group": "gradient",
+      "tone": "light",
+      "fill": {
+        "kind": "linear",
+        "angle": 135,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#C8F7E1"
+          },
+          {
+            "offset": 1,
+            "color": "#5FD4A8"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "sour-apple",
+      "name": "Sour Apple",
+      "group": "gradient",
+      "tone": "vivid",
+      "fill": {
+        "kind": "linear",
+        "angle": 135,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#E8FF9E"
+          },
+          {
+            "offset": 1,
+            "color": "#56D68B"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "blueberry-soda",
+      "name": "Blueberry Soda",
+      "group": "gradient",
+      "tone": "vivid",
+      "fill": {
+        "kind": "linear",
+        "angle": 145,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#A9C8FF"
+          },
+          {
+            "offset": 1,
+            "color": "#4F6BFF"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "grape-soda",
+      "name": "Grape Soda",
+      "group": "gradient",
+      "tone": "dark",
+      "fill": {
+        "kind": "linear",
+        "angle": 160,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#2B2440"
+          },
+          {
+            "offset": 0.6,
+            "color": "#5B3FD6"
+          },
+          {
+            "offset": 1,
+            "color": "#8B6CFF"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "cotton-candy",
+      "name": "Cotton Candy",
+      "group": "gradient",
+      "tone": "light",
+      "fill": {
+        "kind": "linear",
+        "angle": 120,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#FFC6DA"
+          },
+          {
+            "offset": 1,
+            "color": "#B9D4FF"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "peach-fizz",
+      "name": "Peach Fizz",
+      "group": "gradient",
+      "tone": "light",
+      "fill": {
+        "kind": "linear",
+        "angle": 180,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#FFE0C7"
+          },
+          {
+            "offset": 1,
+            "color": "#FF9E7A"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "caramel",
+      "name": "Caramel",
+      "group": "gradient",
+      "tone": "vivid",
+      "fill": {
+        "kind": "linear",
+        "angle": 160,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#F6D2A2"
+          },
+          {
+            "offset": 1,
+            "color": "#B8743A"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "licorice-gradient",
+      "name": "Black Licorice",
+      "group": "gradient",
+      "tone": "dark",
+      "fill": {
+        "kind": "linear",
+        "angle": 160,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#2A2530"
+          },
+          {
+            "offset": 1,
+            "color": "#0E0C10"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "sea-salt",
+      "name": "Sea Salt",
+      "group": "gradient",
+      "tone": "light",
+      "fill": {
+        "kind": "linear",
+        "angle": 180,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#F4F7FA"
+          },
+          {
+            "offset": 1,
+            "color": "#DCE4EC"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "dusk-pop",
+      "name": "Dusk Pop",
+      "group": "gradient",
+      "tone": "dark",
+      "fill": {
+        "kind": "linear",
+        "angle": 160,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#3A1C4A"
+          },
+          {
+            "offset": 0.55,
+            "color": "#C2376B"
+          },
+          {
+            "offset": 1,
+            "color": "#FF9A3C"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "pink-glow",
+      "name": "Pink Glow",
+      "group": "gradient",
+      "tone": "vivid",
+      "fill": {
+        "kind": "radial",
+        "cx": 0.5,
+        "cy": 0.35,
+        "radius": 1,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#FFD1DC"
+          },
+          {
+            "offset": 1,
+            "color": "#FF6F91"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "lemon-halo",
+      "name": "Lemon Halo",
+      "group": "gradient",
+      "tone": "light",
+      "fill": {
+        "kind": "radial",
+        "cx": 0.5,
+        "cy": 0.5,
+        "radius": 1,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#FFFBE6"
+          },
+          {
+            "offset": 1,
+            "color": "#FFD84D"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "midnight-halo",
+      "name": "Midnight Halo",
+      "group": "gradient",
+      "tone": "dark",
+      "fill": {
+        "kind": "radial",
+        "cx": 0.5,
+        "cy": 0,
+        "radius": 1.25,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#3A2A4F"
+          },
+          {
+            "offset": 1,
+            "color": "#120E18"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0.06,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "cocoa-spotlight",
+      "name": "Cocoa Spotlight",
+      "group": "gradient",
+      "tone": "dark",
+      "fill": {
+        "kind": "radial",
+        "cx": 0.5,
+        "cy": 0.3,
+        "radius": 1.1,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#4A3B32"
+          },
+          {
+            "offset": 1,
+            "color": "#1A1411"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0.05,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "candy-wheel",
+      "name": "Candy Wheel",
+      "group": "gradient",
+      "tone": "vivid",
+      "fill": {
+        "kind": "conic",
+        "cx": 0.5,
+        "cy": 0.5,
+        "angle": 200,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#FF4F7B"
+          },
+          {
+            "offset": 0.2,
+            "color": "#FF9A3C"
+          },
+          {
+            "offset": 0.4,
+            "color": "#FFD84D"
+          },
+          {
+            "offset": 0.6,
+            "color": "#5FD4A8"
+          },
+          {
+            "offset": 0.8,
+            "color": "#8B6CFF"
+          },
+          {
+            "offset": 1,
+            "color": "#FF4F7B"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "sherbet",
+      "name": "Sherbet",
+      "group": "mesh",
+      "tone": "light",
+      "fill": {
+        "kind": "mesh",
+        "base": "#FFC7B8",
+        "points": [
+          {
+            "x": 0.15,
+            "y": 0.2,
+            "color": "#FFB4C6",
+            "radius": 0.6
+          },
+          {
+            "x": 0.9,
+            "y": 0.15,
+            "color": "#FFD9A8",
+            "radius": 0.55
+          },
+          {
+            "x": 0.8,
+            "y": 0.95,
+            "color": "#FF8FB0",
+            "radius": 0.7
+          },
+          {
+            "x": 0.1,
+            "y": 1,
+            "color": "#FFE7B0",
+            "radius": 0.6
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "fruit-salad",
+      "name": "Fruit Salad",
+      "group": "mesh",
+      "tone": "vivid",
+      "fill": {
+        "kind": "mesh",
+        "base": "#FFE3C2",
+        "points": [
+          {
+            "x": 0.1,
+            "y": 0.1,
+            "color": "#FF8FAB",
+            "radius": 0.55
+          },
+          {
+            "x": 0.9,
+            "y": 0.1,
+            "color": "#FFD84D",
+            "radius": 0.55
+          },
+          {
+            "x": 0.9,
+            "y": 0.9,
+            "color": "#5FD4A8",
+            "radius": 0.6
+          },
+          {
+            "x": 0.1,
+            "y": 0.9,
+            "color": "#FF9A3C",
+            "radius": 0.55
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "taffy",
+      "name": "Taffy",
+      "group": "mesh",
+      "tone": "light",
+      "fill": {
+        "kind": "mesh",
+        "base": "#FFD6C9",
+        "points": [
+          {
+            "x": 0.2,
+            "y": 0.8,
+            "color": "#FF9E7A",
+            "radius": 0.6
+          },
+          {
+            "x": 0.75,
+            "y": 0.2,
+            "color": "#FFC6DA",
+            "radius": 0.6
+          },
+          {
+            "x": 0.95,
+            "y": 0.85,
+            "color": "#FFE991",
+            "radius": 0.5
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "sorbet",
+      "name": "Sorbet",
+      "group": "mesh",
+      "tone": "vivid",
+      "fill": {
+        "kind": "mesh",
+        "base": "#FFB8C9",
+        "points": [
+          {
+            "x": 0,
+            "y": 0,
+            "color": "#FF6A8F",
+            "radius": 0.7
+          },
+          {
+            "x": 1,
+            "y": 0.3,
+            "color": "#FFC08A",
+            "radius": 0.6
+          },
+          {
+            "x": 0.5,
+            "y": 1,
+            "color": "#C9B8FF",
+            "radius": 0.7
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "bubblegum",
+      "name": "Bubblegum",
+      "group": "mesh",
+      "tone": "light",
+      "fill": {
+        "kind": "mesh",
+        "base": "#FFD1E3",
+        "points": [
+          {
+            "x": 0.2,
+            "y": 0.3,
+            "color": "#FF8FC8",
+            "radius": 0.55
+          },
+          {
+            "x": 0.85,
+            "y": 0.7,
+            "color": "#A9C8FF",
+            "radius": 0.6
+          },
+          {
+            "x": 0.6,
+            "y": 0.05,
+            "color": "#FFE9F2",
+            "radius": 0.5
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "aurora-pop",
+      "name": "Aurora Pop",
+      "group": "mesh",
+      "tone": "dark",
+      "fill": {
+        "kind": "mesh",
+        "base": "#1E1633",
+        "points": [
+          {
+            "x": 0.2,
+            "y": 0.2,
+            "color": "#8B6CFF",
+            "radius": 0.6
+          },
+          {
+            "x": 0.85,
+            "y": 0.3,
+            "color": "#FF4F7B",
+            "radius": 0.55
+          },
+          {
+            "x": 0.5,
+            "y": 1,
+            "color": "#5FD4A8",
+            "radius": 0.6
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0.05,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "tropical",
+      "name": "Tropical",
+      "group": "mesh",
+      "tone": "vivid",
+      "fill": {
+        "kind": "mesh",
+        "base": "#FFE08A",
+        "points": [
+          {
+            "x": 0,
+            "y": 1,
+            "color": "#FF6A8F",
+            "radius": 0.7
+          },
+          {
+            "x": 1,
+            "y": 0,
+            "color": "#5FD4A8",
+            "radius": 0.7
+          },
+          {
+            "x": 0.95,
+            "y": 0.95,
+            "color": "#FF9A3C",
+            "radius": 0.5
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "dusk-candy",
+      "name": "Dusk Candy",
+      "group": "mesh",
+      "tone": "dark",
+      "fill": {
+        "kind": "mesh",
+        "base": "#2B1B33",
+        "points": [
+          {
+            "x": 0.1,
+            "y": 0.9,
+            "color": "#C2376B",
+            "radius": 0.65
+          },
+          {
+            "x": 0.9,
+            "y": 0.85,
+            "color": "#FF9A3C",
+            "radius": 0.55
+          },
+          {
+            "x": 0.6,
+            "y": 0.1,
+            "color": "#5B3FD6",
+            "radius": 0.6
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0.06,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "sea-glass",
+      "name": "Sea Glass",
+      "group": "mesh",
+      "tone": "light",
+      "fill": {
+        "kind": "mesh",
+        "base": "#CDEFE6",
+        "points": [
+          {
+            "x": 0.1,
+            "y": 0.1,
+            "color": "#A9C8FF",
+            "radius": 0.6
+          },
+          {
+            "x": 0.9,
+            "y": 0.2,
+            "color": "#A6EBCF",
+            "radius": 0.6
+          },
+          {
+            "x": 0.6,
+            "y": 0.95,
+            "color": "#E2D9FF",
+            "radius": 0.6
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "lemon-meringue",
+      "name": "Lemon Meringue",
+      "group": "mesh",
+      "tone": "light",
+      "fill": {
+        "kind": "mesh",
+        "base": "#FFF6DA",
+        "points": [
+          {
+            "x": 0.2,
+            "y": 0.2,
+            "color": "#FFE991",
+            "radius": 0.55
+          },
+          {
+            "x": 0.85,
+            "y": 0.8,
+            "color": "#FFD9B5",
+            "radius": 0.6
+          },
+          {
+            "x": 0.9,
+            "y": 0.1,
+            "color": "#FFFFFF",
+            "radius": 0.4
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "cocoa-mesh",
+      "name": "Hot Cocoa",
+      "group": "mesh",
+      "tone": "dark",
+      "fill": {
+        "kind": "mesh",
+        "base": "#1A1411",
+        "points": [
+          {
+            "x": 0.15,
+            "y": 0.1,
+            "color": "#5A3A2A",
+            "radius": 0.6
+          },
+          {
+            "x": 0.9,
+            "y": 0.9,
+            "color": "#3A2A4F",
+            "radius": 0.6
+          },
+          {
+            "x": 0.8,
+            "y": 0.1,
+            "color": "#7A3A3F",
+            "radius": 0.45
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0.06,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "mint-chip",
+      "name": "Mint Chip",
+      "group": "mesh",
+      "tone": "light",
+      "fill": {
+        "kind": "mesh",
+        "base": "#D8F5E8",
+        "points": [
+          {
+            "x": 0.1,
+            "y": 0.9,
+            "color": "#5FD4A8",
+            "radius": 0.6
+          },
+          {
+            "x": 0.9,
+            "y": 0.1,
+            "color": "#B8F0D0",
+            "radius": 0.6
+          },
+          {
+            "x": 0.85,
+            "y": 0.85,
+            "color": "#A9C8FF",
+            "radius": 0.5
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "img-strawberry-satin",
+      "name": "Strawberry Satin",
+      "group": "image",
+      "tone": "vivid",
+      "fill": {
+        "kind": "image",
+        "assetId": "builtin:strawberry-satin",
+        "fit": "cover",
+        "blur": 0,
+        "tint": 0,
+        "focusX": 0.5,
+        "focusY": 0.5
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "img-peach-dunes",
+      "name": "Peach Dunes",
+      "group": "image",
+      "tone": "light",
+      "fill": {
+        "kind": "image",
+        "assetId": "builtin:peach-dunes",
+        "fit": "cover",
+        "blur": 0,
+        "tint": 0,
+        "focusX": 0.5,
+        "focusY": 0.5
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "img-mint-ripple",
+      "name": "Mint Ripple",
+      "group": "image",
+      "tone": "light",
+      "fill": {
+        "kind": "image",
+        "assetId": "builtin:mint-ripple",
+        "fit": "cover",
+        "blur": 0,
+        "tint": 0,
+        "focusX": 0.5,
+        "focusY": 0.5
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "img-lilac-clouds",
+      "name": "Lilac Clouds",
+      "group": "image",
+      "tone": "light",
+      "fill": {
+        "kind": "image",
+        "assetId": "builtin:lilac-clouds",
+        "fit": "cover",
+        "blur": 0,
+        "tint": 0,
+        "focusX": 0.5,
+        "focusY": 0.5
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "img-grape-aurora",
+      "name": "Grape Aurora",
+      "group": "image",
+      "tone": "dark",
+      "fill": {
+        "kind": "image",
+        "assetId": "builtin:grape-aurora",
+        "fit": "cover",
+        "blur": 0,
+        "tint": 0,
+        "focusX": 0.5,
+        "focusY": 0.5
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "img-midnight-bloom",
+      "name": "Midnight Bloom",
+      "group": "image",
+      "tone": "dark",
+      "fill": {
+        "kind": "image",
+        "assetId": "builtin:midnight-bloom",
+        "fit": "cover",
+        "blur": 0,
+        "tint": 0,
+        "focusX": 0.5,
+        "focusY": 0.5
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "img-paper-waves",
+      "name": "Paper Waves",
+      "group": "image",
+      "tone": "light",
+      "fill": {
+        "kind": "image",
+        "assetId": "builtin:paper-waves",
+        "fit": "cover",
+        "blur": 0,
+        "tint": 0,
+        "focusX": 0.5,
+        "focusY": 0.5
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "img-candy-chrome",
+      "name": "Candy Chrome",
+      "group": "image",
+      "tone": "light",
+      "fill": {
+        "kind": "image",
+        "assetId": "builtin:candy-chrome",
+        "fit": "cover",
+        "blur": 0,
+        "tint": 0,
+        "focusX": 0.5,
+        "focusY": 0.5
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "img-tangerine-grain",
+      "name": "Tangerine Grain",
+      "group": "image",
+      "tone": "vivid",
+      "fill": {
+        "kind": "image",
+        "assetId": "builtin:tangerine-grain",
+        "fit": "cover",
+        "blur": 0,
+        "tint": 0,
+        "focusX": 0.5,
+        "focusY": 0.5
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "img-fern-mist",
+      "name": "Fern Mist",
+      "group": "image",
+      "tone": "dark",
+      "fill": {
+        "kind": "image",
+        "assetId": "builtin:fern-mist",
+        "fit": "cover",
+        "blur": 0,
+        "tint": 0,
+        "focusX": 0.5,
+        "focusY": 0.5
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "img-gummy-blobs",
+      "name": "Gummy Blobs",
+      "group": "image",
+      "tone": "light",
+      "fill": {
+        "kind": "image",
+        "assetId": "builtin:gummy-blobs",
+        "fit": "cover",
+        "blur": 0,
+        "tint": 0,
+        "focusX": 0.5,
+        "focusY": 0.5
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "img-ember-night",
+      "name": "Ember Night",
+      "group": "image",
+      "tone": "dark",
+      "fill": {
+        "kind": "image",
+        "assetId": "builtin:ember-night",
+        "fit": "cover",
+        "blur": 0,
+        "tint": 0,
+        "focusX": 0.5,
+        "focusY": 0.5
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "auto-mesh",
+      "name": "From your shot · Mesh",
+      "group": "auto",
+      "tone": "adaptive",
+      "fill": {
+        "kind": "auto",
+        "style": "mesh",
+        "variant": 0
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "auto-linear",
+      "name": "From your shot · Gradient",
+      "group": "auto",
+      "tone": "adaptive",
+      "fill": {
+        "kind": "auto",
+        "style": "linear",
+        "variant": 0
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "auto-soft",
+      "name": "From your shot · Soft",
+      "group": "auto",
+      "tone": "adaptive",
+      "fill": {
+        "kind": "auto",
+        "style": "soft",
+        "variant": 0
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "auto-solid",
+      "name": "From your shot · Solid",
+      "group": "auto",
+      "tone": "adaptive",
+      "fill": {
+        "kind": "auto",
+        "style": "solid",
+        "variant": 0
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "auto-radial",
+      "name": "From your shot · Glow",
+      "group": "auto",
+      "tone": "adaptive",
+      "fill": {
+        "kind": "auto",
+        "style": "radial",
+        "variant": 0
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    }
+  ]
+}
