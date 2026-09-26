@@ -23,6 +23,18 @@ describe.each(factories)("%s store", (_name, make) => {
     await store.designs.put({ id: "d2", name: "two", scene: s2, createdAt: 2, updatedAt: 5 });
     expect((await store.designs.list()).map((d) => d.id)).toEqual(["d2", "d1"]);
     expect((await store.designs.get("d1"))!.scene).toEqual(s1);
+    await store.designs.put({
+      id: "t",
+      name: "t",
+      scene: s1,
+      createdAt: 3,
+      updatedAt: 0,
+      thumbnail: new Blob([new Uint8Array([9, 8])], { type: "image/webp" }),
+    });
+    const thumb = (await store.designs.get("t"))!.thumbnail!;
+    expect(thumb.type).toBe("image/webp");
+    expect(new Uint8Array(await thumb.arrayBuffer())).toEqual(new Uint8Array([9, 8]));
+    await store.designs.delete("t");
     await store.designs.delete("d1");
     expect(await store.designs.get("d1")).toBeUndefined();
     await store.designs.clear();
@@ -89,6 +101,7 @@ describe.each(factories)("%s store", (_name, make) => {
     expect((await store.assets.listMeta("content")).map((a) => a.id)).toEqual(["a"]);
     expect((await store.assets.listMeta())[0]).not.toHaveProperty("blob");
     const got = await store.assets.get("a");
+    expect(got!.blob.type).toBe("image/png");
     expect(new Uint8Array(await got!.blob.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]));
     expect(await store.assets.gc(new Set(["a"]))).toEqual(["b"]);
     expect((await store.assets.list()).map((a) => a.id)).toEqual(["a"]);

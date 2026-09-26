@@ -131,15 +131,18 @@ export function EngineShell() {
         setStatus("Importing…");
         const img = await importImage(blob);
         library.add(img);
-        await db?.assets.put({
-          id: img.id,
-          blob: img.blob,
-          mime: img.mime,
-          width: img.width,
-          height: img.height,
-          role: "content",
-          createdAt: Date.now(),
-        });
+        // Persisting is best-effort: a storage failure must never block editing.
+        void db?.assets
+          .put({
+            id: img.id,
+            blob: img.blob,
+            mime: img.mime,
+            width: img.width,
+            height: img.height,
+            role: "content",
+            createdAt: Date.now(),
+          })
+          .catch((e: unknown) => console.warn("Could not store asset", e));
         store.update((s) => ({ ...s, content: { kind: "image", assetId: img.id } }));
         setAssetVersion((v) => v + 1);
         setStatus(`Loaded ${img.width}×${img.height} (${img.mime})`);
@@ -314,6 +317,7 @@ export function EngineShell() {
         <label className={label}>
           Screenshot
           <input
+            aria-label="Screenshot"
             type="file"
             accept={ACCEPT_ATTRIBUTE}
             onChange={(e) => e.target.files?.[0] && loadBlob(e.target.files[0])}
@@ -322,6 +326,7 @@ export function EngineShell() {
         <label className={label}>
           Style preset
           <select
+            aria-label="Style preset"
             value={scene.meta.stylePresetId ?? ""}
             onChange={(e) => {
               const p = STYLE_PRESETS.find((s) => s.id === e.target.value);
@@ -339,6 +344,7 @@ export function EngineShell() {
         <label className={label}>
           Size
           <select
+            aria-label="Size"
             value={scene.canvas.size.kind === "auto" ? "auto" : (scene.canvas.size.presetId ?? "")}
             onChange={(e) => {
               const p = SIZE_PRESETS.find((s) => s.id === e.target.value);
@@ -355,6 +361,7 @@ export function EngineShell() {
         <label className={label}>
           Background
           <select
+            aria-label="Background"
             onChange={(e) => {
               const f = fills.find((x) => x.id === e.target.value);
               if (f) update(["background", "fill"], f.fill);
@@ -382,6 +389,7 @@ export function EngineShell() {
         <label className={label}>
           Frame
           <select
+            aria-label="Frame"
             value={scene.card.frame.id}
             onChange={(e) => update(["card", "frame", "id"], e.target.value)}
           >
@@ -396,6 +404,7 @@ export function EngineShell() {
         <label className={label}>
           Frame theme
           <select
+            aria-label="Frame theme"
             value={scene.card.frame.theme}
             onChange={(e) => update(["card", "frame", "theme"], e.target.value)}
           >
@@ -406,6 +415,7 @@ export function EngineShell() {
         <label className={label}>
           Window title / URL
           <input
+            aria-label="Window title / URL"
             value={
               scene.card.frame.id === "browser" ? scene.card.frame.url : scene.card.frame.title
             }
@@ -444,6 +454,7 @@ export function EngineShell() {
         <label className={label}>
           Shadow
           <select
+            aria-label="Shadow"
             value={scene.card.shadow.preset}
             onChange={(e) => update(["card", "shadow", "preset"], e.target.value)}
           >
@@ -503,7 +514,7 @@ export function EngineShell() {
           onChange={(v) => update(["card", "tilt", "rotateZ"], v)}
         />
         <Range
-          label="Scale"
+          label="Card scale"
           min={0.3}
           max={1.5}
           step={0.01}
@@ -532,7 +543,11 @@ export function EngineShell() {
           <legend>Export</legend>
           <label className={label}>
             Format
-            <select value={format} onChange={(e) => setFormat(e.target.value as ExportFormat)}>
+            <select
+              aria-label="Format"
+              value={format}
+              onChange={(e) => setFormat(e.target.value as ExportFormat)}
+            >
               {EXPORT_FORMATS.map((f) => (
                 <option key={f} value={f}>
                   {f.toUpperCase()}
@@ -542,7 +557,11 @@ export function EngineShell() {
           </label>
           <label className={label}>
             Scale
-            <select value={scale} onChange={(e) => setScale(Number(e.target.value))}>
+            <select
+              aria-label="Scale"
+              value={scale}
+              onChange={(e) => setScale(Number(e.target.value))}
+            >
               {[1, 2, 3, 4].map((s) => (
                 <option key={s} value={s}>
                   {s}×
@@ -552,7 +571,11 @@ export function EngineShell() {
           </label>
           <label className={label}>
             Filename
-            <input value={pattern} onChange={(e) => setPattern(e.target.value)} />
+            <input
+              aria-label="Filename"
+              value={pattern}
+              onChange={(e) => setPattern(e.target.value)}
+            />
           </label>
           <button type="button" onClick={doExport}>
             Download
@@ -575,6 +598,7 @@ export function EngineShell() {
           <label>
             Open .shotcandy{" "}
             <input
+              aria-label="Open .shotcandy"
               type="file"
               accept=".shotcandy,application/json"
               onChange={(e) => e.target.files?.[0] && loadProject(e.target.files[0])}
@@ -624,6 +648,7 @@ function Range(props: {
         {props.label}: {Number.isInteger(props.step) ? props.value : props.value.toFixed(2)}
       </span>
       <input
+        aria-label={props.label}
         type="range"
         min={props.min}
         max={props.max}
