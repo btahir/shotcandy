@@ -1,0 +1,21 @@
+# Internal notes (never commit)
+BRIEF.md
+PLAN.md
+ACCEPTANCE.md
+docs/design/
+docs/launch/
+notes/
+
+# Dependencies and builds
+node_modules/
+.next/
+out/
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# Environment and OS
+.env*
+.DS_Store
+*.log
