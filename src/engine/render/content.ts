@@ -85,6 +85,57 @@ function redactionsKey(list: RedactAnnotation[]): string {
     : "";
 }
 
+export interface SourceRegion {
+  image: ImageLike;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * The cropped source at the smallest mip level that is still at least
+ * `targetW` wide. Levels are produced by successive halving (browsers'
+ * single-pass downscales alias badly beyond 2x) and cached per level, so
+ * resizing the preview never re-halves the whole image.
+ */
+export function mipSource(
+  env: RenderEnvironment,
+  cache: RenderCache,
+  srcId: string,
+  img: { image: ImageLike; width: number; height: number },
+  crop: { x: number; y: number; width: number; height: number },
+  targetW: number,
+): SourceRegion {
+  const sx = crop.x * img.width;
+  const sy = crop.y * img.height;
+  const sw = crop.width * img.width;
+  const sh = crop.height * img.height;
+  if (sw / targetW < 2) return { image: img.image, x: sx, y: sy, w: sw, h: sh };
+  const levels = Math.floor(Math.log2(sw / targetW));
+  const cropKey = stableStringify(crop);
+  let prev: SourceRegion = { image: img.image, x: sx, y: sy, w: sw, h: sh };
+  let pw = Math.round(sw);
+  let ph = Math.round(sh);
+  for (let n = 1; n <= levels; n++) {
+    const nw = Math.max(1, Math.round(pw / 2));
+    const nh = Math.max(1, Math.round(ph / 2));
+    const from = prev;
+    const level = cache.get(`mip:${srcId}:${img.width}:${cropKey}:${n}`, () => {
+      const c = env.createCanvas(nw, nh);
+      const g = get2d(c);
+      g.imageSmoothingEnabled = true;
+      g.imageSmoothingQuality = "high";
+      g.drawImage(from.image, from.x, from.y, from.w, from.h, 0, 0, nw, nh);
+      return { value: c, bytes: nw * nh * 4 };
+    });
+    prev = { image: level, x: 0, y: 0, w: nw, h: nh };
+    pw = nw;
+    ph = nh;
+  }
+  return prev;
+}
+
 /**
  * The screenshot rasterized at exactly its on-screen device size, with crop and
  * redactions applied. Cached per (asset, size, crop, redactions).
@@ -109,31 +160,12 @@ export function processedImage(
   if (!img) return null;
   const key = `content:${src.id}:${img.width}:${W}x${H}:${stableStringify(crop)}:${redactionsKey(redactions)}:${unitPx.toFixed(4)}`;
   return cache.get(key, () => {
-    const sx = crop.x * img.width;
-    const sy = crop.y * img.height;
-    const sw = crop.width * img.width;
-    const sh = crop.height * img.height;
-    let source: ImageLike = img.image;
-    let rx = sx;
-    let ry = sy;
-    let rw = sw;
-    let rh = sh;
-    if (sw / W > 2) {
-      // Crop first, then halve down towards the target size.
-      const cropped = env.createCanvas(Math.round(sw), Math.round(sh));
-      get2d(cropped).drawImage(img.image, sx, sy, sw, sh, 0, 0, Math.round(sw), Math.round(sh));
-      const stepped = stepDown(env, cropped, Math.round(sw), Math.round(sh), W);
-      source = stepped.image;
-      rx = 0;
-      ry = 0;
-      rw = stepped.width;
-      rh = stepped.height;
-    }
+    const m = mipSource(env, cache, src.id, img, crop, W);
     const out = env.createCanvas(W, H);
     const g = get2d(out, { willReadFrequently: redactions.length > 0 });
     g.imageSmoothingEnabled = true;
     g.imageSmoothingQuality = "high";
-    g.drawImage(source, rx, ry, rw, rh, 0, 0, W, H);
+    g.drawImage(m.image, m.x, m.y, m.w, m.h, 0, 0, W, H);
     for (const r of redactions) applyRedaction(g, r, W, H, unitPx);
     return { value: out, bytes: W * H * 4 };
   });
@@ -178,6 +210,29 @@ export const imageContent: ContentRenderer<Extract<Content, { kind: "image" }>> 
     );
     const dw = dc.rect.width * dc.pixelRatio;
     const dh = dc.rect.height * dc.pixelRatio;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    const src = content.assetId ? dc.assets.get(content.assetId) : undefined;
+    if (src && redactions.length === 0) {
+      // Fast path: draw straight from the nearest mip level.
+      const crop = content.crop ?? { x: 0, y: 0, width: 1, height: 1 };
+      const img = pickImage(src, dw / crop.width);
+      if (img) {
+        const m = mipSource(dc.env, dc.cache, src.id, img, crop, Math.max(1, Math.round(dw)));
+        ctx.drawImage(
+          m.image,
+          m.x,
+          m.y,
+          m.w,
+          m.h,
+          dc.rect.x,
+          dc.rect.y,
+          dc.rect.width,
+          dc.rect.height,
+        );
+        return;
+      }
+    }
     const canvas = processedImage(
       dc.env,
       dc.cache,
@@ -186,14 +241,12 @@ export const imageContent: ContentRenderer<Extract<Content, { kind: "image" }>> 
       redactions,
       dw,
       dh,
-      dw / dc.rect.width,
+      dc.pixelRatio,
     );
     if (!canvas) {
       drawPlaceholder(ctx, dc.rect, "#f4f4f5");
       return;
     }
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(canvas, dc.rect.x, dc.rect.y, dc.rect.width, dc.rect.height);
   },
 };

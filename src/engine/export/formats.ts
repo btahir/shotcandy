@@ -93,7 +93,10 @@ export function canEncode(format: ExportFormat, makeCanvas: () => CanvasLike): P
   const mime = MIME_TYPES[format];
   let p = encodeSupport.get(mime);
   if (!p) {
-    p = canvasToBlob(makeCanvas(), mime, 0.8)
+    const probe = makeCanvas();
+    // An OffscreenCanvas without a context refuses to encode at all.
+    (probe as { getContext?: (t: "2d") => unknown }).getContext?.("2d");
+    p = canvasToBlob(probe, mime, 0.8)
       .then((b) => b.type === mime)
       .catch(() => false);
     encodeSupport.set(mime, p);

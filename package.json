@@ -4,7 +4,6 @@
   "private": true,
   "description": "Turn any screenshot into a beautiful, share-ready image. Free, open source, runs entirely in your browser.",
   "license": "MIT",
-  "type": "module",
   "scripts": {
     "predev": "node scripts/copy-brand-assets.mjs",
     "dev": "next dev",
@@ -13,8 +12,8 @@
     "serve": "node scripts/serve-static.mjs out",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "test:e2e:update": "playwright test --update-snapshots",
+    "test:e2e": "pnpm build && playwright test --project=engine --project=app --project=app-firefox --project=app-webkit",
+    "test:e2e:update": "pnpm build && playwright test --project=engine --project=app --update-snapshots",
     "bench": "playwright test --project=bench",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --max-warnings=0",

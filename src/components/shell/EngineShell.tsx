@@ -29,7 +29,6 @@ import {
   applyStylePatch,
   copyImageToClipboard,
   createAnnotation,
-  createExportWorker,
   createProjectFile,
   createScene,
   formatFilename,
@@ -46,6 +45,7 @@ import {
   sceneAssetIds,
   setIn,
 } from "@/engine";
+import { createExportWorker } from "@/engine/export/worker-factory";
 import { createEditorStore } from "@/state/editor-store";
 import { useEditor } from "@/state/react";
 

@@ -25,14 +25,6 @@ export function supportsWorkerExport(): boolean {
   );
 }
 
-/** Default worker factory (bundlers resolve the `new URL(..., import.meta.url)` pattern). */
-export function createExportWorker(): Worker {
-  return new Worker(new URL("./export.worker.ts", import.meta.url), {
-    type: "module",
-    name: "shotcandy-export",
-  });
-}
-
 type Pending = { resolve: (r: ExportResult) => void; reject: (e: Error) => void };
 
 export class Exporter {

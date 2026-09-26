@@ -116,11 +116,19 @@ function drawFill(
 // ----------------------------------------------------------------------------
 
 /** Resolution of the computed mesh field for an output size. */
+/**
+ * Resolution of the computed mesh field for an output size: about a third of
+ * the output (capped at 640 px), snapped to a 32 px grid (at least 64 px) so
+ * small canvas changes (e.g. dragging the padding slider) reuse the cached
+ * field. The field is stretched to the canvas; the snapping distorts blob
+ * shapes by a few percent at most, which is invisible in a smooth gradient.
+ */
 export function meshFieldSize(w: number, h: number): { fw: number; fh: number } {
   const long = Math.max(w, h);
-  const target = Math.min(640, Math.max(32, Math.ceil(long / 3)));
+  const target = Math.min(640, Math.max(64, Math.ceil(long / 3)));
   const s = target / long;
-  return { fw: Math.max(2, Math.round(w * s)), fh: Math.max(2, Math.round(h * s)) };
+  const snap = (v: number) => Math.max(32, Math.round((v * s) / 32) * 32);
+  return { fw: snap(w), fh: snap(h) };
 }
 
 export function computeMeshField(
@@ -185,7 +193,7 @@ function drawMesh(
   const field = deps.cache.get(key, () => {
     const canvas = deps.env.createCanvas(fw, fh);
     const c = get2d(canvas);
-    const data = computeMeshField(base, points, fw, fh, w / h);
+    const data = computeMeshField(base, points, fw, fh, fw / fh);
     c.putImageData(makeImageData(deps.env, data, fw, fh), 0, 0);
     return { value: canvas, bytes: fw * fh * 4 };
   });

@@ -176,7 +176,7 @@ export {
   type ExportAsset,
   type ExportResult,
 } from "./export/export";
-export { Exporter, supportsWorkerExport, createExportWorker } from "./export/client";
+export { Exporter, supportsWorkerExport, type ExporterOptions } from "./export/client";
 export {
   formatFilename,
   sanitizeFilename,
