@@ -2454,6 +2454,18 @@
     height: 5px;
   }
 
+  /* Before hydration both layouts are in the HTML; CSS shows the right one. */
+  @media (max-width: 767px) {
+    .only-wide {
+      display: none;
+    }
+  }
+  @media (min-width: 768px) {
+    .only-narrow {
+      display: none;
+    }
+  }
+
   /* ---------- Narrow layout (< 768px) ---------- */
   .m {
     height: 100vh;

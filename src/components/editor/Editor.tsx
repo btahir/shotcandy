@@ -14,7 +14,8 @@ import { Stage } from "./Stage";
 
 const NARROW = "(max-width: 767px)";
 
-function useNarrow(): boolean {
+/** null while prerendering/hydrating: both layouts ship in the HTML and CSS picks one. */
+function useNarrow(): boolean | null {
   return useSyncExternalStore(
     (cb) => {
       const m = window.matchMedia(NARROW);
@@ -22,7 +23,7 @@ function useNarrow(): boolean {
       return () => m.removeEventListener("change", cb);
     },
     () => window.matchMedia(NARROW).matches,
-    () => false,
+    () => null,
   );
 }
 
@@ -121,16 +122,21 @@ export function Editor() {
 
   return (
     <AppContext.Provider value={app}>
-      {narrow ? (
-        <MobileEditor />
-      ) : (
-        <div className="app" data-layout="wide">
-          <Header />
-          <Stage />
-          <Inspector />
+      {narrow !== false && (
+        <div className={narrow === null ? "only-narrow" : undefined}>
+          <MobileEditor />
         </div>
       )}
-      <Gallery narrow={narrow} />
+      {narrow !== true && (
+        <div className={narrow === null ? "only-wide" : undefined}>
+          <div className="app" data-layout="wide">
+            <Header />
+            <Stage />
+            <Inspector />
+          </div>
+        </div>
+      )}
+      <Gallery narrow={!!narrow} />
       <ShortcutsSheet />
       <RecentsDialog />
       <LiveRegion />

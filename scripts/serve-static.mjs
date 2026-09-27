@@ -7,6 +7,7 @@
  */
 import { createReadStream, statSync } from "node:fs";
 import { createServer } from "node:http";
+import { createBrotliCompress, createGzip } from "node:zlib";
 import { extname, join, normalize, resolve } from "node:path";
 
 const root = resolve(process.argv[2] ?? "out");
@@ -59,11 +60,20 @@ createServer((req, res) => {
     else res.end("Not found");
     return;
   }
+  const type = TYPES[extname(path)] ?? "application/octet-stream";
+  // Compress text like any production static host would (images/fonts are already compressed).
+  const text = /^(text\/|application\/(json|manifest)|image\/svg)/.test(type);
+  const accept = String(req.headers["accept-encoding"] ?? "");
+  const enc = !text ? null : /\bbr\b/.test(accept) ? "br" : /\bgzip\b/.test(accept) ? "gzip" : null;
   res.writeHead(200, {
-    "content-type": TYPES[extname(path)] ?? "application/octet-stream",
+    "content-type": type,
     "cache-control": "no-cache",
+    ...(enc ? { "content-encoding": enc, vary: "accept-encoding" } : {}),
   });
-  createReadStream(path).pipe(res);
+  const stream = createReadStream(path);
+  if (enc === "br") stream.pipe(createBrotliCompress()).pipe(res);
+  else if (enc === "gzip") stream.pipe(createGzip()).pipe(res);
+  else stream.pipe(res);
 }).listen(port, "127.0.0.1", () => {
   console.log(`Serving ${root} at http://127.0.0.1:${port}`);
 });
