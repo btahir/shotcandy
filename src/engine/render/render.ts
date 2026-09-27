@@ -20,6 +20,7 @@ import type { Shape } from "../frames/types";
 import { drawAnnotation } from "./annotations";
 import { drawBackground } from "./background";
 import { RenderCache } from "./cache";
+import { drawCaption, fillTone } from "../layout/caption";
 import { drawCard } from "./card";
 import { getContentRenderer } from "./content";
 import { shapePath } from "./draw";
@@ -221,6 +222,18 @@ export function renderScene(
       H,
       { env, cache, assets, palette, unit, scale },
       { texture: scene.background.texture, vignette: scene.background.vignette, focus },
+    );
+  }
+
+  // Caption card text, in the space above the card.
+  if (layout.caption && scene.caption) {
+    drawCaption(
+      ctx as never,
+      scene.caption,
+      layout.caption,
+      scale,
+      layout.canvas.width,
+      fillTone(scene.background.fill, palette, assets),
     );
   }
 

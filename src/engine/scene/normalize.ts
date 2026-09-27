@@ -11,6 +11,7 @@ import { isColor, normalizeColor } from "../math/color";
 import { DEFAULT_BACKGROUND, DEFAULT_CARD, createScene } from "./defaults";
 import type {
   AnimationSpec,
+  CaptionSpec,
   Annotation,
   CodeTokens,
   PostContent,
@@ -636,6 +637,23 @@ function annotation(c: Ctx, v: unknown, i: number): Annotation | null {
  * Validate and normalize an already-migrated (current version) scene object.
  * Use `loadScene` (scene/migrate.ts) for data of unknown version.
  */
+function caption(c: Ctx, v: unknown): CaptionSpec | undefined {
+  if (v === undefined || v === null) return undefined;
+  const o = obj(c, "caption", v);
+  return {
+    enabled: o.enabled === true,
+    headline: str(c, "caption.headline", o.headline, "", 200),
+    subhead: str(c, "caption.subhead", o.subhead, "", 300),
+    font: oneOf(c, "caption.font", o.font, ["display", "sans"] as const, "display"),
+    align: oneOf(c, "caption.align", o.align, ["center", "left"] as const, "center"),
+    color:
+      o.color === "auto" || o.color === undefined
+        ? "auto"
+        : color(c, "caption.color", o.color, "#2a1f1a"),
+    size: num(c, "caption.size", o.size, 1, 0.7, 1.4),
+  };
+}
+
 export function normalizeScene(input: unknown): NormalizeResult {
   const c = new Ctx();
   if (!isObj(input)) {
@@ -678,5 +696,7 @@ export function normalizeScene(input: unknown): NormalizeResult {
   };
   const anim = animation(c, input.animation);
   if (anim) scene.animation = anim;
+  const cap = caption(c, input.caption);
+  if (cap) scene.caption = cap;
   return { scene, issues: c.issues };
 }

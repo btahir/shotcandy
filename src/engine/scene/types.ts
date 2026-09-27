@@ -39,6 +39,24 @@ export interface Scene {
    * scene itself is the rest pose; animation/timeline.ts evaluates frames.
    */
   animation?: AnimationSpec;
+  /**
+   * A headline and subhead set in the canvas above the card (tall canvases
+   * with landscape screenshots use it to fill the space). Absent = none.
+   */
+  caption?: CaptionSpec;
+}
+
+/** Caption card: text above the screenshot, laid out in the canvas. */
+export interface CaptionSpec {
+  enabled: boolean;
+  headline: string;
+  subhead: string;
+  font: "display" | "sans";
+  align: "center" | "left";
+  /** Text colour, or "auto" to pick ink or white against the background. */
+  color: Color | "auto";
+  /** Type size multiplier (0.7..1.4). */
+  size: number;
 }
 
 // ---------------------------------------------------------------------------

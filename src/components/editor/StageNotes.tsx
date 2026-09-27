@@ -7,6 +7,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import {
+  type CaptionBlock,
   type CodeContent,
   type SceneLayout,
   canvasToContent,
@@ -272,5 +273,87 @@ export function CodeLineLayer({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * The caption on the stage: hover shows its block, click edits it in place
+ * (Enter or clicking away commits, Esc cancels). The canvas updates live.
+ */
+export function CaptionLayer({
+  layout,
+  zoom,
+  left,
+  top,
+}: {
+  layout: SceneLayout;
+  zoom: number;
+  left: number;
+  top: number;
+}) {
+  const app = useApp();
+  const cap = useScene((s) => s.scene.caption);
+  const tool = useUi((s) => s.tool);
+  const [editing, setEditing] = useState<null | "headline" | "subhead">(null);
+  const [before, setBefore] = useState("");
+  if (!layout.caption || !cap?.enabled || tool !== "select") return null;
+  const box = (b: CaptionBlock) => {
+    const pad = 6;
+    return {
+      left: left + b.box.x * zoom - pad,
+      top: top + b.box.y * zoom - pad,
+      width: Math.max(80, b.box.width * zoom) + pad * 2,
+      height: b.box.height * zoom + pad * 2,
+    };
+  };
+  return (
+    <>
+      {layout.caption.blocks.map((b) =>
+        editing === b.role ? (
+          <textarea
+            key={b.role}
+            className="caption-editor"
+            aria-label={b.role === "headline" ? "Caption headline" : "Caption subhead"}
+            autoFocus
+            value={cap[b.role]}
+            style={{
+              ...box(b),
+              // The editor spans the caption's full width so DOM text never wraps early.
+              left: left + layout.caption!.x * zoom - 8,
+              width: layout.caption!.width * zoom + 16,
+              font: b.font.replace(/(\d+(?:\.\d+)?)px/, (_, v: string) => `${Number(v) * zoom}px`),
+              lineHeight: b.role === "headline" ? 1.14 : 1.35,
+              textAlign: layout.caption!.align,
+            }}
+            onChange={(e) => app.setCaption({ [b.role]: e.target.value }, `caption:${b.role}`)}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === "Escape") {
+                app.setCaption({ [b.role]: before }, `caption:${b.role}`);
+                setEditing(null);
+              } else if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                setEditing(null);
+              }
+            }}
+            onBlur={() => setEditing(null)}
+          />
+        ) : (
+          <button
+            key={b.role}
+            type="button"
+            className="caption-hit"
+            data-testid={`caption-${b.role}-hit`}
+            aria-label={`Edit caption ${b.role}: ${cap[b.role]}`}
+            style={box(b)}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => {
+              setBefore(cap[b.role]);
+              setEditing(b.role);
+            }}
+          />
+        ),
+      )}
+    </>
   );
 }

@@ -38,6 +38,7 @@ import {
   translation,
 } from "../math/matrix";
 import { resolveShadowLayers } from "../presets/shadows";
+import { type CaptionLayout, captionActive, captionLayout } from "./caption";
 import type { CanvasAnchor, CropRect, ImageContent, Scene } from "../scene/types";
 
 /** Reference side of the content, in card units. */
@@ -79,6 +80,8 @@ export interface SceneLayout {
   cardQuad: [Point, Point, Point, Point];
   /** Natural content size in source pixels (after crop). */
   contentPixels: Size;
+  /** The caption block above the card, when the scene has one (canvas px at scale 1). */
+  caption?: CaptionLayout;
 }
 
 /**
@@ -262,7 +265,70 @@ export function contentPixelSize(scene: Scene, assetSize: Size | null): Size {
  * Full scene layout. `assetSize` is the natural pixel size of the content image
  * (null for placeholders or missing assets).
  */
+/**
+ * Layout with the caption card: the text takes the top of the canvas and the
+ * card is composed in the space below. Auto canvases grow taller by the
+ * caption's height (the card keeps its native pixels); fixed and ratio
+ * canvases keep their size and fit the card into what's left.
+ */
 export function computeLayout(scene: Scene, assetSize: Size | null): SceneLayout {
+  if (!captionActive(scene)) return computeLayoutBase(scene, assetSize);
+  const { caption: spec, ...plain } = scene;
+  const base = computeLayoutBase(plain, assetSize);
+  const W = base.canvas.width;
+  const H0 = base.canvas.height;
+  const cap = captionLayout(spec!, W, H0);
+  const top = Math.round(cap.height);
+  const shiftBy = (l: SceneLayout, canvasH: number, dy = top, c = cap): SceneLayout => {
+    const cardToCanvas = multiply(translation(0, dy), l.cardToCanvas);
+    return {
+      ...l,
+      canvas: { width: W, height: canvasH },
+      cardToCanvas,
+      canvasToCard: invert(cardToCanvas),
+      cardQuad: l.cardQuad.map((p) => ({ x: p.x, y: p.y + dy })) as SceneLayout["cardQuad"],
+      caption: c,
+    };
+  };
+  if (plain.canvas.size.kind === "auto") return shiftBy(base, H0 + top);
+  const regionH = Math.max(1, H0 - top);
+  const region: Scene = {
+    ...plain,
+    canvas: { ...plain.canvas, size: { kind: "fixed", width: W, height: regionH } },
+  };
+  const inner = computeLayoutBase(region, assetSize);
+  // Balance the group: when the card has room around it, pull it up under the
+  // caption and move the caption down, so text and card sit together with
+  // equal space above and below (instead of text at the top, card mid-way).
+  const ys = inner.cardQuad.map((p) => p.y);
+  const t0 = Math.min(...ys);
+  const b0 = Math.max(...ys);
+  const first = cap.blocks[0]!;
+  const last = cap.blocks[cap.blocks.length - 1]!;
+  const y0 = first.box.y;
+  const tb = last.box.y + last.box.height;
+  const mg = Math.min(W, H0) * 0.07;
+  const centred = (plain.canvas.anchor ?? "center") === "center";
+  if (centred && t0 >= 0 && b0 <= regionH) {
+    const e = (2 * top + t0 + b0 - tb - H0 + y0 - mg) / 2;
+    const d = H0 - top - b0 + e - y0;
+    if (d > 0 && top - e + b0 <= H0 && top - e + t0 >= tb + d) {
+      const dd = Math.round(d);
+      const moved: CaptionLayout = {
+        ...cap,
+        blocks: cap.blocks.map((bl) => ({
+          ...bl,
+          box: { ...bl.box, y: bl.box.y + dd },
+          lines: bl.lines.map((ln) => ({ ...ln, y: ln.y + dd })),
+        })),
+      };
+      return shiftBy(inner, H0, top - Math.round(e), moved);
+    }
+  }
+  return shiftBy(inner, H0);
+}
+
+function computeLayoutBase(scene: Scene, assetSize: Size | null): SceneLayout {
   const contentPx = contentPixelSize(scene, assetSize);
   const card = computeCardGeometry(scene, contentPx);
   const { tilt, transform } = scene.card;

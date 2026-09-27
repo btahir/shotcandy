@@ -48,6 +48,13 @@ export {
   type CardGeometry,
 } from "./layout/layout";
 export {
+  captionLayout,
+  captionActive,
+  DEFAULT_CAPTION,
+  type CaptionLayout,
+  type CaptionBlock,
+} from "./layout/caption";
+export {
   sourceAdvice,
   themeForLightness,
   topBandLightness,
@@ -311,6 +318,7 @@ export {
   videoBitrate,
   extrapolateVideoBytes,
   extrapolateGifBytes,
+  roughAnimationBytes,
   GIF_AREA_EXPONENT,
   MIME_BY_FORMAT,
   GIF_MAX_FPS,

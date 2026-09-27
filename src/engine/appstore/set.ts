@@ -287,8 +287,10 @@ export function slideScene(
     slide.assetId && assets.get(slide.assetId)
       ? { kind: "image", assetId: slide.assetId, ...(slide.crop ? { crop: slide.crop } : {}) }
       : placeholderFor(set);
+  const { caption: _caption, ...tpl } = template;
+  void _caption;
   let scene: Scene = {
-    ...template,
+    ...tpl,
     canvas: { size: { kind: "fixed", width: W, height: H }, padding: template.canvas.padding },
     background: {
       ...template.background,

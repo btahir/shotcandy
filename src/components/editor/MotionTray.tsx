@@ -116,6 +116,23 @@ export const MotionTray = memo(function MotionTray({ bare = false }: { bare?: bo
       </div>
       {spec && preset && (
         <div className="motion-controls" data-testid="motion-controls">
+          {preset.id === "draw" && annotations === 0 && (
+            <div className="warn-note draw-hint" data-testid="draw-hint" role="status">
+              <Icon name="arrow" size="sm" />
+              <span>
+                Draw on animates your arrows, boxes and text. Add one first, or this exports a still
+                clip.
+                <span className="guard-acts">
+                  <button type="button" className="link" onClick={() => app.setTool("arrow")}>
+                    Add an arrow
+                  </button>
+                  <button type="button" className="link" onClick={() => app.setTool("text")}>
+                    Add text
+                  </button>
+                </span>
+              </span>
+            </div>
+          )}
           <Slider
             label="Length"
             value={spec.duration}
@@ -210,7 +227,9 @@ export const MotionTray = memo(function MotionTray({ bare = false }: { bare?: bo
           <div className="toggle-row">
             <span className="label">
               Draw on annotations
-              {annotations === 0 && <small>Add an arrow or text to draw it on</small>}
+              {annotations === 0 && preset.id !== "draw" && (
+                <small>Add an arrow or text to draw it on</small>
+              )}
             </span>
             <Switch
               checked={spec.annotations && annotations > 0}

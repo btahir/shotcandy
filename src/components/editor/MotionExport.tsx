@@ -1,7 +1,7 @@
 "use client";
 /** Export options for the motion clip: MP4 / WebM / GIF, size, frame rate and quality. */
 import { useEffect, useMemo, useState } from "react";
-import { type AnimationFormat, canEncodeFormat } from "@/engine";
+import { type AnimationFormat, canEncodeFormat, roughAnimationBytes } from "@/engine";
 import { useModKey } from "@/lib/platform";
 import { Icon } from "../icons";
 import { Segmented, Switch } from "../ui/controls";
@@ -66,6 +66,16 @@ export function useMotionEstimate(active: boolean): number | null {
 
 const GIF_TARGET = 5 * 1024 * 1024;
 
+/** "2–3 MB" / "400–600 KB": a range in one unit. */
+export function formatRange([lo, hi]: [number, number]): string {
+  const MB = 1024 * 1024;
+  if (hi >= MB) {
+    const f = (v: number) => (v < 10 ? v.toFixed(1) : String(Math.round(v)));
+    return `${f(lo / MB)}–${f(hi / MB)} MB`;
+  }
+  return `${Math.round(lo / 1024)}–${Math.round(hi / 1024)} KB`;
+}
+
 export function MotionExportPanel({ onDone }: { onDone?: () => void }) {
   const app = useApp();
   const mod = useModKey();
@@ -100,6 +110,16 @@ export function MotionExportPanel({ onDone }: { onDone?: () => void }) {
   const plan = app.motionPlan(settings);
   const gif = settings.format === "gif";
   const video = !gif;
+  // An instant range from the calibrated models; the sample encode refines it.
+  const rough = plan
+    ? roughAnimationBytes(plan, {
+        format: settings.format,
+        quality: settings.quality,
+        preset: spec.preset,
+        gifColors: settings.gifColors,
+        dither: settings.dither,
+      })
+    : null;
   const label = settings.format === "gif" ? "GIF" : settings.format.toUpperCase();
 
   return (
@@ -210,8 +230,12 @@ export function MotionExportPanel({ onDone }: { onDone?: () => void }) {
         {plan && (
           <>
             {plan.duration.toFixed(1)} s · {plan.frames} frames ·{" "}
-            <span data-testid="motion-size">
-              {est !== null ? `≈ ${formatBytes(est)}` : "sizing…"}
+            <span data-testid="motion-size" data-refined={est !== null ? "true" : "false"}>
+              {est !== null
+                ? `≈ ${formatBytes(est)}`
+                : rough
+                  ? `≈ ${formatRange(rough)}`
+                  : "sizing…"}
             </span>
           </>
         )}

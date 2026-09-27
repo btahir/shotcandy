@@ -18,6 +18,7 @@ import {
   type AssetResolver,
   type AssetSource,
   type CanvasSize,
+  type CaptionSpec,
   type DesignRecord,
   type ExportFormat,
   type ExportResult,
@@ -31,6 +32,7 @@ import {
   AssetLibrary,
   DEFAULT_FILENAME_PATTERN,
   DEFAULT_STYLE_ID,
+  DEFAULT_CAPTION,
   Exporter,
   ImportError,
   RenderCache,
@@ -350,6 +352,26 @@ function importMessage(e: unknown): { title: string; detail: string } {
   return { title: "Couldn't read that file", detail: "Try PNG, JPEG or WebP." };
 }
 
+/**
+ * Tall canvases (9:16, 4:5 and taller) holding a landscape screenshot get the
+ * caption card on by default, once: a caption the user turned off stays off.
+ */
+export function withAutoCaption(
+  s: Scene,
+  content: { width: number; height: number } | null,
+): Scene {
+  if (s.caption || !content || s.content.kind !== "image") return s;
+  const size = s.canvas.size;
+  const ratio =
+    size.kind === "fixed"
+      ? size.height / size.width
+      : size.kind === "aspect"
+        ? size.ratioH / size.ratioW
+        : 0;
+  const landscape = content.width / content.height >= 1.15;
+  return ratio >= 1.2 && landscape ? { ...s, caption: { ...DEFAULT_CAPTION } } : s;
+}
+
 let annSeq = 0;
 const newId = (p: string) => `${p}_${Date.now().toString(36)}${(annSeq++).toString(36)}`;
 
@@ -615,7 +637,10 @@ export class EditorApp {
     const first = !this.ui.get().hasContent;
     const portrait = img.height / img.width >= 1.6;
     this.store.update((s) => {
-      let next: Scene = { ...s, content: { kind: "image", assetId: img.id } };
+      let next: Scene = withAutoCaption(
+        { ...s, content: { kind: "image", assetId: img.id } },
+        { width: img.width, height: img.height },
+      );
       if (first && !this.userPickedStyle) {
         const id = portrait ? "phone-sorbet" : DEFAULT_STYLE_ID;
         const p = getStylePreset(id);
@@ -944,8 +969,24 @@ export class EditorApp {
   }
 
   setSize(size: CanvasSize): void {
-    this.store.update((s) => setIn(s, ["canvas", "size"], size));
+    this.store.update((s) =>
+      withAutoCaption(setIn(s, ["canvas", "size"], size), this.contentSizeOf(s)),
+    );
     this.ui.set({ zoom: null, pan: { x: 0, y: 0 } });
+  }
+
+  private contentSizeOf(s: Scene): { width: number; height: number } | null {
+    const c = s.content;
+    if (c.kind !== "image" || !c.assetId) return null;
+    const a = this.library.get(c.assetId);
+    return a ? { width: a.width, height: a.height } : null;
+  }
+
+  /** Edit the caption card (creating it from the defaults when needed). */
+  setCaption(patch: Partial<CaptionSpec>, coalesce?: string): void {
+    this.store.update((s) => ({ ...s, caption: { ...DEFAULT_CAPTION, ...s.caption, ...patch } }), {
+      coalesce: coalesce ?? `caption:${Object.keys(patch).join(",")}`,
+    });
   }
 
   // ------------------------------------------------------------- annotations

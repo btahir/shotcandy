@@ -760,10 +760,117 @@ export function PositionControls() {
   );
 }
 
+/**
+ * Caption card: a headline and subhead set above the screenshot. On by default
+ * for tall canvases with landscape shots; also editable on the stage.
+ */
+export function CaptionControls() {
+  const app = useApp();
+  const cap = useScene((s) => s.scene.caption);
+  const on = !!cap?.enabled;
+  return (
+    <div className="caption-controls" data-testid="caption-controls">
+      <div className="toggle-row">
+        <span className="label">
+          Caption
+          <small>A headline above the screenshot. Click it on the canvas to edit.</small>
+        </span>
+        <Switch
+          checked={on}
+          label="Caption"
+          onChange={(v) => {
+            app.setCaption({ enabled: v });
+            app.announce(v ? "Caption on" : "Caption off");
+          }}
+        />
+      </div>
+      {on && cap && (
+        <div className="caption-fields">
+          <label className="input">
+            <span className="sr-only">Caption headline</span>
+            <input
+              value={cap.headline}
+              placeholder="Headline"
+              data-testid="caption-headline"
+              onChange={(e) => app.setCaption({ headline: e.target.value }, "caption:headline")}
+              onKeyDown={(e) => e.stopPropagation()}
+            />
+          </label>
+          <label className="input">
+            <span className="sr-only">Caption subhead</span>
+            <input
+              value={cap.subhead}
+              placeholder="Subhead (optional)"
+              data-testid="caption-subhead"
+              onChange={(e) => app.setCaption({ subhead: e.target.value }, "caption:subhead")}
+              onKeyDown={(e) => e.stopPropagation()}
+            />
+          </label>
+          <div className="caption-row">
+            <Segmented
+              label="Caption font"
+              value={cap.font}
+              onChange={(font) => app.setCaption({ font })}
+              options={[
+                { value: "display", label: "Display" },
+                { value: "sans", label: "Sans" },
+              ]}
+            />
+            <Segmented
+              label="Caption alignment"
+              value={cap.align}
+              onChange={(align) => app.setCaption({ align })}
+              options={[
+                {
+                  value: "center",
+                  label: "",
+                  icon: <Icon name="alignCenter" size="sm" />,
+                  title: "Centre",
+                },
+                {
+                  value: "left",
+                  label: "",
+                  icon: <Icon name="alignLeft" size="sm" />,
+                  title: "Left",
+                },
+              ]}
+            />
+            <ColourButton
+              className={`colour-dot${cap.color === "auto" ? " auto" : ""}`}
+              value={cap.color === "auto" ? "#2a1f1a" : cap.color}
+              label="Caption colour"
+              onChange={(c) => app.setCaption({ color: c }, "caption:color")}
+            />
+          </div>
+          <Slider
+            label="Text size"
+            value={Math.round(cap.size * 100)}
+            min={70}
+            max={140}
+            stops={[{ value: 100, label: "1×" }]}
+            format={(v) => `${Math.round(v)}%`}
+            onChange={(v) => app.setCaption({ size: v / 100 }, "caption:size")}
+          />
+          {cap.color !== "auto" && (
+            <button
+              type="button"
+              className="link quiet"
+              onClick={() => app.setCaption({ color: "auto" })}
+            >
+              Match the background
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export const LayoutTray = memo(function LayoutTray({ bare = false }: { bare?: boolean }) {
   const app = useApp();
   const padding = useScene((s) => s.scene.canvas.padding);
   const isImage = useScene((s) => s.scene.content.kind === "image");
+  const mode = useUi((s) => s.mode);
   const card = useScene((s) => s.scene.card);
   const style = useScene((s) => s.scene.meta.stylePresetId);
   const custom = useUi((s) => s.customPresets);
@@ -839,6 +946,7 @@ export const LayoutTray = memo(function LayoutTray({ bare = false }: { bare?: bo
       />
       {!usesRadius && <p className="note">Corners are set by the device frame.</p>}
       {isImage && <PositionControls />}
+      {isImage && mode === "screenshot" && <CaptionControls />}
       <div className="sub" style={{ marginTop: 14 }}>
         Shadow
       </div>

@@ -593,19 +593,45 @@
     white-space: nowrap;
   }
 
-  /* ---------- Toasts right under the Export button, over the inspector and
-     clear of the canvas and its size tag (REVIEW r2 N11) ---------- */
+  /* ---------- Toasts: top-right corner of the stage, in the band above a
+     fitted canvas. Never wider than the stage's right half (so they clear
+     the centred size tag), never over the inspector (REVIEW r3). ---------- */
   @media (min-width: 768px) {
     .stage .toast-layer,
     .stage.has-timeline .toast-layer {
-      position: fixed;
-      top: calc(var(--sc-header-h) + 6px);
+      position: absolute;
+      top: 6px;
       bottom: auto;
       left: auto;
-      right: 16px;
+      right: 14px;
       transform: none;
       align-items: flex-end;
-      max-width: min(560px, calc(100vw - 32px));
+      max-width: calc(50% - 90px);
+      width: max-content;
+    }
+    /* Compact enough (52 px) for the band above a fitted canvas; long lines
+       ellipsize here (screen readers still get the whole message). */
+    .stage .toast-layer .toast {
+      max-width: 100%;
+      min-height: 0;
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+    .stage .toast-layer .toast > div {
+      min-width: 0;
+    }
+    .stage .toast-layer .toast .t1,
+    .stage .toast-layer .toast .t2 {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stage .toast-layer .wrap-thumb {
+      height: 40px;
+      width: 88px;
+    }
+    .stage .toast-layer .wrap-thumb svg {
+      top: 0;
     }
   }
 
@@ -641,7 +667,8 @@
     gap: 12px;
     margin-left: 2px;
   }
-  .slide-guard .guard-acts {
+  .slide-guard .guard-acts,
+  .draw-hint .guard-acts {
     display: flex;
     margin-top: 4px;
   }
@@ -702,5 +729,61 @@
   }
   .chip.static:hover {
     box-shadow: none;
+  }
+
+  /* Caption card: controls in the Layout tray, and on-stage editing. */
+  .caption-controls {
+    margin-top: 6px;
+  }
+  .caption-controls .toggle-row .label small {
+    display: block;
+    font-size: 11.5px;
+    line-height: 15px;
+    font-weight: var(--sc-weight-medium);
+    color: var(--sc-ink-3);
+  }
+  .caption-fields {
+    display: grid;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .caption-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    align-items: center;
+  }
+  .colour-dot.auto {
+    background: conic-gradient(#2a1f1a 0 50%, #ffffff 0) !important;
+  }
+  .caption-hit {
+    position: absolute;
+    z-index: 6;
+    border-radius: 12px;
+    cursor: text;
+    background: transparent;
+    transition: box-shadow var(--sc-dur-fast);
+  }
+  .caption-hit:hover {
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sc-accent) 65%, transparent);
+  }
+  .caption-hit:focus-visible {
+    outline: 2px solid var(--sc-ink);
+    outline-offset: 2px;
+  }
+  .caption-editor {
+    position: absolute;
+    z-index: 9;
+    padding: 6px;
+    border: 0;
+    border-radius: 12px;
+    resize: none;
+    overflow: hidden;
+    color: var(--sc-ink);
+    background: color-mix(in srgb, var(--sc-surface) 94%, transparent);
+    box-shadow:
+      var(--sc-shadow-float),
+      0 0 0 2px var(--sc-accent);
+    outline: none;
   }
 }

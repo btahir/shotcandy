@@ -2,6 +2,11 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   type AppStoreSet,
+  DEFAULT_CAPTION,
+  createScene,
+  normalizeScene,
+  renderToCanvas,
+  setIn,
   EMPTY_ASSETS,
   MapAssetResolver,
   createSet,
@@ -154,5 +159,71 @@ describe("N2: a wrapped link keeps its colour on every line", () => {
       .map(([t]) => t)
       .join("");
     expect(accentText).toBe(URL60);
+  });
+});
+
+describe("N14: caption card on tall canvases", () => {
+  const wide = syntheticScreenshot(2880, 1800, "#4f8bff");
+  const assets = new MapAssetResolver([wide]);
+  const base = setIn(
+    createScene({ content: { kind: "image", assetId: wide.id } }),
+    ["canvas", "size"],
+    { kind: "fixed", width: 1080, height: 1920, presetId: "instagram-story" },
+  );
+
+  it("puts the text at the top and the card in the space below, inside the canvas", () => {
+    const plain = layoutScene(base, assets);
+    const withCap = layoutScene({ ...base, caption: { ...DEFAULT_CAPTION } }, assets);
+    expect(withCap.canvas).toEqual({ width: 1080, height: 1920 });
+    const cap = withCap.caption!;
+    expect(cap.height).toBeGreaterThan(200);
+    expect(cap.blocks.map((b) => b.role)).toEqual(["headline", "subhead"]);
+    const top = Math.min(...withCap.cardQuad.map((p) => p.y));
+    const bottom = Math.max(...withCap.cardQuad.map((p) => p.y));
+    const last = cap.blocks[cap.blocks.length - 1]!;
+    expect(top).toBeGreaterThan(last.box.y + last.box.height);
+    // Text and card sit together as a group, centred: equal space above and below.
+    const above = cap.blocks[0]!.box.y;
+    expect(Math.abs(above - (1920 - bottom))).toBeLessThan(4);
+    expect(bottom).toBeLessThanOrEqual(1920);
+    // The empty band shrinks: the card sits lower than when centred.
+    expect(top).toBeGreaterThan(Math.min(...plain.cardQuad.map((p) => p.y)));
+    // Disabled or empty captions change nothing.
+    const off = layoutScene({ ...base, caption: { ...DEFAULT_CAPTION, enabled: false } }, assets);
+    expect(off.cardQuad).toEqual(plain.cardQuad);
+    const empty = layoutScene(
+      { ...base, caption: { ...DEFAULT_CAPTION, headline: " ", subhead: "" } },
+      assets,
+    );
+    expect(empty.caption).toBeUndefined();
+  });
+
+  it("grows an auto canvas by the caption height and keeps native pixels", () => {
+    const auto = setIn(base, ["canvas", "size"], { kind: "auto" });
+    const plain = layoutScene(auto, assets);
+    const withCap = layoutScene({ ...auto, caption: { ...DEFAULT_CAPTION } }, assets);
+    expect(withCap.canvas.width).toBe(plain.canvas.width);
+    expect(withCap.canvas.height).toBe(plain.canvas.height + Math.round(withCap.caption!.height));
+    expect(withCap.k).toBe(plain.k);
+  });
+
+  it("draws the headline in ink on light backgrounds and white on dark ones", () => {
+    const render = (color: string) => {
+      const s = setIn(
+        { ...base, caption: { ...DEFAULT_CAPTION, headline: "████", subhead: "" } },
+        ["background", "fill"],
+        { kind: "solid", color },
+      );
+      const l = layoutScene(s, assets);
+      const b = l.caption!.blocks[0]!;
+      const { canvas } = renderToCanvas(s, assets, { env: nodeEnv, cache: new RenderCache() });
+      return pixel(canvas, 540, Math.round(b.lines[0]!.y));
+    };
+    expect(render("#fbf5ec")[0]).toBeLessThan(80);
+    expect(render("#1a1411")[0]).toBeGreaterThan(200);
+    expect(
+      normalizeScene(JSON.parse(JSON.stringify({ ...base, caption: DEFAULT_CAPTION }))).scene
+        .caption,
+    ).toEqual(DEFAULT_CAPTION);
   });
 });

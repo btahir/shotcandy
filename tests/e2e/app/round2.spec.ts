@@ -260,6 +260,8 @@ test("N10/N11/N23: notes and toasts keep clear of the canvas; the h1 is inside m
     b.y < a.y + a.height;
   expect(overlap(note, tag)).toBe(false);
   await page.keyboard.press("s");
+  await expect(page.getByTestId("toast")).toBeVisible();
+  await page.waitForTimeout(450); // let the toast's rise-in and the style cross-fade finish
   const toast = await page.getByTestId("toast").boundingBox();
   const canvas = await page.getByTestId("preview").boundingBox();
   expect(overlap(toast, canvas)).toBe(false);

@@ -137,3 +137,37 @@ export function extrapolateGifBytes(
   const ratio = (full.width * full.height) / Math.max(1, sample.width * sample.height);
   return Math.round(sampleBytes * ratio ** GIF_AREA_EXPONENT);
 }
+
+/** Share of the video bitrate target each motion uses (measured, see extrapolateVideoBytes). */
+const VIDEO_SHARE: Record<string, number> = {
+  reveal: 0.68,
+  focus: 0.94,
+  scroll: 0.8,
+  sweep: 1,
+  float: 1,
+  drift: 0.17,
+  draw: 0.14,
+  flip: 0.78,
+};
+
+/**
+ * An instant size range for a motion export, before the sample encode
+ * refines it: per-motion calibrated models (GIF ≈ 0.2 bytes per pixel-frame
+ * at 640 px, 128 colours, dithered; video = its share of the bitrate target).
+ */
+export function roughAnimationBytes(
+  plan: AnimationPlan,
+  o: { format: AnimationFormat; quality: AnimationQuality; preset: string; gifColors?: GifColors; dither?: boolean },
+): [number, number] {
+  let mid: number;
+  if (o.format === "gif") {
+    const area = plan.width * plan.height;
+    const colours = o.gifColors === 256 ? 1.12 : o.gifColors === 64 ? 0.86 : o.gifColors === 32 ? 0.74 : 1;
+    const g = 0.2 * (area / (640 * 400)) ** (GIF_AREA_EXPONENT - 1) * colours * (o.dither === false ? 0.78 : 1);
+    mid = area * plan.frames * g;
+  } else {
+    const target = (videoBitrate(o.quality, plan.width, plan.height, plan.fps) * plan.duration) / 8;
+    mid = target * (VIDEO_SHARE[o.preset] ?? 0.8);
+  }
+  return [Math.round(mid * 0.8), Math.round(mid * 1.25)];
+}

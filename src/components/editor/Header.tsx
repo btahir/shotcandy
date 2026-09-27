@@ -364,8 +364,8 @@ export function SetExportPanel({
     <div className="export-panel" data-testid="set-export">
       <div className="export-head">
         {mobile ? <span /> : <h2>Export set</h2>}
-        <span className="mono muted">
-          {set.slides.length} × {size.width} × {size.height}
+        <span className="mono muted" data-testid="set-export-count">
+          {count} × {size.width} × {size.height}
         </span>
       </div>
       <div className="sub">Format</div>

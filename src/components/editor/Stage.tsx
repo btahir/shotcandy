@@ -23,7 +23,7 @@ import { DropVeil, EmptyState } from "./EmptyState";
 import { Toasts } from "./Toasts";
 import { RenderPill, Timeline } from "./Timeline";
 import { Board } from "./Board";
-import { CodeLineLayer, StageNotes } from "./StageNotes";
+import { CaptionLayer, CodeLineLayer, StageNotes } from "./StageNotes";
 
 const MAX_PREVIEW_SIDE = 8192;
 const MAX_PREVIEW_AREA = 36_000_000;
@@ -404,7 +404,6 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
               top,
               width: dispW,
               height: dispH,
-              ["--bloom" as string]: `${Math.round(Math.hypot(dispW, dispH) * 1.6)}px`,
             }}
           >
             <canvas
@@ -434,6 +433,9 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
           )}
           {!showFrames && !previewScene && (
             <AnnotationLayer geo={{ layout, zoom }} left={left} top={top} compRef={compRef} />
+          )}
+          {mode === "screenshot" && !showFrames && !previewScene && (
+            <CaptionLayer layout={layout} zoom={zoom} left={left} top={top} />
           )}
           {mode === "code" && !showFrames && !previewScene && (
             <CodeLineLayer layout={layout} zoom={zoom} left={left} top={top} />

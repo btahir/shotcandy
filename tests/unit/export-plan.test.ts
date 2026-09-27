@@ -15,6 +15,7 @@ import {
   MapAssetResolver,
   extrapolateGifBytes,
   extrapolateVideoBytes,
+  roughAnimationBytes,
   videoBitrate,
   applyStylePatch,
   createScene,
@@ -30,6 +31,7 @@ import {
   suitedStyles,
 } from "@/components/editor/shuffle";
 import { slug } from "@/components/editor/appstore";
+import { formatRange } from "@/components/editor/MotionExport";
 import { createEditorStore } from "@/state/editor-store";
 import { syntheticScreenshot } from "../helpers/node-canvas";
 
@@ -243,5 +245,32 @@ describe("round 2: motion size models, App Store names, lively palettes", () => 
     expect(paletteIsLively(pal(0.3, 0.2))).toBe(false);
     expect(paletteIsLively(pal(0.7, 0.2, true))).toBe(false);
     expect(paletteIsLively(null)).toBe(false);
+  });
+});
+
+describe("round 3: instant motion size ranges", () => {
+  it("gives a range that scales with frames and size, per motion", () => {
+    const plan = { width: 640, height: 400, fps: 15, frames: 60, duration: 4 };
+    const [lo, hi] = roughAnimationBytes(plan, {
+      format: "gif",
+      quality: "balanced",
+      preset: "float",
+      gifColors: 128,
+      dither: true,
+    });
+    expect(lo).toBeLessThan(hi);
+    // ≈ 0.2 bytes per pixel-frame at 640 px, 128 colours, dithered.
+    expect((lo + hi) / 2 / (640 * 400 * 60)).toBeCloseTo(0.2 * 1.025, 1);
+    const [lo2] = roughAnimationBytes(
+      { ...plan, frames: 120 },
+      { format: "gif", quality: "balanced", preset: "float" },
+    );
+    expect(lo2).toBeGreaterThan(lo * 1.9);
+    const v = { width: 1920, height: 1080, fps: 30, frames: 120, duration: 4 };
+    const [sweep] = roughAnimationBytes(v, { format: "mp4", quality: "balanced", preset: "sweep" });
+    const [drift] = roughAnimationBytes(v, { format: "mp4", quality: "balanced", preset: "drift" });
+    expect(drift).toBeLessThan(sweep / 4);
+    expect(formatRange([2 * 1024 * 1024, 3 * 1024 * 1024])).toBe("2.0–3.0 MB");
+    expect(formatRange([400 * 1024, 600 * 1024])).toBe("400–600 KB");
   });
 });
