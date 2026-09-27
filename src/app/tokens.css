@@ -157,7 +157,8 @@
     inset 0 -2px 0 rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(0, 0, 0, 0.06),
     0 2px 4px rgba(74, 45, 20, 0.14);
   /* focus: double ring so it reads on any fill */
-  --sc-focus-ring: 0 0 0 2px var(--sc-paper), 0 0 0 4px var(--sc-accent-ring);
+  /* Ink, not candy: candy rings mean "chosen", the ink ring means "keyboard is here". */
+  --sc-focus-ring: 0 0 0 2px var(--sc-paper), 0 0 0 4px var(--sc-ink);
   /* selected tile / swatch */
   --sc-selected-ring: 0 0 0 2px var(--sc-surface), 0 0 0 4.5px var(--sc-accent);
 

@@ -386,9 +386,8 @@ function BoxShape({ a, geo, sel, tool, begin }: ShapeProps<RectAnnotation | Reda
       )}
       {(sel || a.kind === "redact") && (
         <polygon
-          className={`outline${a.kind === "redact" ? " redact" : ""}`}
+          className={`outline${a.kind === "redact" ? " redact" : ""}${sel ? "" : " idle"}`}
           points={pts(q)}
-          style={!sel ? { opacity: 0.6 } : undefined}
         />
       )}
       {sel &&

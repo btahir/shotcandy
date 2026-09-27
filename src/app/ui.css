@@ -89,9 +89,6 @@
   .btn:focus-visible,
   .icon-btn:focus-visible,
   .chip:focus-visible,
-  .tile:focus-visible,
-  .opt:focus-visible,
-  .sw:focus-visible,
   .seg button:focus-visible,
   .menu-item:focus-visible,
   .switch:focus-visible,
@@ -99,8 +96,7 @@
   .tool:focus-visible,
   .link:focus-visible,
   .sample:focus-visible,
-  .brand:focus-visible,
-  .card-btn:focus-visible {
+  .brand:focus-visible {
     outline: none;
     box-shadow: var(--sc-focus-ring);
   }
@@ -900,9 +896,6 @@
   .sw.on {
     box-shadow: var(--sc-selected-ring), var(--sc-shadow-swatch);
   }
-  .sw.on:focus-visible {
-    box-shadow: var(--sc-focus-ring);
-  }
   .sw.sm {
     width: 28px;
     height: 28px;
@@ -967,9 +960,7 @@
   .wall.on {
     box-shadow: var(--sc-selected-ring);
   }
-  .wall:focus-visible {
-    box-shadow: var(--sc-focus-ring);
-  }
+
   .wall.upload {
     background: var(--sc-well);
     box-shadow: var(--sc-shadow-raised);
@@ -2815,10 +2806,6 @@
     .btn,
     .icon-btn,
     .chip,
-    .tile,
-    .opt,
-    .sw,
-    .wall,
     .seg button,
     .menu-item,
     .switch,
@@ -2827,7 +2814,6 @@
     .link,
     .sample,
     .brand,
-    .card-btn,
     .save-tile,
     .disclosure,
     .colour-dot,
@@ -2838,6 +2824,46 @@
   ):focus-visible {
     outline: none;
     box-shadow: var(--sc-focus-ring) !important;
+  }
+}
+
+/* Choosable things (tiles, swatches, style thumbnails) keep their candy
+   "selected" ring while focused; focus draws an ink outline outside it. */
+@layer components {
+  :is(
+    .tile,
+    .opt,
+    .sw,
+    .wall,
+    .pos-cell,
+    .stop-chip,
+    .stop-bar .stop,
+    .recent-card .card-btn
+  ):focus-visible {
+    outline: 2px solid var(--sc-ink);
+    outline-offset: 3px;
+  }
+  .sw.on:focus-visible {
+    box-shadow: var(--sc-selected-ring), var(--sc-shadow-swatch);
+  }
+  .wall.on:focus-visible {
+    box-shadow: var(--sc-selected-ring);
+  }
+  .preset:focus-visible .thumb,
+  .jar-card .card-btn:focus-visible .th {
+    outline: 2px solid var(--sc-ink);
+    outline-offset: 3px;
+  }
+  .preset:not(.on):focus-visible .thumb,
+  .jar-card:not(.on) .card-btn:focus-visible .th {
+    box-shadow: none;
+  }
+  .preset.on:focus-visible .thumb,
+  .jar-card.on .card-btn:focus-visible .th {
+    box-shadow: var(--sc-selected-ring);
+  }
+  .card-btn:focus-visible {
+    outline: none;
   }
 }
 

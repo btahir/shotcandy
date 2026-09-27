@@ -28,10 +28,10 @@ function groups(mod: string): { title: string; rows: Row[] }[] {
       rows: [
         ["Candy Jar (all styles)", ["G"]],
         ["Previous / next style", ["[", "]"]],
-        ["Surprise me", ["S"]],
+        ["Candy Shuffle (a whole new look)", ["S"]],
         ["Inspector styles", ["1", "–", "6"]],
         ["Cycle frames", ["F"]],
-        ["Frame light / dark", ["⇧", "F"]],
+        ["Frame theme: auto / light / dark", ["⇧", "F"]],
         ["Cycle padding", ["P"]],
         ["Size menu", ["K"]],
         ["Play or pause motion", ["M"]],
@@ -117,7 +117,7 @@ export function ShortcutsSheet() {
                           {k}
                         </span>
                       ) : (
-                        <kbd key={i} className="kbd">
+                        <kbd key={i} className={`kbd${/^[⌘⇧⌥⌫↵←→↑↓−+]$/.test(k) ? " glyph" : ""}`}>
                           {k}
                         </kbd>
                       ),
