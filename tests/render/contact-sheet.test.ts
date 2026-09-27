@@ -154,3 +154,62 @@ describe.skipIf(!process.env.CONTACT_FULL)("contact sheet close-ups", () => {
     }
   }, 600_000);
 });
+
+/**
+ * Gallery: every style once, each on a sample that suits it, as one sheet.
+ * CONTACT_GALLERY=<file.png> (e.g. docs/screenshots/styles-light.png).
+ */
+describe.skipIf(!process.env.CONTACT_GALLERY)("style gallery sheet", () => {
+  it("renders one tile per style", async () => {
+    registerSheetFonts();
+    const assets = await loadSheetAssets();
+    const cache = new RenderCache();
+    const landscape = [
+      "dashboard-light",
+      "editor-dark",
+      "kanban-light",
+      "landing-hero",
+      "settings-dark",
+      "terminal-code",
+    ];
+    const cols = 6;
+    const tw = 440;
+    const th = 330;
+    const gap = 24;
+    const label = 34;
+    const rows = Math.ceil(STYLE_PRESETS.length / cols);
+    const W = cols * tw + (cols + 1) * gap;
+    const H = rows * (th + label) + (rows + 1) * gap;
+    const sheet = createCanvas(W, H);
+    const g = sheet.getContext("2d");
+    g.fillStyle = "#f6eee2";
+    g.fillRect(0, 0, W, H);
+    STYLE_PRESETS.forEach((style, i) => {
+      const sample =
+        style.suits === "portrait"
+          ? "mobile-habits"
+          : style.suits === "tablet"
+            ? "tablet-reader"
+            : landscape[i % landscape.length]!;
+      let s: Scene = createScene({ content: { kind: "image", assetId: sample } });
+      s = applyStylePatch(s, style.patch, style.id);
+      s = { ...s, canvas: { ...s.canvas, size: getSizePreset("4x3")!.size } };
+      const layout = layoutScene(s, assets);
+      const scale = Math.min(tw / layout.canvas.width, th / layout.canvas.height);
+      const c = renderToCanvas(s, assets, { env: nodeEnv, cache, scale })
+        .canvas as unknown as Canvas;
+      const x = gap + (i % cols) * (tw + gap);
+      const y = gap + Math.floor(i / cols) * (th + label + gap);
+      g.save();
+      g.beginPath();
+      g.roundRect(x, y, tw, th, 14);
+      g.clip();
+      g.drawImage(c, x + (tw - c.width) / 2, y + (th - c.height) / 2);
+      g.restore();
+      g.fillStyle = "#2a1f1a";
+      g.font = "700 19px Figtree";
+      g.fillText(style.name, x + 2, y + th + 25);
+    });
+    writeFileSync(process.env.CONTACT_GALLERY!, sheet.toBuffer("image/png"));
+  }, 600_000);
+});
