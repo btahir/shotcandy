@@ -11,10 +11,13 @@ import { TOOLS } from "./Dock";
 import { SizeChip, sizeLabel, useExportEstimate } from "./Header";
 import { BackgroundTray, FrameTray, LayoutTray, useStyleRow } from "./Inspector";
 import { Stage } from "./Stage";
+import { MotionTray } from "./MotionTray";
+import { MotionExportPanel } from "./MotionExport";
 import { StyleThumb } from "./StyleThumb";
 
 const TABS: { id: MobileTab; label: string; icon: IconName }[] = [
   { id: "styles", label: "Styles", icon: "sparkle" },
+  { id: "motion", label: "Motion", icon: "motion" },
   { id: "background", label: "Background", icon: "image" },
   { id: "layout", label: "Layout", icon: "sliders" },
   { id: "frame", label: "Frame", icon: "frameBrowser" },
@@ -228,6 +231,7 @@ function MobileSheet() {
             <FrameQuick />
           </>
         )}
+        {tab === "motion" && <MotionTray bare />}
         {tab === "background" && <BackgroundTray bare />}
         {tab === "layout" && <LayoutTray bare />}
         {tab === "frame" && <FrameTray bare />}
@@ -317,6 +321,7 @@ function MobileExport() {
     }, 200);
   };
   const file = app.filenameFor({ width: oW, height: oH }, settings);
+  const motionTab = settings.kind === "motion" && !!scene.animation;
   return (
     <>
       <div className={`scrim${closing ? " closing" : ""}`} onClick={close} aria-hidden="true" />
@@ -328,75 +333,100 @@ function MobileExport() {
         onKeyDown={(e) => e.key === "Escape" && close()}
       >
         <div className="grab" onClick={close} aria-hidden="true" />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <h2 id="m-export-title">Save your image</h2>
-          <span className="mono muted">
-            {W} × {H}
-          </span>
-        </div>
-        <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 12 }}>
-          <div className="preview-img">
-            <CurrentThumb />
-          </div>
-          <div style={{ fontSize: 13, color: "var(--sc-ink-2)", lineHeight: "19px", minWidth: 0 }}>
-            <b style={{ color: "var(--sc-ink)" }}>{styleName(scene.meta.stylePresetId, custom)}</b>
-            <br />
-            {sizeLabel(scene.canvas.size)}
-            <br />
-            <span className="mono muted" style={{ overflowWrap: "anywhere" }}>
-              {file}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2 id="m-export-title">{motionTab ? "Save your clip" : "Save your image"}</h2>
+          {scene.animation ? (
+            <Segmented
+              label="Export type"
+              value={motionTab ? "motion" : "image"}
+              onChange={(kind) => app.setExportSettings({ kind })}
+              options={[
+                { value: "image", label: "Image" },
+                { value: "motion", label: "Video" },
+              ]}
+            />
+          ) : (
+            <span className="mono muted">
+              {W} × {H}
             </span>
+          )}
+        </div>
+        {motionTab && (
+          <div style={{ marginTop: 12 }}>
+            <MotionExportPanel onDone={close} />
           </div>
-        </div>
-        <div className="sub">Format</div>
-        <Segmented<ExportFormat>
-          label="Format"
-          value={settings.format}
-          onChange={(format) => app.setExportSettings({ format })}
-          options={[
-            { value: "png", label: "PNG" },
-            { value: "jpeg", label: "JPEG" },
-            { value: "webp", label: "WebP" },
-          ]}
-        />
-        <div className="sub">
-          Size{" "}
-          <span className="mono muted">
-            {oW} × {oH}
-            {bpp ? ` · ≈ ${formatBytes(bpp * oW * oH * 0.85)}` : ""}
-          </span>
-        </div>
-        <Segmented
-          label="Scale"
-          value={String(settings.scale)}
-          onChange={(v) => app.setExportSettings({ scale: Number(v) })}
-          options={[1, 2, 3, 4].map((s) => ({ value: String(s), label: `${s}×` }))}
-        />
-        <button
-          type="button"
-          className={`btn btn-primary btn-block${busy ? " pressed" : ""}`}
-          style={{ height: 52, marginTop: 18, fontSize: 15.5 }}
-          onClick={() => void app.share("save")}
-          data-autofocus
-        >
-          <Icon name="download" /> Save to Photos
-        </button>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={(e) => app.copy(e.currentTarget)}
-          >
-            <Icon name="copy" /> Copy
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => void app.share("share")}
-          >
-            <Icon name="link" /> Share…
-          </button>
-        </div>
+        )}
+        {!motionTab && (
+          <>
+            <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 12 }}>
+              <div className="preview-img">
+                <CurrentThumb />
+              </div>
+              <div
+                style={{ fontSize: 13, color: "var(--sc-ink-2)", lineHeight: "19px", minWidth: 0 }}
+              >
+                <b style={{ color: "var(--sc-ink)" }}>
+                  {styleName(scene.meta.stylePresetId, custom)}
+                </b>
+                <br />
+                {sizeLabel(scene.canvas.size)}
+                <br />
+                <span className="mono muted" style={{ overflowWrap: "anywhere" }}>
+                  {file}
+                </span>
+              </div>
+            </div>
+            <div className="sub">Format</div>
+            <Segmented<ExportFormat>
+              label="Format"
+              value={settings.format}
+              onChange={(format) => app.setExportSettings({ format })}
+              options={[
+                { value: "png", label: "PNG" },
+                { value: "jpeg", label: "JPEG" },
+                { value: "webp", label: "WebP" },
+              ]}
+            />
+            <div className="sub">
+              Size{" "}
+              <span className="mono muted">
+                {oW} × {oH}
+                {bpp ? ` · ≈ ${formatBytes(bpp * oW * oH * 0.85)}` : ""}
+              </span>
+            </div>
+            <Segmented
+              label="Scale"
+              value={String(settings.scale)}
+              onChange={(v) => app.setExportSettings({ scale: Number(v) })}
+              options={[1, 2, 3, 4].map((s) => ({ value: String(s), label: `${s}×` }))}
+            />
+            <button
+              type="button"
+              className={`btn btn-primary btn-block${busy ? " pressed" : ""}`}
+              style={{ height: 52, marginTop: 18, fontSize: 15.5 }}
+              onClick={() => void app.share("save")}
+              data-autofocus
+            >
+              <Icon name="download" /> Save to Photos
+            </button>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={(e) => app.copy(e.currentTarget)}
+              >
+                <Icon name="copy" /> Copy
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => void app.share("share")}
+              >
+                <Icon name="link" /> Share…
+              </button>
+            </div>
+          </>
+        )}
       </section>
     </>
   );

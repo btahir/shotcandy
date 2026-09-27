@@ -28,6 +28,7 @@ import { styleName } from "./app";
 import { useApp, useScene, useUi } from "./context";
 import { openFilePicker } from "./EmptyState";
 import { StyleThumb } from "./StyleThumb";
+import { MotionTray } from "./MotionTray";
 
 const DEFAULT_ROW = ["sherbet", "mint-julep", "grape-soda", "paper", "midnight", "satin"];
 
@@ -1051,6 +1052,7 @@ export function Inspector() {
       ) : (
         <div className="inspector-pane" key="style">
           <StylesTray />
+          <MotionTray />
           <BackgroundTray />
           <LayoutTray />
           <FrameTray />

@@ -6,13 +6,22 @@
  * the dock, toasts and the empty/drag-over moments.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { type Scene, layoutScene, outputSize, renderScene } from "@/engine";
+import {
+  type Scene,
+  evaluateScene,
+  getMotionPreset,
+  layoutScene,
+  outputSize,
+  renderScene,
+} from "@/engine";
+import { useStore } from "@/lib/store";
 import { fillDominant } from "@/lib/fill-css";
 import { AnnotationLayer } from "./AnnotationLayer";
 import { useApp, useScene, useUi } from "./context";
 import { Dock, ZoomControl } from "./Dock";
 import { DropVeil, EmptyState } from "./EmptyState";
 import { Toasts } from "./Toasts";
+import { RenderPill, Timeline } from "./Timeline";
 
 const MAX_PREVIEW_SIDE = 8192;
 const MAX_PREVIEW_AREA = 36_000_000;
@@ -31,6 +40,11 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
   const assetsVersion = useUi((s) => s.assetsVersion);
   const fontsReady = useUi((s) => s.fontsReady);
   const stageFocus = useUi((s) => s.stageFocus);
+  const previewing = useStore(app.playback, (s) => s.playing || s.t !== null);
+  const motion = scene.animation;
+  const motionPreset = motion ? getMotionPreset(motion.preset) : undefined;
+  // Presets that restructure the scene (scroll crops it) always show frames.
+  const showFrames = !!motionPreset && (previewing || !!motionPreset.prepare);
   const stageRef = useRef<HTMLDivElement>(null);
   const compRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -58,10 +72,22 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [scene, app, assetsVersion],
   );
-  const W = layout.canvas.width;
-  const H = layout.canvas.height;
+  // Motion frames share one pinned canvas; size the preview from it.
+  const frameLayout = useMemo(
+    () =>
+      showFrames
+        ? layoutScene(
+            evaluateScene(scene, app.restTime(scene.animation), app.motionContext()),
+            app.library,
+          )
+        : layout,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [showFrames, scene, layout, app, assetsVersion],
+  );
+  const W = frameLayout.canvas.width;
+  const H = frameLayout.canvas.height;
   const padX = narrow ? 32 : 150;
-  const padY = narrow ? 40 : 190;
+  const padY = (narrow ? 40 : 190) + (motion && !narrow ? 60 : 0);
   const fit =
     size.w > 0
       ? Math.max(0.02, Math.min((size.w - padX) / W, (size.h - padY) / H, narrow ? 2 : 1.5))
@@ -89,30 +115,63 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
     } as Scene;
   }, [scene, editing]);
 
-  useEffect(() => {
-    if (!hasImage) return;
+  // Draws the still design, or the motion frame at the playhead. Coalesced to
+  // one render per animation frame; playback changes schedule a redraw too.
+  const drawRef = useRef<() => void>(() => undefined);
+  const draw = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const id = requestAnimationFrame(() => {
-      const dpr = window.devicePixelRatio || 1;
-      let s = zoom * dpr;
-      const long = Math.max(W, H) * s;
-      if (long > MAX_PREVIEW_SIDE) s *= MAX_PREVIEW_SIDE / long;
-      if (W * H * s * s > MAX_PREVIEW_AREA) s = Math.sqrt(MAX_PREVIEW_AREA / (W * H));
-      const out = outputSize(layout, s);
-      if (canvas.width !== out.width) canvas.width = out.width;
-      if (canvas.height !== out.height) canvas.height = out.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      const t0 = performance.now();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      renderScene(ctx, renderScene_, app.library, { scale: s, cache: app.cache });
-      const ms = performance.now() - t0;
-      (window as unknown as { __shotcandyRenderMs?: number }).__shotcandyRenderMs = ms;
-      app.emit("rendered", ms);
+    if (!canvas || !hasImage) return;
+    const dpr = window.devicePixelRatio || 1;
+    let s = zoom * dpr;
+    const long = Math.max(W, H) * s;
+    if (long > MAX_PREVIEW_SIDE) s *= MAX_PREVIEW_SIDE / long;
+    if (W * H * s * s > MAX_PREVIEW_AREA) s = Math.sqrt(MAX_PREVIEW_AREA / (W * H));
+    const out = outputSize(frameLayout, s);
+    if (canvas.width !== out.width) canvas.width = out.width;
+    if (canvas.height !== out.height) canvas.height = out.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const t0 = performance.now();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let frame = renderScene_;
+    if (showFrames) {
+      const t = app.playback.get().t ?? app.restTime(renderScene_.animation);
+      frame = evaluateScene(renderScene_, t, app.motionContext());
+    }
+    renderScene(ctx, frame, app.library, { scale: s, cache: app.cache });
+    const ms = performance.now() - t0;
+    (window as unknown as { __shotcandyRenderMs?: number }).__shotcandyRenderMs = ms;
+    app.emit("rendered", ms);
+  };
+  useLayoutEffect(() => {
+    drawRef.current = draw;
+  });
+  const rafRef = useRef(0);
+  const schedule = useCallback(() => {
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = 0;
+      drawRef.current();
     });
-    return () => cancelAnimationFrame(id);
-  }, [app, renderScene_, layout, zoom, W, H, hasImage, fontsReady, assetsVersion]);
+  }, []);
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+
+  useEffect(() => {
+    if (hasImage) schedule();
+  }, [
+    schedule,
+    renderScene_,
+    frameLayout,
+    zoom,
+    W,
+    H,
+    hasImage,
+    fontsReady,
+    assetsVersion,
+    showFrames,
+  ]);
+
+  useEffect(() => (motion ? app.playback.subscribe(schedule) : undefined), [app, motion, schedule]);
 
   // Signature moments: first-paste landing and style cross-fades.
   const prevLanding = useRef(landing);
@@ -239,6 +298,9 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
     if (e.target === e.currentTarget || !onComp) {
       if (selection) app.store.select(null);
       if (editing) app.ui.set({ editingText: null });
+    } else if (onComp && showFrames && previewing) {
+      // Clicking the moving design returns to the still, editable one.
+      app.stopPreview();
     } else if (onComp && tool === "select" && selection) {
       // Clicking the composition (not an annotation) deselects.
       app.store.select(null);
@@ -279,13 +341,14 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
     ? (palette?.dominant.hex ?? fillDominant(scene.background.fill, palette) ?? "transparent")
     : "#FF8FAB";
 
-  const showMarks = hasImage && !selection && tool === "select" && !editing && !narrow;
+  const showMarks =
+    hasImage && !selection && tool === "select" && !editing && !narrow && !showFrames;
   const zoomed = zoom > fit * 1.01;
 
   return (
     <main
       ref={stageRef}
-      className={`stage${spaceDown || zoomed ? " can-pan" : ""}${panning ? " panning" : ""}`}
+      className={`stage${spaceDown || zoomed ? " can-pan" : ""}${panning ? " panning" : ""}${motion && hasImage && !narrow ? " has-timeline" : ""}`}
       style={{ ["--tint" as string]: tint }}
       tabIndex={hasImage ? 0 : -1}
       aria-label={hasImage ? "Canvas. Press ⌘C to copy the image" : "Canvas"}
@@ -332,11 +395,15 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
               )}
             </div>
           )}
-          <AnnotationLayer geo={{ layout, zoom }} left={left} top={top} compRef={compRef} />
+          {!showFrames && (
+            <AnnotationLayer geo={{ layout, zoom }} left={left} top={top} compRef={compRef} />
+          )}
+          {motion && <Timeline narrow={narrow} />}
           {!narrow && <Dock />}
         </>
       )}
       {!narrow && <ZoomControl disabled={!hasImage} />}
+      <RenderPill />
       <Toasts />
       <DropVeil />
     </main>

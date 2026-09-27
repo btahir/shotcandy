@@ -34,6 +34,7 @@ function groups(mod: string): { title: string; rows: Row[] }[] {
         ["Frame light / dark", ["⇧", "F"]],
         ["Cycle padding", ["P"]],
         ["Size menu", ["K"]],
+        ["Play or pause motion", ["M"]],
         ["Zoom to fit / 100%", [mod, "0", "·", mod, "1"]],
         ["Zoom in / out", [mod, "+", "·", mod, "−"]],
         ["Pan", ["Space", "drag"]],

@@ -482,6 +482,118 @@ const S: Record<string, Def> = {
       </>
     ),
   },
+  play: {
+    fill: true,
+    d: (
+      <path d="M8 5.6v12.8a1.2 1.2 0 0 0 1.8 1l10-6.4a1.2 1.2 0 0 0 0-2l-10-6.4A1.2 1.2 0 0 0 8 5.6Z" />
+    ),
+  },
+  pause: {
+    fill: true,
+    d: (
+      <>
+        <rect x="6" y="5" width="4.2" height="14" rx="1.4" />
+        <rect x="13.8" y="5" width="4.2" height="14" rx="1.4" />
+      </>
+    ),
+  },
+  motion: {
+    d: (
+      <>
+        <rect x="9" y="5" width="12" height="14" rx="3" />
+        <path d="M5 8h1.5M3 12h3.5M5 16h1.5" />
+      </>
+    ),
+  },
+  film: {
+    d: (
+      <>
+        <rect x="3" y="4" width="18" height="16" rx="3" />
+        <path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4" />
+      </>
+    ),
+  },
+  loop: {
+    d: (
+      <>
+        <path d="M17 2.5 20.5 6 17 9.5" />
+        <path d="M3.5 11V9.5A3.5 3.5 0 0 1 7 6h13.5" />
+        <path d="M7 21.5 3.5 18 7 14.5" />
+        <path d="M20.5 13v1.5A3.5 3.5 0 0 1 17 18H3.5" />
+      </>
+    ),
+  },
+  quote: {
+    fill: true,
+    d: (
+      <path d="M4 18.5v-4.3c0-4 1.9-7 5.6-8.7l1 1.7c-2 1.1-3 2.6-3.2 4.6H10v6.7H4Zm10 0v-4.3c0-4 1.9-7 5.6-8.7l1 1.7c-2 1.1-3 2.6-3.2 4.6H20v6.7h-6Z" />
+    ),
+  },
+  message: {
+    d: (
+      <>
+        <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v9a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A1.5 1.5 0 0 1 4 15.5Z" />
+        <path d="M8 8.5h8M8 12h5" />
+      </>
+    ),
+  },
+  phones: {
+    d: (
+      <>
+        <rect x="2.5" y="5" width="8" height="15" rx="2" />
+        <rect x="13.5" y="4" width="8" height="15" rx="2" />
+        <path d="M5 8h3M16 7h3" />
+      </>
+    ),
+  },
+  screenshot: {
+    d: (
+      <>
+        <rect x="3" y="4" width="18" height="15" rx="3" />
+        <path d="M3 8.5h18" />
+        <circle cx="6" cy="6.3" r=".6" fill="currentColor" />
+        <circle cx="8.2" cy="6.3" r=".6" fill="currentColor" />
+        <path d="M7 15.5l3-3 2.5 2.5 2-2 2.5 2.5" />
+      </>
+    ),
+  },
+  star: {
+    fill: true,
+    d: <path d="m12 3.2 2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6-4.4-4.2 6-.8Z" />,
+  },
+  user: {
+    d: (
+      <>
+        <circle cx="12" cy="8.5" r="4" />
+        <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+      </>
+    ),
+  },
+  zip: {
+    d: (
+      <>
+        <path d="M6 3h8l4 4v12.5A1.5 1.5 0 0 1 16.5 21h-10A1.5 1.5 0 0 1 5 19.5v-15A1.5 1.5 0 0 1 6.5 3" />
+        <path d="M11 3v2M11 7v2M11 11v2" />
+        <rect x="9.5" y="14" width="3" height="4" rx="1" />
+      </>
+    ),
+  },
+  arrowLeft: {
+    d: (
+      <>
+        <path d="M19 12H5" />
+        <path d="m11 6-6 6 6 6" />
+      </>
+    ),
+  },
+  arrowRight: {
+    d: (
+      <>
+        <path d="M5 12h14" />
+        <path d="m13 6 6 6-6 6" />
+      </>
+    ),
+  },
 };
 
 export type IconName = keyof typeof S;

@@ -81,7 +81,16 @@ export function createMigrator(
 }
 
 /** Scene schema migrations, oldest first. Version 1 is the initial schema. */
-export const SCENE_MIGRATIONS: readonly MigrationStep[] = [];
+export const SCENE_MIGRATIONS: readonly MigrationStep[] = [
+  {
+    from: 1,
+    to: 2,
+    // v2 adds optional fields only (scene.animation, new content kinds); a v1
+    // scene is a valid v2 scene. Older apps refuse v2 files with a clear message.
+    migrate: (doc) => doc,
+    description: "animation and new content kinds (additive)",
+  },
+];
 
 export const sceneMigrator = createMigrator(SCENE_VERSION, SCENE_MIGRATIONS);
 

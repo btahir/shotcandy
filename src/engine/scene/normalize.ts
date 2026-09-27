@@ -10,6 +10,7 @@
 import { isColor, normalizeColor } from "../math/color";
 import { DEFAULT_BACKGROUND, DEFAULT_CARD, createScene } from "./defaults";
 import type {
+  AnimationSpec,
   Annotation,
   BackgroundFill,
   BackgroundSpec,
@@ -338,6 +339,32 @@ function card(c: Ctx, v: unknown): CardStyle {
   };
 }
 
+function animation(c: Ctx, v: unknown): AnimationSpec | undefined {
+  if (v === undefined || v === null) return undefined;
+  const o = obj(c, "animation", v);
+  if (typeof o.preset !== "string" || !o.preset) {
+    c.warn("animation.preset", "missing motion preset; animation dropped");
+    return undefined;
+  }
+  return {
+    preset: o.preset.slice(0, 64),
+    duration: num(c, "animation.duration", o.duration, 3, 1, 20),
+    fps: Math.round(num(c, "animation.fps", o.fps, 30, 10, 60)),
+    easing: oneOf(
+      c,
+      "animation.easing",
+      o.easing,
+      ["smooth", "snappy", "gentle", "bounce", "linear"] as const,
+      "smooth",
+    ),
+    loop: oneOf(c, "animation.loop", o.loop, ["once", "boomerang"] as const, "once"),
+    intensity: num(c, "animation.intensity", o.intensity, 1, 0.25, 2),
+    annotations: typeof o.annotations === "boolean" ? o.annotations : true,
+    focusX: num(c, "animation.focusX", o.focusX, 0.5, 0, 1),
+    focusY: num(c, "animation.focusY", o.focusY, 0.5, 0, 1),
+  };
+}
+
 function annotation(c: Ctx, v: unknown, i: number): Annotation | null {
   const p = `annotations[${i}]`;
   if (!isObj(v)) {
@@ -461,5 +488,7 @@ export function normalizeScene(input: unknown): NormalizeResult {
       ...(typeof meta.stylePresetId === "string" ? { stylePresetId: meta.stylePresetId } : {}),
     },
   };
+  const anim = animation(c, input.animation);
+  if (anim) scene.animation = anim;
   return { scene, issues: c.issues };
 }

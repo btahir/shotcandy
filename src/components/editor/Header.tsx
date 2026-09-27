@@ -21,6 +21,7 @@ import { Slider } from "../ui/Slider";
 import { formatBytes } from "./app";
 import { useApp, useScene, useUi } from "./context";
 import { openFilePicker } from "./EmptyState";
+import { MotionExportPanel } from "./MotionExport";
 
 const RATIO_HINT: Record<string, string> = {
   "16x9": "widescreen",
@@ -278,12 +279,49 @@ export function useExportEstimate(active: boolean) {
   return bpp;
 }
 
+/** The Export popover: Image or Video/GIF tabs. */
+export function ExportPopover({ onDone }: { onDone?: () => void }) {
+  const app = useApp();
+  const kind = useUi((s) => s.exportSettings.kind);
+  const hasMotion = useScene((s) => !!s.scene.animation);
+  const tab = kind === "motion" ? "motion" : "image";
+  return (
+    <div>
+      <div className="export-head">
+        <h2>Export</h2>
+        <Segmented
+          label="Export type"
+          role="tablist"
+          value={tab}
+          onChange={(v) => app.setExportSettings({ kind: v })}
+          options={[
+            { value: "image", label: "Image", icon: <Icon name="image" size="xs" /> },
+            {
+              value: "motion",
+              label: "Video",
+              icon: <Icon name="film" size="xs" />,
+              title: hasMotion ? "MP4, WebM or GIF" : "Pick a motion first",
+            },
+          ]}
+        />
+      </div>
+      {tab === "motion" ? (
+        <MotionExportPanel onDone={onDone} />
+      ) : (
+        <ExportPanel onDone={onDone} titled={false} />
+      )}
+    </div>
+  );
+}
+
 export function ExportPanel({
   onDone,
   compact = false,
+  titled = true,
 }: {
   onDone?: () => void;
   compact?: boolean;
+  titled?: boolean;
 }) {
   const app = useApp();
   const mod = useModKey();
@@ -317,7 +355,12 @@ export function ExportPanel({
   };
   return (
     <div className="export-panel">
-      {!compact && (
+      {!compact && !titled && (
+        <div className="mono muted export-native">
+          {W} × {H} at 1×
+        </div>
+      )}
+      {!compact && titled && (
         <div
           style={{
             display: "flex",
@@ -469,7 +512,7 @@ export function ExportPanel({
             className="btn btn-primary"
             data-testid="download"
             onClick={(e) => {
-              void app.download(e.currentTarget);
+              void app.downloadImage(e.currentTarget);
               onDone?.();
             }}
           >
@@ -628,6 +671,14 @@ export function Header() {
   const copyState = useUi((s) => s.copyState);
   const exportBusy = useUi((s) => s.exportBusy);
   const settings = useUi((s) => s.exportSettings);
+  const motionJob = useUi((s) => s.motionExport);
+  const hasMotion = useScene((s) => !!s.scene.animation);
+  const motionKind = settings.kind === "motion" && hasMotion;
+  const m = settings.motion;
+  const motionTag =
+    m.format === "gif"
+      ? `GIF · ${m.gifSize}`
+      : `${m.format.toUpperCase()} · ${m.videoRes === 2160 ? "4K" : `${m.videoRes}p`}`;
   const moreRef = useRef<HTMLButtonElement>(null);
   const exportRef = useRef<HTMLButtonElement>(null);
   const mainRef = useRef<HTMLButtonElement>(null);
@@ -704,17 +755,28 @@ export function Header() {
         <button
           ref={mainRef}
           type="button"
-          className={`btn btn-primary${exportBusy ? " pressed" : ""}`}
+          className={`btn btn-primary${exportBusy || motionJob ? " pressed" : ""}`}
           disabled={!hasImage}
+          aria-busy={!!motionJob}
           data-testid="export"
-          title={hasImage ? "Download (⌘S)" : "Paste a screenshot first"}
+          title={
+            hasImage
+              ? motionKind
+                ? "Export the clip (⌘S)"
+                : "Download (⌘S)"
+              : "Paste a screenshot first"
+          }
           onClick={(e) => void app.download(e.currentTarget)}
         >
-          <Icon name="download" /> Export{" "}
+          <Icon name={motionKind ? "film" : "download"} /> Export{" "}
           {hasImage && (
             <span className="tag">
-              {slow && exportBusy ? (
+              {motionJob ? (
+                `${motionJob.total ? Math.round((motionJob.done / motionJob.total) * 100) : 0}%`
+              ) : slow && exportBusy ? (
                 <span className="ring-spinner" aria-label="Exporting" />
+              ) : motionKind ? (
+                motionTag
               ) : (
                 <>
                   {settings.format === "jpeg" ? "JPG" : settings.format.toUpperCase()} ·{" "}
@@ -746,7 +808,7 @@ export function Header() {
         align="end"
         width={348}
       >
-        {popover === "export" && <ExportPanel onDone={() => app.ui.set({ popover: null })} />}
+        {popover === "export" && <ExportPopover onDone={() => app.ui.set({ popover: null })} />}
       </Popover>
     </header>
   );

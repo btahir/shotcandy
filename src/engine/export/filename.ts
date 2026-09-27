@@ -16,7 +16,8 @@ export interface FilenameVars {
   width: number;
   height: number;
   scale: number;
-  format: ExportFormat;
+  /** Image format, or the extension of another file type (mp4, webm, gif, zip). */
+  format: ExportFormat | "mp4" | "webm" | "gif" | "zip";
   /** Injected so results are testable/deterministic. */
   now: Date;
   /** Sequence number for batch exports. */
@@ -44,7 +45,8 @@ export function formatFilename(pattern: string, v: FilenameVars): string {
     key in tokens ? tokens[key]! : m,
   );
   const base = sanitizeFilename(raw) || "shotcandy";
-  return `${base}.${FILE_EXTENSIONS[v.format]}`;
+  const ext = (FILE_EXTENSIONS as Record<string, string>)[v.format] ?? v.format;
+  return `${base}.${ext}`;
 }
 
 /** Remove characters that are invalid on Windows/macOS/Linux; trim and cap length. */

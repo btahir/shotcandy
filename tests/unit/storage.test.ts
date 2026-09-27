@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 import { describe, expect, it } from "vitest";
 import {
+  SCENE_VERSION,
   createIndexedDBStore,
   createMemoryStore,
   createScene,
@@ -53,7 +54,7 @@ describe.each(factories)("%s store", (_name, make) => {
     // A design from a newer app version stays readable.
     const future = { ...createScene(), version: 42 } as unknown as ReturnType<typeof createScene>;
     await store.designs.put({ id: "f", name: "f", scene: future, createdAt: 1, updatedAt: 1 });
-    expect((await store.designs.get("f"))!.scene.version).toBe(1);
+    expect((await store.designs.get("f"))!.scene.version).toBe(SCENE_VERSION);
   });
 
   it("stores user presets and normalizes them on read", async () => {

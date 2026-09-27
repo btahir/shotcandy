@@ -82,7 +82,7 @@ test("every header and inspector control is reachable by keyboard with a visible
   await page.locator("body").focus();
   const seen = new Set<string>();
   let ringless = 0;
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < 90; i++) {
     await page.keyboard.press("Tab");
     await page.waitForTimeout(170);
     const info = await page.evaluate(() => {

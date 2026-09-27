@@ -192,7 +192,7 @@ test("shortcuts sheet, theme toggle and zoom controls", async ({ page }) => {
   await expect(page.locator("html")).not.toHaveAttribute("data-theme", /./);
   await page.keyboard.press("Escape");
 
-  await page.getByRole("button", { name: /Zoom in/ }).click();
+  await page.getByRole("button", { name: /^Zoom in \(/ }).click();
   await expect(page.getByRole("button", { name: /^Zoom \d+%/ })).not.toHaveText("27%");
   await page.getByRole("button", { name: /^Zoom \d+%/ }).click();
 });

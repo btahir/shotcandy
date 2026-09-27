@@ -19,7 +19,7 @@
 /** Normalized hex colour: `#rrggbb` or `#rrggbbaa`. */
 export type Color = string;
 
-export const SCENE_VERSION = 1 as const;
+export const SCENE_VERSION = 2 as const;
 
 export interface Scene {
   /** Schema version; see scene/migrate.ts. */
@@ -30,6 +30,43 @@ export interface Scene {
   card: CardStyle;
   annotations: Annotation[];
   meta: SceneMeta;
+  /**
+   * Motion for animated export (GIF/MP4/WebM). Absent = a still image. The
+   * scene itself is the rest pose; animation/timeline.ts evaluates frames.
+   */
+  animation?: AnimationSpec;
+}
+
+// ---------------------------------------------------------------------------
+// Animation
+// ---------------------------------------------------------------------------
+
+/** Named easing curves (animation/easing.ts). */
+export type MotionEasing = "smooth" | "snappy" | "gentle" | "bounce" | "linear";
+
+/**
+ * How a non-periodic motion plays: "once" moves, then holds the rest pose;
+ * "boomerang" moves there and back so the file loops seamlessly. Periodic
+ * motions (float, sweep, drift) always loop seamlessly and ignore this.
+ */
+export type MotionLoop = "once" | "boomerang";
+
+export interface AnimationSpec {
+  /** Motion preset id (animation/presets.ts). */
+  preset: string;
+  /** Length of one loop in seconds (1..20). */
+  duration: number;
+  /** Frames per second of the preview and exports (10..60). */
+  fps: number;
+  easing: MotionEasing;
+  loop: MotionLoop;
+  /** Scales the size of the movement (0.25..2). */
+  intensity: number;
+  /** Draw annotations on in turn: arrows draw, highlights pop, text types. */
+  annotations: boolean;
+  /** Point the "focus" motion zooms into, normalized to the content (0..1). */
+  focusX: number;
+  focusY: number;
 }
 
 export interface SceneMeta {
@@ -235,6 +272,11 @@ export type AnnotationAnchor = "content" | "canvas";
 interface AnnotationBase {
   id: string;
   anchor: AnnotationAnchor;
+  /**
+   * Render-time draw-on progress (0..1) set by the animation timeline; never
+   * persisted. Absent = fully drawn. Redactions ignore it (always applied).
+   */
+  reveal?: number;
 }
 
 export interface TextAnnotation extends AnnotationBase {

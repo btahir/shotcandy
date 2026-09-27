@@ -4,6 +4,9 @@
  * no app UI involved. Bundled by tests/e2e/global-setup.ts.
  */
 import {
+  AnimationExporter,
+  evaluateFrame,
+  type AnimationExportOptions,
   Exporter,
   RenderCache,
   exportScene,
@@ -22,6 +25,10 @@ const resolver = { get: (id: string) => sources.get(id) };
 const cache = new RenderCache();
 const exporter = new Exporter({
   createWorker: () => new Worker("./export.worker.js", { type: "module" }),
+});
+
+const animator = new AnimationExporter({
+  createWorker: () => new Worker("./animation.worker.js", { type: "module" }),
 });
 
 async function blobToDataUrl(blob: Blob): Promise<string> {
@@ -99,6 +106,60 @@ const harness = {
       times.push(performance.now() - t0);
     }
     return times;
+  },
+
+  /** Hash of frame n's pixels (browser-side determinism check). */
+  frameHash(scene: Scene, n: number, scale = 0.5, fresh = true) {
+    const pose = evaluateFrame(scene, n, { assets: resolver });
+    const layout = layoutScene(pose, resolver);
+    const size = outputSize(layout, scale);
+    const canvas = new OffscreenCanvas(size.width, size.height);
+    const g = canvas.getContext("2d", { willReadFrequently: true })!;
+    renderScene(g, pose, resolver, { scale, cache: fresh ? new RenderCache() : cache });
+    const d = g.getImageData(0, 0, size.width, size.height).data;
+    let h = 0x811c9dc5;
+    for (let i = 0; i < d.length; i++) h = Math.imul(h ^ d[i]!, 0x01000193);
+    return { hash: (h >>> 0).toString(16), width: size.width, height: size.height };
+  },
+
+  /** Animated export (worker or main thread); returns the file as base64 plus the result. */
+  async animate(scene: Scene, options: AnimationExportOptions, via: "main" | "worker") {
+    const assets = [...originals.entries()]
+      .filter(([id]) => JSON.stringify(scene).includes(id))
+      .map(([id, o]) => ({ id, ...o }));
+    const exp = via === "worker" ? animator : new AnimationExporter();
+    const progress: number[] = [];
+    const t0 = performance.now();
+    const r = await exp.export(scene, assets, options, {
+      onProgress: (p) => progress.push(p.done / p.total),
+    });
+    const ms = performance.now() - t0;
+    const buf = new Uint8Array(await r.blob.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < buf.length; i += 0x8000)
+      bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+    const { blob: _b, ...rest } = r;
+    return { ...rest, base64: btoa(bin), bytes: buf.length, progress, ms };
+  },
+
+  /** Start an animated export and cancel it after `afterFrames` progress events. */
+  async animateCancel(scene: Scene, options: AnimationExportOptions, afterFrames: number) {
+    const assets = [...originals.entries()]
+      .filter(([id]) => JSON.stringify(scene).includes(id))
+      .map(([id, o]) => ({ id, ...o }));
+    const ac = new AbortController();
+    let n = 0;
+    try {
+      await animator.export(scene, assets, options, {
+        signal: ac.signal,
+        onProgress: () => {
+          if (++n >= afterFrames) ac.abort();
+        },
+      });
+      return { cancelled: false, n };
+    } catch (e) {
+      return { cancelled: (e as Error).name === "AbortError", n, message: (e as Error).message };
+    }
   },
 
   /** Export through the main thread or the worker; returns dims decoded from the file. */

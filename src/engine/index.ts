@@ -185,6 +185,49 @@ export {
 } from "./export/filename";
 export { copyImageToClipboard, canCopyImages, ClipboardUnavailableError } from "./export/clipboard";
 
+// Animation (timeline, motion presets, animated export client).
+// Encoders are reached only via the worker or a dynamic import.
+export {
+  evaluateScene,
+  evaluateFrame,
+  motionFrame,
+  motionReference,
+  createAnimation,
+  frameCount,
+  frameTime,
+  gifDelays,
+  revealAnnotations,
+} from "./animation/timeline";
+export {
+  registerMotionPreset,
+  getMotionPreset,
+  listMotionPresets,
+  driftFill,
+  scrollViewport,
+} from "./animation/presets";
+export { EASING_LABELS, cubicBezier, getEasing } from "./animation/easing";
+export type { MotionContext, MotionFrame, MotionPreset } from "./animation/types";
+export {
+  planAnimation,
+  MIME_BY_FORMAT,
+  GIF_MAX_FPS,
+  AnimationCancelledError,
+  type AnimationFormat,
+  type AnimationQuality,
+  type AnimationExportOptions,
+  type AnimationExportResult,
+  type AnimationPlan,
+  type AnimationProgress,
+  type GifColors,
+} from "./animation/plan";
+export {
+  AnimationExporter,
+  canEncodeFormat,
+  canEncodeVideo,
+  isAbortError,
+  type AnimationRun,
+} from "./animation/client";
+
 // Project files and storage
 export {
   createProjectFile,

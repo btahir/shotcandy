@@ -1,0 +1,670 @@
+/* Motion: preset tiles with CSS demos, the stage timeline, the render pill
+   and the Video export tab. Confectionery tokens only. */
+@layer components {
+  /* ---------- Preset tiles ---------- */
+  .mtiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 8px;
+  }
+  .mtile {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    text-align: center;
+    border-radius: var(--sc-radius-md);
+  }
+  .mtile:focus-visible {
+    outline: none;
+  }
+  .mtile:focus-visible .mthumb {
+    box-shadow: var(--sc-focus-ring);
+  }
+  .mthumb {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    border-radius: var(--sc-radius-md);
+    overflow: hidden;
+    background: var(--sc-well);
+    box-shadow: var(--sc-shadow-well);
+    transition:
+      transform var(--sc-dur-fast) var(--sc-ease-pop),
+      box-shadow var(--sc-dur-fast);
+  }
+  .mtile:hover .mthumb {
+    transform: translateY(-2px);
+  }
+  .mtile.on .mthumb {
+    box-shadow: var(--sc-selected-ring);
+  }
+  .mtile .name {
+    font-size: 11.5px;
+    line-height: 14px;
+    font-weight: 600;
+    color: var(--sc-ink-2);
+  }
+  .mtile.on .name {
+    color: var(--sc-ink);
+  }
+
+  /* The mini stage inside each tile. */
+  .mg {
+    position: absolute;
+    inset: 0;
+    perspective: 140px;
+    background: linear-gradient(135deg, var(--sc-candy-200), var(--sc-tangerine-200));
+  }
+  .mg-none {
+    background: var(--sc-well);
+  }
+  .mg-card {
+    position: absolute;
+    left: 24%;
+    top: 22%;
+    width: 52%;
+    height: 56%;
+    border-radius: 5px;
+    background: #fffdfa;
+    box-shadow:
+      0 1px 1px rgba(90, 30, 20, 0.12),
+      0 5px 12px -3px rgba(90, 30, 20, 0.32);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 6px 0;
+    transform-origin: 50% 60%;
+    overflow: hidden;
+  }
+  .mg-none .mg-card {
+    box-shadow: 0 1px 2px rgba(90, 30, 20, 0.14);
+  }
+  .mg-card b {
+    display: block;
+    height: 3px;
+    border-radius: 2px;
+    background: #f1e4d9;
+  }
+  .mg-card b:first-child {
+    width: 45%;
+    background: var(--sc-candy-300);
+  }
+  .mg-card b:nth-child(3) {
+    width: 70%;
+  }
+  .mg-scroll .mg-card {
+    background:
+      repeating-linear-gradient(180deg, transparent 0 6px, #f1e4d9 6px 9px, transparent 9px 13px) 0
+        0 / 100% 26px,
+      #fffdfa;
+  }
+  .mg-scroll .mg-card b {
+    display: none;
+  }
+  .mg-drift {
+    background: linear-gradient(
+      120deg,
+      var(--sc-candy-200),
+      var(--sc-tangerine-200),
+      var(--sc-grape-200),
+      var(--sc-mint-200),
+      var(--sc-candy-200)
+    );
+    background-size: 400% 100%;
+  }
+  .mg-draw svg {
+    transform: scale(0.72);
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .mg-draw path {
+    fill: none;
+    stroke: var(--sc-candy-500);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+  .mg-ring {
+    position: absolute;
+    left: 58%;
+    top: 30%;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 2px solid var(--sc-candy-500);
+    opacity: 0;
+  }
+
+  /* Demos run on hover, focus and for the chosen motion. */
+  .mtile:is(:hover, :focus-visible, .on) .mg-reveal .mg-card {
+    animation: mg-reveal 2.6s var(--sc-ease-out) infinite;
+  }
+  .mtile:is(:hover, :focus-visible, .on) .mg-float .mg-card {
+    animation: mg-float 2.4s var(--sc-ease-in-out) infinite;
+  }
+  .mtile:is(:hover, :focus-visible, .on) .mg-sweep .mg-card {
+    animation: mg-sweep 3s var(--sc-ease-in-out) infinite alternate;
+  }
+  .mtile:is(:hover, :focus-visible, .on) .mg-focus .mg-card {
+    animation: mg-focus 3.2s var(--sc-ease-in-out) infinite;
+  }
+  .mtile:is(:hover, :focus-visible, .on) .mg-focus .mg-ring {
+    animation: mg-ring 3.2s var(--sc-ease-out) infinite;
+  }
+  .mtile:is(:hover, :focus-visible, .on) .mg-scroll .mg-card {
+    animation: mg-scroll 3s var(--sc-ease-in-out) infinite alternate;
+  }
+  .mtile:is(:hover, :focus-visible, .on) .mg-drift {
+    animation: mg-drift 5s linear infinite;
+  }
+  .mtile:is(:hover, :focus-visible, .on) .mg-draw path:first-child {
+    animation: mg-draw 2.4s var(--sc-ease-in-out) infinite;
+  }
+  .mtile:is(:hover, :focus-visible, .on) .mg-draw path:last-child {
+    animation: mg-head 2.4s var(--sc-ease-pop) infinite;
+  }
+  .mtile:is(:hover, :focus-visible, .on) .mg-flip .mg-card {
+    animation: mg-flip 2.6s var(--sc-ease-pop) infinite;
+  }
+  @keyframes mg-reveal {
+    0% {
+      transform: translateY(16%) scale(0.72) rotateX(38deg);
+      opacity: 0.4;
+    }
+    55%,
+    100% {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @keyframes mg-float {
+    0%,
+    100% {
+      transform: translateY(7%) rotate(-1deg);
+    }
+    50% {
+      transform: translateY(-7%) rotate(1deg);
+    }
+  }
+  @keyframes mg-sweep {
+    from {
+      transform: rotateY(-30deg) rotateX(6deg);
+    }
+    to {
+      transform: rotateY(30deg) rotateX(6deg);
+    }
+  }
+  @keyframes mg-focus {
+    0%,
+    18%,
+    100% {
+      transform: none;
+    }
+    50%,
+    78% {
+      transform: scale(1.9) translate(-14%, 16%);
+    }
+  }
+  @keyframes mg-ring {
+    0%,
+    10% {
+      opacity: 0;
+      transform: scale(1.8);
+    }
+    20% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    34%,
+    100% {
+      opacity: 0;
+      transform: scale(1);
+    }
+  }
+  @keyframes mg-scroll {
+    from {
+      background-position:
+        0 0,
+        0 0;
+    }
+    to {
+      background-position:
+        0 -52px,
+        0 0;
+    }
+  }
+  @keyframes mg-drift {
+    to {
+      background-position: 400% 0;
+    }
+  }
+  @keyframes mg-draw {
+    0% {
+      stroke-dashoffset: 1;
+    }
+    55%,
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes mg-head {
+    0%,
+    48% {
+      stroke-dashoffset: 1;
+    }
+    70%,
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes mg-flip {
+    0% {
+      transform: rotateY(-82deg) scale(0.9);
+      opacity: 0.3;
+    }
+    50%,
+    100% {
+      transform: none;
+      opacity: 1;
+    }
+  }
+
+  /* ---------- Motion controls ---------- */
+  .motion-controls {
+    margin-top: var(--sc-space-3-5);
+    padding-top: var(--sc-space-3);
+    border-top: 1px dashed var(--sc-line);
+    animation: sc-pane-in var(--sc-dur-base) var(--sc-ease-out);
+  }
+  .motion-controls .toggle-row .label small,
+  .motion-export .toggle-row .label small {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--sc-ink-3);
+    margin-top: 1px;
+  }
+  .loop-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0 2px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: var(--sc-well);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sc-ink-2);
+  }
+  .loop-note svg {
+    color: var(--sc-accent-text);
+  }
+  .focus-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .focus-row > div:first-child {
+    flex: 1;
+  }
+  .focus-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 18px);
+    gap: 5px;
+    padding: 6px;
+    border-radius: 12px;
+    background: var(--sc-well);
+    box-shadow: var(--sc-shadow-well);
+  }
+  .focus-grid button {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    background: var(--sc-surface);
+    box-shadow: var(--sc-shadow-raised);
+    transition:
+      background var(--sc-dur-fast),
+      transform var(--sc-dur-fast) var(--sc-ease-pop);
+  }
+  .focus-grid button:hover {
+    transform: scale(1.1);
+  }
+  .focus-grid button.on {
+    background: var(--sc-accent);
+    box-shadow: inset 0 -1.5px 0 var(--sc-candy-800);
+  }
+
+  /* ---------- Stage timeline ---------- */
+  .timeline {
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--sc-space-6) + 52px + 12px);
+    transform: translateX(-50%);
+    z-index: var(--sc-z-dock);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: min(560px, calc(100% - 220px));
+    padding: 6px 8px 6px 6px;
+    border-radius: 18px;
+    background: var(--sc-surface);
+    box-shadow: var(--sc-shadow-float);
+    animation: sc-rise var(--sc-dur-base) var(--sc-ease-out);
+  }
+  .timeline.narrow {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    transform: none;
+    width: auto;
+    gap: 8px;
+    padding: 4px 8px 4px 4px;
+    border-radius: 16px;
+    animation: none;
+  }
+  .timeline.narrow .tl-play {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+  }
+  .tl-play {
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: var(--sc-accent-fill);
+    background-image: var(--sc-grad-candy);
+    box-shadow: var(--sc-shadow-candy);
+    padding-bottom: 2px;
+    transition: transform var(--sc-dur-instant) var(--sc-ease-out);
+  }
+  .tl-play:hover:not(:disabled) {
+    background-image: var(--sc-grad-candy-hover);
+  }
+  .tl-play:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: var(--sc-shadow-candy-pressed);
+  }
+  .tl-play:disabled {
+    background: var(--sc-well);
+    color: var(--sc-ink-4);
+    box-shadow: var(--sc-shadow-raised);
+  }
+  .tl-track {
+    position: relative;
+    flex: 1;
+    height: 38px;
+    cursor: pointer;
+    touch-action: none;
+    border-radius: 10px;
+  }
+  .tl-track:focus-visible {
+    outline: none;
+    box-shadow: var(--sc-focus-ring);
+  }
+  .tl-rail {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 15px;
+    height: 8px;
+    border-radius: 8px;
+    background: var(--sc-well);
+    box-shadow: var(--sc-shadow-well);
+    overflow: hidden;
+  }
+  .tl-seg {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+  }
+  .tl-seg.move {
+    background: color-mix(in oklab, var(--sc-candy-200) 55%, transparent);
+  }
+  .tl-seg.hold {
+    background-image: radial-gradient(var(--sc-line-strong) 1px, transparent 1.3px);
+    background-size: 5px 8px;
+    background-position: 0 50%;
+    opacity: 0.8;
+  }
+  .tl-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: var(--sc-grad-fill);
+    border-radius: 8px;
+  }
+  .tl-tick {
+    position: absolute;
+    top: 27px;
+    width: 1px;
+    height: 4px;
+    background: var(--sc-line-strong);
+    pointer-events: none;
+  }
+  .tl-knob {
+    position: absolute;
+    top: 8px;
+    width: 8px;
+    height: 22px;
+    margin-left: -4px;
+    border-radius: 4px;
+    background: var(--sc-grad-knob);
+    box-shadow: var(--sc-shadow-knob);
+    pointer-events: none;
+  }
+  .tl-knob::after {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 7px;
+    width: 2px;
+    height: 8px;
+    border-radius: 1px;
+    background: var(--sc-candy-400);
+  }
+  .tl-time {
+    flex: none;
+    min-width: 72px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--sc-ink);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .tl-time span {
+    color: var(--sc-ink-3);
+  }
+  .tl-still {
+    flex: none;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sc-ink-2);
+    background: var(--sc-well);
+    transition:
+      background var(--sc-dur-fast),
+      color var(--sc-dur-fast);
+  }
+  .tl-still:hover {
+    color: var(--sc-ink);
+    background: var(--sc-well-hover);
+  }
+  .tl-still.on {
+    background: var(--sc-ink);
+    color: var(--sc-on-ink);
+  }
+
+  .stage.has-timeline .toast-layer {
+    bottom: calc(var(--sc-space-6) + 52px + 12px + 50px + 14px);
+  }
+
+  /* ---------- Render progress pill ---------- */
+  .render-pill {
+    position: absolute;
+    left: 50%;
+    top: var(--sc-space-6);
+    transform: translateX(-50%);
+    z-index: var(--sc-z-toast);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 6px;
+    min-width: 320px;
+    padding: 10px 12px 10px 10px;
+    border-radius: 20px;
+    background: var(--sc-ink);
+    color: var(--sc-on-ink);
+    box-shadow: var(--sc-shadow-modal);
+    animation: sc-toast-in 260ms var(--sc-ease-pop);
+  }
+  .rp-ring {
+    grid-row: 1 / 3;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(closest-side, var(--sc-ink) 76%, transparent 78%),
+      conic-gradient(var(--sc-candy-400) var(--p), rgba(255, 255, 255, 0.14) 0);
+    color: var(--sc-candy-300);
+  }
+  .rp-txt {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+  .rp-txt b {
+    font-size: 13.5px;
+    font-weight: 700;
+  }
+  .rp-txt .mono {
+    font-size: 11.5px;
+    opacity: 0.72;
+    white-space: nowrap;
+  }
+  .rp-txt {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .rp-bar {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.14);
+    overflow: hidden;
+  }
+  .rp-bar i {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: var(--sc-grad-fill);
+    transition: width 120ms linear;
+  }
+  .render-pill .act {
+    grid-column: 3;
+    grid-row: 1;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--sc-candy-300);
+    padding: 6px 8px;
+    border-radius: 10px;
+  }
+  .render-pill .act:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .render-pill .act:focus-visible {
+    outline: none;
+    box-shadow: var(--sc-focus-ring);
+  }
+
+  /* ---------- Export popover: tabs and the Video tab ---------- */
+  .export-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .export-head h2 {
+    font: 700 17px/22px var(--sc-font-display);
+    letter-spacing: -0.015em;
+  }
+  .export-head .seg button {
+    gap: 5px;
+    padding: 0 12px;
+  }
+  .export-native {
+    margin: -6px 0 10px;
+    font-size: 11.5px;
+  }
+  .motion-summary {
+    margin: 14px 2px 12px;
+    font-size: 11.5px;
+    color: var(--sc-ink-3);
+    min-height: 16px;
+  }
+  .motion-export .btn-block {
+    margin-top: 4px;
+  }
+  .motion-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    padding: 18px 12px 10px;
+    color: var(--sc-ink-2);
+    font-size: 13px;
+    line-height: 18px;
+  }
+  .motion-empty svg {
+    width: 28px;
+    height: 28px;
+    color: var(--sc-accent-text);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mg *,
+    .mg {
+      animation: none !important;
+    }
+  }
+}
+
+@layer components {
+  /* Narrow layout: tiles become a horizontal rail, like the styles rail. */
+  .motion-bare .mtiles {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 4px 16px 6px;
+    scroll-snap-type: x proximity;
+    scroll-padding: 0 16px;
+    scrollbar-width: none;
+  }
+  .motion-bare .mtile {
+    flex: none;
+    width: 92px;
+    scroll-snap-align: start;
+  }
+  .motion-bare .motion-controls {
+    margin: 8px 16px 0;
+  }
+}

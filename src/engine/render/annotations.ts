@@ -10,6 +10,7 @@ import type { Rect } from "../math/geometry";
 import { roundedRectPath, tracePath } from "../math/path";
 import type { Annotation, ArrowAnnotation, RectAnnotation, TextAnnotation } from "../scene/types";
 import { beginPath, clipPath, fillRoundedRect, withState } from "./draw";
+import { easeBack, easeInOut, window01 } from "../animation/easing";
 import type { Ctx2D } from "./env";
 import { fontStack } from "./fonts";
 
@@ -22,6 +23,7 @@ export interface AnnotationBox {
 }
 
 export function drawAnnotation(ctx: Ctx2D, a: Annotation, box: AnnotationBox): void {
+  if (a.kind !== "redact" && a.reveal !== undefined && a.reveal <= 0) return;
   switch (a.kind) {
     case "text":
       drawText(ctx, a, box);
@@ -43,11 +45,11 @@ function px(box: AnnotationBox, u: number, v: number) {
 
 function drawText(ctx: Ctx2D, a: TextAnnotation, box: AnnotationBox): void {
   if (!a.text) return;
+  const reveal = a.reveal ?? 1;
   const size = a.size * box.unit;
   const p = px(box, a.x, a.y);
   withState(ctx, () => {
     ctx.font = `${a.weight} ${size}px ${fontStack(a.font)}`;
-    ctx.textAlign = a.align;
     ctx.textBaseline = "middle";
     const lines = a.text.split("\n");
     const lh = size * 1.2;
@@ -55,21 +57,45 @@ function drawText(ctx: Ctx2D, a: TextAnnotation, box: AnnotationBox): void {
     const maxW = Math.max(...widths);
     const totalH = lh * lines.length;
     const top = p.y - totalH / 2;
-    if (a.background) {
+    // Draw-on: the pill pops in, then the text types itself.
+    const pill = a.background ? window01(reveal, 0, 0.22) : 1;
+    const typed = a.background ? window01(reveal, 0.14, 1) : reveal;
+    if (a.background && pill > 0) {
       const padX = size * 0.5;
       const padY = size * 0.28;
       const left = a.align === "left" ? p.x : a.align === "right" ? p.x - maxW : p.x - maxW / 2;
       const rectH = totalH + padY * 2;
-      fillRoundedRect(
-        ctx,
-        { x: left - padX, y: top - padY, width: maxW + padX * 2, height: rectH },
-        Math.min(rectH / 2, size * 0.7),
-        a.background,
-        0.6,
-      );
+      const r = { x: left - padX, y: top - padY, width: maxW + padX * 2, height: rectH };
+      if (pill < 1) {
+        const k = 0.6 + 0.4 * easeBack(pill);
+        const cx = r.x + r.width / 2;
+        const cy = r.y + r.height / 2;
+        ctx.globalAlpha *= Math.min(1, pill * 2.5);
+        ctx.translate(cx, cy);
+        ctx.scale(k, k);
+        ctx.translate(-cx, -cy);
+      }
+      fillRoundedRect(ctx, r, Math.min(rectH / 2, size * 0.7), a.background, 0.6);
     }
     ctx.fillStyle = toCss(a.color);
-    lines.forEach((line, i) => ctx.fillText(line, p.x, top + lh * (i + 0.5)));
+    if (typed >= 1) {
+      ctx.textAlign = a.align;
+      lines.forEach((line, i) => ctx.fillText(line, p.x, top + lh * (i + 0.5)));
+      return;
+    }
+    // Typewriter: characters appear in reading order at their final positions.
+    const chars = Array.from(a.text.replace(/\n/g, ""));
+    let left = Math.ceil(chars.length * typed);
+    ctx.textAlign = "left";
+    lines.forEach((line, i) => {
+      if (left <= 0) return;
+      const glyphs = Array.from(line);
+      const shown = glyphs.slice(0, left).join("");
+      left -= glyphs.length;
+      const w = widths[i]!;
+      const x = a.align === "left" ? p.x : a.align === "right" ? p.x - w : p.x - w / 2;
+      ctx.fillText(shown, x, top + lh * (i + 0.5));
+    });
   });
 }
 
@@ -99,8 +125,13 @@ function drawArrow(ctx: Ctx2D, a: ArrowAnnotation, box: AnnotationBox): void {
   const g = arrowGeometry(a, box);
   if (g.len < 1e-6) return;
   const { p1, p2, ctrl, dir, width, headLen, headHalf } = g;
+  const reveal = a.reveal ?? 1;
+  // Draw-on: the shaft grows along the curve, then the head pops out at the tip.
+  const shaft = easeInOut(window01(reveal, 0, a.head === "none" ? 1 : 0.78));
+  const head = a.head === "none" ? 0 : window01(reveal, 0.7, 1);
+  const hk = head >= 1 ? 1 : easeBack(head);
   // Shorten the shaft so its round cap does not poke through a triangle head.
-  const inset = a.head === "triangle" ? headLen * 0.8 : 0;
+  const inset = a.head === "triangle" ? headLen * 0.8 * Math.min(1, hk) : 0;
   const end = { x: p2.x - dir.x * inset, y: p2.y - dir.y * inset };
   withState(ctx, () => {
     ctx.strokeStyle = toCss(a.color);
@@ -110,18 +141,29 @@ function drawArrow(ctx: Ctx2D, a: ArrowAnnotation, box: AnnotationBox): void {
     ctx.lineJoin = "round";
     ctx.beginPath();
     ctx.moveTo(p1.x, p1.y);
-    ctx.quadraticCurveTo(ctrl.x, ctrl.y, end.x, end.y);
-    ctx.stroke();
-    const base = { x: p2.x - dir.x * headLen, y: p2.y - dir.y * headLen };
-    const left = { x: base.x - dir.y * headHalf, y: base.y + dir.x * headHalf };
-    const right = { x: base.x + dir.y * headHalf, y: base.y - dir.x * headHalf };
+    if (shaft >= 1) ctx.quadraticCurveTo(ctrl.x, ctrl.y, end.x, end.y);
+    else {
+      // De Casteljau split of the quadratic at `shaft`.
+      const t = shaft;
+      const q0 = { x: p1.x + (ctrl.x - p1.x) * t, y: p1.y + (ctrl.y - p1.y) * t };
+      const q1 = { x: ctrl.x + (end.x - ctrl.x) * t, y: ctrl.y + (end.y - ctrl.y) * t };
+      const q = { x: q0.x + (q1.x - q0.x) * t, y: q0.y + (q1.y - q0.y) * t };
+      ctx.quadraticCurveTo(q0.x, q0.y, q.x, q.y);
+    }
+    if (shaft > 0) ctx.stroke();
+    if (head <= 0) return;
+    const hl = headLen * hk;
+    const hh = headHalf * hk;
+    const base = { x: p2.x - dir.x * hl, y: p2.y - dir.y * hl };
+    const left = { x: base.x - dir.y * hh, y: base.y + dir.x * hh };
+    const right = { x: base.x + dir.y * hh, y: base.y - dir.x * hh };
     if (a.head === "triangle") {
       ctx.beginPath();
       ctx.moveTo(p2.x, p2.y);
       ctx.lineTo(left.x, left.y);
       ctx.lineTo(right.x, right.y);
       ctx.closePath();
-      ctx.lineWidth = width * 0.5;
+      ctx.lineWidth = width * 0.5 * Math.min(1, hk);
       ctx.stroke();
       ctx.fill();
     } else if (a.head === "line") {
@@ -145,7 +187,18 @@ function drawRect(ctx: Ctx2D, a: RectAnnotation, box: AnnotationBox): void {
   if (r.width <= 0 || r.height <= 0) return;
   const radius = Math.min(a.radius * box.unit, r.width / 2, r.height / 2);
   const path = roundedRectPath(r, radius, 0.6);
+  const reveal = a.reveal ?? 1;
   withState(ctx, () => {
+    if (reveal < 1 && a.style !== "spotlight") {
+      // Draw-on: pop in from the centre with a small overshoot.
+      const k = 0.55 + 0.45 * easeBack(reveal);
+      const cx = r.x + r.width / 2;
+      const cy = r.y + r.height / 2;
+      ctx.globalAlpha *= Math.min(1, reveal * 2.5);
+      ctx.translate(cx, cy);
+      ctx.scale(k, k);
+      ctx.translate(-cx, -cy);
+    }
     if (a.style === "spotlight") {
       if (box.clip)
         clipPath(ctx, roundedRectPath(box.clip.rect, box.clip.radii, box.clip.smoothing));
@@ -155,7 +208,7 @@ function drawRect(ctx: Ctx2D, a: RectAnnotation, box: AnnotationBox): void {
       const outer = box.clip?.rect ?? box.rect;
       ctx.rect(outer.x - 1, outer.y - 1, outer.width + 2, outer.height + 2);
       tracePath(ctx, path);
-      const alpha = c.a < 1 ? c.a : 0.5;
+      const alpha = (c.a < 1 ? c.a : 0.5) * easeInOut(reveal);
       ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
       ctx.fill("evenodd");
       return;

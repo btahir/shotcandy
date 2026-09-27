@@ -6,6 +6,11 @@
  * keyboard shortcuts and tests all drive the same code paths.
  */
 import {
+  type AnimationFormat,
+  type AnimationQuality,
+  type AnimationSpec,
+  type GifColors,
+  type MotionContext,
   type Annotation,
   type AnnotationKind,
   type AssetResolver,
@@ -19,6 +24,7 @@ import {
   type Scene,
   type ShotcandyStore,
   type StylePatch,
+  AnimationExporter,
   AssetLibrary,
   DEFAULT_FILENAME_PATTERN,
   DEFAULT_STYLE_ID,
@@ -32,8 +38,14 @@ import {
   canvasToContent,
   contentToCanvas,
   copyImageToClipboard,
+  createAnimation,
   createAnnotation,
   createProjectFile,
+  evaluateScene,
+  getMotionPreset,
+  isAbortError,
+  planAnimation,
+  renderToCanvas,
   createScene,
   extractStylePatch,
   fetchBuiltinAsset,
@@ -53,6 +65,7 @@ import {
   updateAnnotation,
 } from "@/engine";
 import { createExportWorker } from "@/engine/export/worker-factory";
+import { createAnimationWorker } from "@/engine/animation/worker-factory";
 import { createEditorStore, type EditorStore } from "@/state/editor-store";
 import { APP_VERSION } from "@/config/site";
 import { loadCanvasFonts, registerBrandFonts } from "@/lib/fonts";
@@ -60,19 +73,59 @@ import { GHOST_H, GHOST_ID, GHOST_W, loadGhost } from "@/lib/ghost";
 import { createStore, type Store } from "@/lib/store";
 import { ThumbService } from "@/lib/thumbs/service";
 import { sprinkle } from "@/lib/sprinkles";
+import { prefersReducedMotion } from "@/lib/platform";
 
 registerBrandFonts();
 
 export type Tool = "select" | "text" | "arrow" | "rect" | "redact";
 export type Popover = null | "size" | "export" | "more";
 export type Modal = null | "gallery" | "shortcuts" | "recents";
-export type MobileTab = "styles" | "background" | "layout" | "frame" | "draw";
+export type MobileTab = "styles" | "motion" | "background" | "layout" | "frame" | "draw";
+
+export interface MotionExportSettings {
+  format: AnimationFormat;
+  /** Video: short side in px (720, 1080, 1440, 2160). */
+  videoRes: number;
+  /** GIF: long side in px. */
+  gifSize: number;
+  quality: AnimationQuality;
+  gifFps: number;
+  gifColors: GifColors;
+  dither: boolean;
+}
 
 export interface ExportSettings {
   format: ExportFormat;
   scale: number;
   quality: number;
   pattern: string;
+  /** What the Export button produces: a still image or the motion clip. */
+  kind: "image" | "motion";
+  motion: MotionExportSettings;
+}
+
+export const DEFAULT_MOTION_EXPORT: MotionExportSettings = {
+  format: "mp4",
+  videoRes: 1080,
+  gifSize: 800,
+  quality: "balanced",
+  gifFps: 20,
+  gifColors: 128,
+  dither: true,
+};
+
+export interface MotionExportState {
+  format: AnimationFormat;
+  stage: "starting" | "palette" | "frames" | "finishing";
+  done: number;
+  total: number;
+}
+
+/** Playback of the motion preview (kept out of UiState: it changes every frame). */
+export interface PlaybackState {
+  playing: boolean;
+  /** Playhead in seconds, or null for the rest pose (the still design). */
+  t: number | null;
 }
 
 export interface Toast {
@@ -115,6 +168,7 @@ export interface UiState {
   fontsReady: number;
   assetsVersion: number;
   stageFocus: number;
+  motionExport: MotionExportState | null;
 }
 
 const SETTINGS_KEY = "shotcandy:export";
@@ -130,12 +184,33 @@ export const ANN_COLOURS = [
   "#FFFFFF",
 ];
 
+function loadMotionSettings(raw: unknown): MotionExportSettings {
+  const d = DEFAULT_MOTION_EXPORT;
+  if (!raw || typeof raw !== "object") return { ...d };
+  const p = raw as Partial<MotionExportSettings>;
+  return {
+    format: p.format === "gif" || p.format === "webm" ? p.format : "mp4",
+    videoRes: [720, 1080, 1440, 2160].includes(Number(p.videoRes))
+      ? Number(p.videoRes)
+      : d.videoRes,
+    gifSize: [480, 640, 800, 1080].includes(Number(p.gifSize)) ? Number(p.gifSize) : d.gifSize,
+    quality: p.quality === "small" || p.quality === "best" ? p.quality : "balanced",
+    gifFps: [10, 15, 20, 25].includes(Number(p.gifFps)) ? Number(p.gifFps) : d.gifFps,
+    gifColors: [64, 128, 256].includes(Number(p.gifColors))
+      ? (Number(p.gifColors) as GifColors)
+      : d.gifColors,
+    dither: typeof p.dither === "boolean" ? p.dither : true,
+  };
+}
+
 function loadSettings(): ExportSettings {
   const d: ExportSettings = {
     format: "png",
     scale: 2,
     quality: 0.92,
     pattern: DEFAULT_FILENAME_PATTERN,
+    kind: "image",
+    motion: { ...DEFAULT_MOTION_EXPORT },
   };
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -146,6 +221,8 @@ function loadSettings(): ExportSettings {
       scale: [1, 2, 3, 4].includes(Number(p.scale)) ? Number(p.scale) : 2,
       quality: typeof p.quality === "number" ? Math.min(1, Math.max(0.3, p.quality)) : 0.92,
       pattern: typeof p.pattern === "string" && p.pattern.trim() ? p.pattern : d.pattern,
+      kind: "image",
+      motion: loadMotionSettings(p.motion),
     };
   } catch {
     return d;
@@ -209,7 +286,12 @@ export class EditorApp {
   readonly library = new AssetLibrary();
   readonly cache = new RenderCache();
   readonly exporter = new Exporter({ createWorker: createExportWorker });
+  readonly animator = new AnimationExporter({ createWorker: createAnimationWorker });
   readonly ui: Store<UiState>;
+  readonly playback: Store<PlaybackState> = createStore<PlaybackState>({ playing: false, t: null });
+  private motionAbort: AbortController | null = null;
+  private tickRaf = 0;
+  private lastTick = 0;
   thumbs: ThumbService | null = null;
   db: ShotcandyStore | null = null;
   ghost: AssetSource | null = null;
@@ -247,6 +329,8 @@ export class EditorApp {
         scale: 2,
         quality: 0.92,
         pattern: DEFAULT_FILENAME_PATTERN,
+        kind: "image",
+        motion: { ...DEFAULT_MOTION_EXPORT },
       },
       editingText: null,
       customPresets: [],
@@ -261,6 +345,7 @@ export class EditorApp {
       fontsReady: 0,
       assetsVersion: 0,
       stageFocus: 0,
+      motionExport: null,
     });
     this.resolver = {
       get: (id: string) => (id === GHOST_ID ? (this.ghost ?? undefined) : this.library.get(id)),
@@ -353,6 +438,7 @@ export class EditorApp {
 
   dispose(): void {
     this.disposed = true;
+    this.motionAbort?.abort();
     this.exporter.dispose();
     this.thumbs?.dispose();
     this.db?.close();
@@ -608,6 +694,7 @@ export class EditorApp {
 
   // ------------------------------------------------------------- annotations
   setTool(tool: Tool): void {
+    this.stopPreview();
     this.ui.set({ tool, editingText: null });
     if (tool !== "select") this.store.select(null);
   }
@@ -727,6 +814,217 @@ export class EditorApp {
     });
   }
 
+  // ------------------------------------------------------------------ motion
+  /** Assets and palette the motion timeline needs. */
+  motionContext(): MotionContext {
+    const c = this.scene.content;
+    const palette = c.kind === "image" && c.assetId ? this.library.get(c.assetId)?.palette : null;
+    return { assets: this.resolver, palette: palette ?? null };
+  }
+
+  /** Where the playhead rests when paused: the end pose, or phase 0 for loops. */
+  restTime(spec: AnimationSpec | undefined = this.scene.animation): number {
+    if (!spec) return 0;
+    const p = getMotionPreset(spec.preset);
+    if (!p || p.periodic) return 0;
+    if (spec.loop === "boomerang") return spec.duration * 0.5;
+    return spec.duration * ((p.onceWindow?.[1] ?? 0.72) + 1) * 0.5;
+  }
+
+  /** Pick a motion preset (null turns motion off). */
+  setMotion(id: string | null): void {
+    const prev = this.scene.animation;
+    if (!id) {
+      this.store.update((s) => {
+        const { animation: _a, ...rest } = s;
+        return rest as Scene;
+      });
+      this.playback.set({ playing: false, t: null });
+      if (this.ui.get().exportSettings.kind === "motion") this.setExportSettings({ kind: "image" });
+      this.announce("Motion off");
+      return;
+    }
+    const preset = getMotionPreset(id);
+    if (!preset) return;
+    const spec = createAnimation(id, prev);
+    this.store.update((s) => ({ ...s, animation: spec }));
+    this.setExportSettings({ kind: "motion" });
+    this.announce(`Motion: ${preset.label}. ${preset.description}`);
+    if (prefersReducedMotion()) this.playback.set({ playing: false, t: null });
+    else this.play(0);
+  }
+
+  updateMotion(patch: Partial<AnimationSpec>, coalesce?: string): void {
+    if (!this.scene.animation) return;
+    this.store.update(
+      (s) => (s.animation ? { ...s, animation: { ...s.animation, ...patch } } : s),
+      { coalesce: coalesce ?? `motion:${Object.keys(patch).join(",")}` },
+    );
+    const t = this.playback.get().t;
+    const d = this.scene.animation?.duration ?? 1;
+    if (t !== null && t > d) this.playback.set({ t: t % d });
+  }
+
+  play(from?: number): void {
+    if (!this.scene.animation) return;
+    const cur = this.playback.get().t;
+    const d = this.scene.animation.duration;
+    this.playback.set({ playing: true, t: from ?? (cur === null || cur >= d - 1e-3 ? 0 : cur) });
+    this.store.select(null);
+    this.ui.set({ editingText: null, tool: "select" });
+    if (!this.tickRaf) {
+      this.lastTick = 0;
+      this.tickRaf = requestAnimationFrame(this.tick);
+    }
+  }
+
+  /** Advances the playhead in real time while playing (the preview, not the export). */
+  private tick = (now: number) => {
+    const p = this.playback.get();
+    const spec = this.scene.animation;
+    if (!p.playing || !spec || this.disposed) {
+      this.tickRaf = 0;
+      return;
+    }
+    const dt = this.lastTick ? Math.min(0.1, (now - this.lastTick) / 1000) : 0;
+    this.lastTick = now;
+    this.playback.set({ t: ((p.t ?? 0) + dt) % spec.duration });
+    this.tickRaf = requestAnimationFrame(this.tick);
+  };
+
+  pause(): void {
+    if (this.playback.get().playing) this.playback.set({ playing: false });
+  }
+
+  togglePlay(): void {
+    if (this.playback.get().playing) this.pause();
+    else this.play();
+  }
+
+  seek(t: number): void {
+    const d = this.scene.animation?.duration ?? 0;
+    this.playback.set({ playing: false, t: Math.max(0, Math.min(d, t)) });
+  }
+
+  /** Back to the still design (so annotations can be edited in place). */
+  stopPreview(): void {
+    const p = this.playback.get();
+    if (p.playing || p.t !== null) this.playback.set({ playing: false, t: null });
+  }
+
+  /** Output size and timing of the motion export with the current settings. */
+  motionPlan(settings: MotionExportSettings = this.ui.get().exportSettings.motion) {
+    const scene = this.scene;
+    if (!scene.animation) return null;
+    const ctx = this.motionContext();
+    const base = layoutScene(evaluateScene(scene, 0, ctx), this.resolver).canvas;
+    const scale =
+      settings.format === "gif"
+        ? settings.gifSize / Math.max(base.width, base.height)
+        : Math.min(
+            settings.videoRes / Math.min(base.width, base.height),
+            4096 / Math.max(base.width, base.height),
+          );
+    const opts = {
+      format: settings.format,
+      scale,
+      ...(settings.format === "gif" ? { fps: settings.gifFps } : {}),
+    };
+    return { ...planAnimation(scene, this.resolver, opts, ctx.palette), scale };
+  }
+
+  /** Render and download the motion clip (MP4, WebM or GIF). */
+  async exportMotion(anchor?: Element | null): Promise<void> {
+    const scene = this.scene;
+    if (!scene.animation || !this.ui.get().hasImage || this.ui.get().motionExport) return;
+    const settings = this.ui.get().exportSettings.motion;
+    const plan = this.motionPlan(settings);
+    if (!plan) return;
+    const ac = new AbortController();
+    this.motionAbort = ac;
+    this.pause();
+    this.ui.set({
+      motionExport: { format: settings.format, stage: "starting", done: 0, total: plan.frames },
+    });
+    this.announce(`Rendering ${settings.format.toUpperCase()}, ${plan.frames} frames`);
+    let last = 0;
+    try {
+      const r = await this.animator.export(
+        scene,
+        this.exportAssets(scene),
+        {
+          format: settings.format,
+          scale: plan.scale,
+          quality: settings.quality,
+          ...(settings.format === "gif"
+            ? { fps: settings.gifFps, gifColors: settings.gifColors, dither: settings.dither }
+            : {}),
+        },
+        {
+          signal: ac.signal,
+          onProgress: (p) => {
+            const now = performance.now();
+            if (now - last < 50 && p.done < p.total) return;
+            last = now;
+            this.ui.set({ motionExport: { format: settings.format, ...p } });
+          },
+        },
+      );
+      const name = formatFilename("{name}-{style}-{w}x{h}", {
+        name: scene.meta.name,
+        style: scene.animation.preset,
+        width: r.width,
+        height: r.height,
+        scale: 1,
+        format: settings.format,
+        now: new Date(),
+      });
+      downloadBlob(r.blob, name);
+      sprinkle(anchor ?? null);
+      this.emit("motion-exported", r);
+      this.toast({
+        kind: "wrap",
+        title: `Saved ${name}`,
+        detail: `${r.duration.toFixed(1)} s · ${r.width} × ${r.height} · ${r.fps} fps · ${formatBytes(r.blob.size)}`,
+        thumb: await this.posterUrl(scene),
+        duration: 4200,
+      });
+      this.announce(`Saved ${name}`);
+    } catch (e) {
+      if (isAbortError(e)) {
+        this.toast({ kind: "info", title: "Export cancelled", detail: "Nothing was saved." });
+      } else {
+        this.toast({
+          kind: "error",
+          title: "Couldn't render the clip",
+          detail: e instanceof Error ? e.message : String(e),
+          prose: true,
+          duration: 6000,
+        });
+      }
+    } finally {
+      this.motionAbort = null;
+      this.ui.set({ motionExport: null });
+    }
+  }
+
+  cancelMotionExport(): void {
+    this.motionAbort?.abort();
+  }
+
+  /** A small still of the design for the export toast. */
+  private async posterUrl(scene: Scene): Promise<string | undefined> {
+    try {
+      const layout = layoutScene(scene, this.resolver);
+      const scale = 124 / Math.max(layout.canvas.width, layout.canvas.height);
+      const { canvas } = renderToCanvas(scene, this.resolver, { scale, cache: this.cache });
+      const blob = await (canvas as OffscreenCanvas).convertToBlob?.({ type: "image/png" });
+      return blob ? URL.createObjectURL(blob) : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   // ------------------------------------------------------------------ export
   exportAssets(scene: Scene = this.scene) {
     return this.library.exportAssets(sceneAssetIds(scene));
@@ -795,7 +1093,7 @@ export class EditorApp {
           title: "Copied to clipboard",
           detail: `${r.width} × ${r.height} PNG · paste anywhere`,
           thumb: await thumbUrl(r.blob),
-          action: { label: "Download", run: () => this.download() },
+          action: { label: "Download", run: () => void this.downloadImage() },
         });
         this.announce(`Copied ${r.width} by ${r.height} PNG to the clipboard.`);
       },
@@ -823,8 +1121,15 @@ export class EditorApp {
     );
   }
 
-  /** Download with the current export settings. */
-  async download(anchor?: Element | null, override?: Partial<ExportSettings>): Promise<void> {
+  /** The Export button: the motion clip when motion export is chosen, else the image. */
+  async download(anchor?: Element | null): Promise<void> {
+    if (this.ui.get().exportSettings.kind === "motion" && this.scene.animation)
+      return this.exportMotion(anchor);
+    return this.downloadImage(anchor);
+  }
+
+  /** Download a still image with the current export settings. */
+  async downloadImage(anchor?: Element | null, override?: Partial<ExportSettings>): Promise<void> {
     if (!this.ui.get().hasImage || this.ui.get().exportBusy) return;
     const settings = { ...this.ui.get().exportSettings, ...override };
     this.ui.set({ exportBusy: true });

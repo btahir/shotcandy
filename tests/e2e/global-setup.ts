@@ -32,6 +32,11 @@ export default async function globalSetup(): Promise<void> {
     entryPoints: [resolve(root, "src/engine/export/export.worker.ts")],
     outfile: `${out}/export.worker.js`,
   });
+  await build({
+    ...common,
+    entryPoints: [resolve(root, "src/engine/animation/animation.worker.ts")],
+    outfile: `${out}/animation.worker.js`,
+  });
   writeFileSync(
     `${out}/index.html`,
     `<!doctype html><meta charset="utf-8"><title>Shotcandy harness</title><body><script type="module" src="./harness.js"></script></body>`,

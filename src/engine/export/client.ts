@@ -91,7 +91,9 @@ export class Exporter {
   async export(scene: Scene, assets: ExportAsset[], options: ExportOptions): Promise<ExportResult> {
     const caps = await this.startWorker();
     const hasText =
-      scene.annotations.some((a) => a.kind === "text") || scene.card.frame.id !== "none";
+      scene.annotations.some((a) => a.kind === "text") ||
+      scene.card.frame.id !== "none" ||
+      (scene.content.kind !== "image" && scene.content.kind !== "placeholder");
     const fonts = listFonts();
     const needsWebFonts = fonts.some((f) => f.sources?.length);
     // Web fonts need FontFace in the worker; without it, render on the main thread.

@@ -145,6 +145,9 @@ export function useShortcuts(app: EditorApp) {
         case "k":
           app.ui.set({ popover: ui.popover === "size" ? null : "size" });
           break;
+        case "m":
+          if (app.scene.animation) app.togglePlay();
+          break;
         case "f": {
           const f = app.scene.card.frame;
           if (e.shiftKey) {
