@@ -162,11 +162,37 @@ function drawAvatar(
   ctx.restore();
 }
 
-/** Draw a line with #tags, @mentions and links in the accent colour. */
+/**
+ * Split wrapped lines into [text, accent?] runs for #tags, @mentions and
+ * links, matched on the whole text so a URL broken across lines stays in the
+ * accent colour on every line (REVIEW r2 N2).
+ */
+export function richRuns(text: string, lines: string[]): [string, boolean][][] {
+  const accent = new Uint8Array(text.length);
+  RICH.lastIndex = 0;
+  for (const m of text.matchAll(RICH)) accent.fill(1, m.index!, m.index! + m[0].length);
+  let cursor = 0;
+  return lines.map((line) => {
+    if (!line) return [];
+    const at = text.indexOf(line, cursor);
+    if (at < 0) return [[line, false]];
+    cursor = at + line.length;
+    const runs: [string, boolean][] = [];
+    for (let i = 0; i < line.length; i++) {
+      const on = accent[at + i] === 1;
+      const last = runs[runs.length - 1];
+      if (last && last[1] === on) last[0] += line[i];
+      else runs.push([line[i]!, on]);
+    }
+    return runs;
+  });
+}
+
+/** Draw a line's runs, accent runs in the accent colour. */
 function drawRich(
   ctx: Ctx2D,
   font: string,
-  line: string,
+  runs: [string, boolean][],
   x: number,
   y: number,
   color: string,
@@ -175,11 +201,8 @@ function drawRich(
   ctx.font = font;
   ctx.textAlign = "left";
   let cx = x;
-  for (const part of line.split(RICH)) {
-    if (!part) continue;
-    RICH.lastIndex = 0;
-    ctx.fillStyle = RICH.test(part) ? accent : color;
-    RICH.lastIndex = 0;
+  for (const [part, on] of runs) {
+    ctx.fillStyle = on ? accent : color;
     ctx.fillText(part, cx, y);
     cx += measureText(font, part);
   }
@@ -291,8 +314,8 @@ function drawPost(
       for (let i = 0; i < c.rating; i++)
         star(ctx, L.width - L.pad - 9 - (c.rating - 1 - i) * 23, L.pad + 17, 9.5);
     }
-    L.lines.forEach((line, i) =>
-      drawRich(ctx, L.bodyFont, line, L.pad, L.textY + (i + 0.5) * L.lineHeight, t.text, c.accent),
+    richRuns(c.text, L.lines).forEach((runs, i) =>
+      drawRich(ctx, L.bodyFont, runs, L.pad, L.textY + (i + 0.5) * L.lineHeight, t.text, c.accent),
     );
     const ay = L.height - L.pad - L.avatar;
     drawAvatar(ctx, c, assets, L.pad, ay, L.avatar, px);
@@ -324,8 +347,8 @@ function drawPost(
     ctx.font = L.metaFont;
     ctx.fillText(ellipsize(L.metaFont, meta, maxT), tx, L.pad + 38);
   }
-  L.lines.forEach((line, i) =>
-    drawRich(ctx, L.bodyFont, line, L.pad, L.textY + (i + 0.5) * L.lineHeight, t.text, c.accent),
+  richRuns(c.text, L.lines).forEach((runs, i) =>
+    drawRich(ctx, L.bodyFont, runs, L.pad, L.textY + (i + 0.5) * L.lineHeight, t.text, c.accent),
   );
   if (L.footerY !== null) {
     ctx.fillStyle = t.line;

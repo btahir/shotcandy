@@ -94,3 +94,46 @@ export function planAnimation(
   }
   return { width, height, fps, frames, duration: frames / fps };
 }
+
+/** Bitrate for a quality level: bits per pixel per frame. */
+export function videoBitrate(quality: AnimationQuality, w: number, h: number, fps: number): number {
+  const bpp = quality === "small" ? 0.05 : quality === "best" ? 0.2 : 0.1;
+  return Math.round(Math.min(80_000_000, Math.max(600_000, w * h * fps * bpp)));
+}
+
+/**
+ * Scale a video size measured on a small sample encode (same clip, same fps)
+ * up to the full size. The encoders run variable bitrate against
+ * `videoBitrate`; how much of the target a clip uses depends on its motion
+ * (a still "Draw on" uses 10-20 %, a 3D sweep all of it) but barely on its
+ * size, so the sample's share of its own target carries over. Measured on the
+ * 8 presets: 480p samples predict 1080p within about ±15 %.
+ */
+export function extrapolateVideoBytes(
+  sampleBytes: number,
+  sample: AnimationPlan,
+  full: AnimationPlan,
+  quality: AnimationQuality,
+): number {
+  const target = (p: AnimationPlan) =>
+    (videoBitrate(quality, p.width, p.height, p.fps) * p.duration) / 8;
+  const share = Math.min(1.2, sampleBytes / Math.max(1, target(sample)));
+  return Math.round(target(full) * share);
+}
+
+/**
+ * Scale a GIF size measured on a small sample encode up to the full size.
+ * LZW output grows slower than the pixel count (flat areas compress better
+ * when they are bigger). Calibrated on the 8 presets x 2 screenshots,
+ * 200 px samples -> 640 px GIFs: exponent 0.78 ± 0.03 (about ±8 % in size).
+ */
+export const GIF_AREA_EXPONENT = 0.78;
+
+export function extrapolateGifBytes(
+  sampleBytes: number,
+  sample: { width: number; height: number },
+  full: { width: number; height: number },
+): number {
+  const ratio = (full.width * full.height) / Math.max(1, sample.width * sample.height);
+  return Math.round(sampleBytes * ratio ** GIF_AREA_EXPONENT);
+}

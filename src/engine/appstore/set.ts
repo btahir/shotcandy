@@ -16,7 +16,7 @@ import { measureText, wrapText } from "../render/measure";
 import { layoutScene } from "../render/render";
 import { createScene } from "../scene/defaults";
 import { deepMerge } from "../scene/patch";
-import type { Color, Content, Scene, StylePatch, TextAnnotation } from "../scene/types";
+import type { Color, Content, CropRect, Scene, StylePatch, TextAnnotation } from "../scene/types";
 
 export const SET_MIN_SLIDES = 3;
 export const SET_MAX_SLIDES = 10;
@@ -27,6 +27,8 @@ export interface AppStoreSlide {
   subhead: string;
   /** Screenshot asset, or null for a placeholder screen. */
   assetId: string | null;
+  /** Part of the screenshot to show (normalized), e.g. a phone-shaped crop of a landscape shot. */
+  crop?: { x: number; y: number; width: number; height: number };
 }
 
 export interface SetText {
@@ -216,8 +218,9 @@ function textBlocks(set: AppStoreSet, slide: AppStoreSlide, W: number, H: number
   const maxW = W * (set.landscape ? 0.62 : 0.84);
   const hFont = `800 ${hp}px ${fontStack(t.font)}`;
   const sFont = `500 ${sp}px ${fontStack("sans")}`;
+  const headAll = slide.headline.trim() ? wrapText(hFont, slide.headline.trim(), maxW) : [];
   const head: TextBlock = {
-    lines: slide.headline.trim() ? wrapText(hFont, slide.headline.trim(), maxW).slice(0, 4) : [],
+    lines: headAll.slice(0, 4),
     px: hp,
     lh: hp * 1.2,
   };
@@ -228,7 +231,43 @@ function textBlocks(set: AppStoreSet, slide: AppStoreSlide, W: number, H: number
   };
   const gap = head.lines.length && sub.lines.length ? sp * 0.8 : 0;
   const height = head.lines.length * head.lh + gap + sub.lines.length * sub.lh;
-  return { head, sub, gap, height, maxW, hFont };
+  return { head, sub, gap, height, maxW, hFont, headLines: headAll.length };
+}
+
+/** Lines the slide's headline wraps to (uncapped), for the "keep it to 3 lines" hint. */
+export function headlineLineCount(set: AppStoreSet, slide: AppStoreSlide): number {
+  const { width: W, height: H } = setCanvasSize(set);
+  return textBlocks(set, slide, W, H).headLines;
+}
+
+/**
+ * Height reserved for the text on every slide: the tallest block in the set,
+ * so devices start at the same y on every slide however long each headline is.
+ */
+export function reservedTextHeight(set: AppStoreSet): number {
+  const { width: W, height: H } = setCanvasSize(set);
+  return Math.max(0, ...set.slides.map((sl) => textBlocks(set, sl, W, H).height));
+}
+
+/** Whether a screenshot's shape fights the set's orientation (landscape shot in a portrait set). */
+export function orientationMismatch(
+  set: AppStoreSet,
+  size: { width: number; height: number },
+): boolean {
+  return set.landscape ? size.height > size.width * 1.05 : size.width > size.height * 1.05;
+}
+
+/** A centred crop of a screenshot with the device screen's proportions ("Crop to phone"). */
+export function deviceCrop(set: AppStoreSet, size: { width: number; height: number }): CropRect {
+  const tablet = isTabletSize(set.sizePresetId);
+  const ratio = (tablet ? 2732 / 2048 : 2796 / 1290) ** (set.landscape ? -1 : 1); // h / w
+  const srcRatio = size.height / size.width;
+  if (srcRatio < ratio) {
+    const w = size.height / ratio / size.width;
+    return { x: (1 - w) / 2, y: 0, width: w, height: 1 };
+  }
+  const h = (size.width * ratio) / size.height;
+  return { x: 0, y: 0, width: 1, height: h };
 }
 
 /**
@@ -246,7 +285,7 @@ export function slideScene(
   const count = set.slides.length;
   const content: Content =
     slide.assetId && assets.get(slide.assetId)
-      ? { kind: "image", assetId: slide.assetId }
+      ? { kind: "image", assetId: slide.assetId, ...(slide.crop ? { crop: slide.crop } : {}) }
       : placeholderFor(set);
   let scene: Scene = {
     ...template,
@@ -265,15 +304,18 @@ export function slideScene(
     scene = { ...scene, background: bg };
   }
 
-  // Region for the device: below (or above) the text block.
+  // Region for the device: below (or above) the text block. Every slide
+  // reserves the set's tallest text block (text top-aligned inside it), so the
+  // devices line up across slides.
   const tb = textBlocks(set, slide, W, H);
+  const reserved = reservedTextHeight(set);
   const margin = Math.min(W, H) * 0.075;
-  const textTop = set.text.position === "top" ? margin : H - margin - tb.height;
-  const textGap = tb.height ? Math.min(W, H) * 0.06 : 0;
+  const textTop = set.text.position === "top" ? margin : H - margin - reserved;
+  const textGap = reserved ? Math.min(W, H) * 0.06 : 0;
   const region =
     set.text.position === "top"
       ? {
-          y0: textTop + tb.height + textGap,
+          y0: textTop + reserved + textGap,
           y1: set.device === "bleed" ? H + H * 0.2 : H - margin * 0.8,
         }
       : { y0: set.device === "bleed" ? -H * 0.2 : margin * 0.8, y1: textTop - textGap };
@@ -295,7 +337,9 @@ export function slideScene(
       ? set.text.position === "top"
         ? region.y0 + cardH / 2
         : region.y1 - cardH / 2
-      : (region.y0 + region.y1) / 2;
+      : set.text.position === "top"
+        ? region.y0 + cardH / 2
+        : region.y1 - cardH / 2;
   const cx0 = (Math.max(...xs) + Math.min(...xs)) / 2;
   scene = {
     ...scene,
@@ -380,6 +424,21 @@ export function normalizeSet(input: unknown): AppStoreSet {
           headline: typeof s.headline === "string" ? s.headline.slice(0, 200) : "",
           subhead: typeof s.subhead === "string" ? s.subhead.slice(0, 300) : "",
           assetId: typeof s.assetId === "string" && s.assetId ? s.assetId : null,
+          ...(isObj(s.crop) &&
+          [s.crop.x, s.crop.y, s.crop.width, s.crop.height].every(
+            (n) => typeof n === "number" && n >= 0 && n <= 1,
+          ) &&
+          (s.crop.width as number) > 0.02 &&
+          (s.crop.height as number) > 0.02
+            ? {
+                crop: {
+                  x: s.crop.x as number,
+                  y: s.crop.y as number,
+                  width: s.crop.width as number,
+                  height: s.crop.height as number,
+                },
+              }
+            : {}),
         }))
     : d.slides;
   while (slides.length < SET_MIN_SLIDES)

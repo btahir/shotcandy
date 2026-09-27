@@ -94,7 +94,8 @@ export function toGradientEdit(fill: BackgroundFill, palette: Palette | null = n
     case "radial":
       return { type: "radial", angle: 135, stops: normalizeStops(f.stops) };
     case "conic": {
-      // Drop the seam stop fromGradientEdit adds to close the wheel.
+      // A closed wheel (last stop = first colour at 1, see fromGradientEdit):
+      // drop the closing stop and spread the rest back over 0..1.
       let stops = f.stops;
       const last = stops[stops.length - 1];
       if (
@@ -104,11 +105,8 @@ export function toGradientEdit(fill: BackgroundFill, palette: Palette | null = n
         normalizeColor(last.color) === normalizeColor(stops[0]!.color)
       ) {
         const rest = stops.slice(0, -1);
-        const top = rest[rest.length - 1]!.offset || 1;
-        stops = rest.map((s) => ({
-          ...s,
-          offset: top >= 0.998 ? Math.min(1, s.offset / top) : s.offset,
-        }));
+        const k = (rest.length - 1) / rest.length;
+        stops = rest.map((s) => ({ ...s, offset: Math.min(1, s.offset / k) }));
       }
       return { type: "conic", angle: f.angle, stops: normalizeStops(stops) };
     }
@@ -153,15 +151,16 @@ export function fromGradientEdit(edit: GradientEdit): BackgroundFill {
     case "radial":
       return { kind: "radial", cx: 0.5, cy: 0.4, radius: 1.05, stops };
     case "conic": {
-      // A seamless wheel: repeat the first colour at the end.
-      const wheel =
-        stops[stops.length - 1]!.color === stops[0]!.color
-          ? stops
-          : [
-              ...stops.map((s) => ({ ...s, offset: s.offset * 0.999 })),
-              { offset: 1, color: stops[0]!.color },
-            ];
-      return { kind: "conic", cx: 0.5, cy: 0.5, angle, stops: wheel.slice(0, 16) };
+      // A seamless wheel: n colours share the circle equally (0 .. (n-1)/n)
+      // and the last segment blends back into the first colour at 1, so the
+      // join is as soft as every other colour change (no hairline seam).
+      const n = stops.length;
+      const k = (n - 1) / n;
+      const wheel = [
+        ...stops.map((s) => ({ ...s, offset: Math.round(s.offset * k * 10000) / 10000 })),
+        { offset: 1, color: stops[0]!.color },
+      ];
+      return { kind: "conic", cx: 0.5, cy: 0.5, angle, stops: wheel };
     }
     case "mesh": {
       const [base, ...rest] = stops.map((s) => s.color);

@@ -65,12 +65,47 @@ export function measureText(font: string, text: string): number {
   return w;
 }
 
+/** Characters a long token may break after (URLs, paths, hyphenated words). */
+const SOFT_BREAK = /[/\-_.?&=#:,]/;
+
+/**
+ * Break one token that is wider than the line into pieces that fit: prefer
+ * breaking after `/ - _ . ?` and friends, and fall back to any character (the
+ * canvas equivalent of CSS `overflow-wrap: anywhere`). Never returns a piece
+ * wider than `maxWidth` unless a single character is.
+ */
+function breakToken(font: string, token: string, maxWidth: number, lead = ""): string[] {
+  const chars = Array.from(token);
+  const out: string[] = [];
+  let start = 0;
+  let first = true;
+  while (start < chars.length) {
+    const prefix = first ? lead : "";
+    let end = start;
+    let soft = -1;
+    while (end < chars.length) {
+      const piece = prefix + chars.slice(start, end + 1).join("");
+      if (measureText(font, piece) > maxWidth && end > start) break;
+      if (SOFT_BREAK.test(chars[end]!)) soft = end;
+      end++;
+    }
+    // Break after a soft character when one sits in the back half of the piece.
+    if (end < chars.length && soft >= start && soft - start >= (end - start) / 2) end = soft + 1;
+    if (end === start) end = start + 1;
+    out.push(prefix + chars.slice(start, end).join(""));
+    start = end;
+    first = false;
+  }
+  return out;
+}
+
 /**
  * Greedy word wrap to `maxWidth`. Keeps explicit newlines, breaks overlong
- * words by character. Returns the lines (without trailing spaces).
+ * words (URLs) at soft characters, else by character. Returns the lines (without trailing spaces).
  */
 export function wrapText(font: string, text: string, maxWidth: number): string[] {
   const out: string[] = [];
+  const fits = (s: string) => measureText(font, s.trimEnd()) <= maxWidth;
   for (const para of text.split("\n")) {
     if (!para) {
       out.push("");
@@ -79,26 +114,29 @@ export function wrapText(font: string, text: string, maxWidth: number): string[]
     const words = para.split(/(\s+)/).filter((w) => w.length);
     let line = "";
     for (const word of words) {
-      const next = line + word;
-      if (measureText(font, next.trimEnd()) <= maxWidth || !line.trim()) {
-        if (measureText(font, next.trimEnd()) <= maxWidth) {
-          line = next;
-          continue;
-        }
-        // A single word wider than the line: break it by character.
-        let chunk = line;
-        for (const ch of Array.from(word)) {
-          if (measureText(font, (chunk + ch).trimEnd()) > maxWidth && chunk.trim()) {
-            out.push(chunk.trimEnd());
-            chunk = "";
-          }
-          chunk += ch;
-        }
-        line = chunk;
+      if (/^\s+$/.test(word)) {
+        if (line) line += word;
         continue;
       }
-      out.push(line.trimEnd());
-      line = /^\s+$/.test(word) ? "" : word;
+      if (fits(line + word)) {
+        line += word;
+        continue;
+      }
+      if (line.trim() && fits(word)) {
+        out.push(line.trimEnd());
+        line = word;
+        continue;
+      }
+      // The word is wider than a whole line: continue the current line with
+      // as much of it as fits, then carry on in line-sized pieces.
+      const lead = line.trim() ? line : "";
+      const pieces = breakToken(font, word, maxWidth, lead);
+      if (lead && measureText(font, pieces[0]!) > maxWidth) {
+        out.push(line.trimEnd());
+        pieces.splice(0, pieces.length, ...breakToken(font, word, maxWidth));
+      }
+      for (let i = 0; i < pieces.length - 1; i++) out.push(pieces[i]!.trimEnd());
+      line = pieces[pieces.length - 1]!;
     }
     out.push(line.trimEnd());
   }

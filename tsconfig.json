@@ -29,5 +29,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "out", ".next"]
+  "exclude": ["node_modules", "out", ".next", "docs"]
 }

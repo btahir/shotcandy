@@ -58,6 +58,8 @@ export function codeLines(c: CodeContent): [string, number][][] {
 
 const cache = new WeakMap<CodeContent, { gen: number; layout: CodeLayout }>();
 
+const fontSizeMin = (F: number) => F * 32;
+
 export function codeLayout(c: CodeContent): CodeLayout {
   const hit = cache.get(c);
   if (hit && hit.gen === measureGeneration()) return hit.layout;
@@ -79,7 +81,11 @@ export function codeLayout(c: CodeContent): CodeLayout {
   }
   const minCode = measureText(font, "0".repeat(32));
   const titleW = c.title ? measureText(titleFont, c.title) + F * 9 : 0;
-  const natural = Math.ceil(Math.max(pad * 2 + gutterW + Math.max(codeW, minCode), titleW));
+  // Never a cramped window: at least 32 font-sizes wide (480 px at 15 px), so
+  // a one-line snippet still reads as a window (REVIEW r2 N12).
+  const natural = Math.ceil(
+    Math.max(pad * 2 + gutterW + Math.max(codeW, minCode), titleW, fontSizeMin(F)),
+  );
   const width = Math.max(natural, Math.ceil(c.width ?? 0));
   const codeY = headerH ? headerH + pad * 0.55 : pad;
   const height = Math.ceil(codeY + Math.max(1, lines.length) * lineHeight + pad);

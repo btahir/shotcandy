@@ -184,13 +184,5 @@ export class VideoWriter {
   }
 }
 
-/** Bitrate for a quality level: bits per pixel per frame. */
-export function videoBitrate(
-  quality: "small" | "balanced" | "best",
-  w: number,
-  h: number,
-  fps: number,
-): number {
-  const bpp = quality === "small" ? 0.05 : quality === "best" ? 0.2 : 0.1;
-  return Math.round(Math.min(80_000_000, Math.max(600_000, w * h * fps * bpp)));
-}
+// Bitrate per quality level lives with the plan (no encoder imports there).
+export { videoBitrate } from "../plan";

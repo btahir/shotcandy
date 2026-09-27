@@ -115,7 +115,7 @@ export {
 } from "./code/presets";
 
 // Post and testimonial cards
-export { postLayout, initials, type PostLayout } from "./post/render";
+export { postLayout, initials, richRuns, type PostLayout } from "./post/render";
 export {
   POST_THEMES,
   POST_STYLES,
@@ -135,6 +135,10 @@ export {
   setCanvasSize,
   newSlideId,
   headlineWidth,
+  headlineLineCount,
+  reservedTextHeight,
+  orientationMismatch,
+  deviceCrop,
   isTabletSize,
   APPSTORE_SIZES,
   SET_STYLES,
@@ -304,6 +308,10 @@ export { EASING_LABELS, cubicBezier, getEasing } from "./animation/easing";
 export type { MotionContext, MotionFrame, MotionPreset } from "./animation/types";
 export {
   planAnimation,
+  videoBitrate,
+  extrapolateVideoBytes,
+  extrapolateGifBytes,
+  GIF_AREA_EXPONENT,
   MIME_BY_FORMAT,
   GIF_MAX_FPS,
   AnimationCancelledError,
