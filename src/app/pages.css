@@ -589,7 +589,12 @@
     font-size: 16px;
     margin-top: 8px;
   }
-  .cta-band img {
+  .cta-band .cta-mark {
+    flex: none;
+    height: 120px;
+  }
+  .cta-band img,
+  .cta-band .cta-mark {
     width: 120px;
     transform: rotate(-12deg);
     filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.35));

@@ -10,6 +10,7 @@
  *   brand/empty/*.webp                -> public/empty/        (empty-state fan art)
  *   brand/icons/*                     -> public/icons/
  *   brand/og-image.png, brand/og/*    -> public/og/
+ *   brand/showcase/*.webp             -> public/showcase/  (page art)
  *   brand/logo-mark.svg               -> public/logo-mark.svg
  *   @fontsource* woff2 (latin, latin-ext) -> public/fonts/
  */
@@ -27,6 +28,7 @@ const dirs = [
   ["brand/empty", "public/empty", /\.webp$/],
   ["brand/icons", "public/icons", /\.(png|svg|ico)$/],
   ["brand/og", "public/og", /\.png$/],
+  ["brand/showcase", "public/showcase", /\.webp$/],
 ];
 
 let n = 0;

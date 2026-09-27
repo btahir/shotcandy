@@ -331,9 +331,10 @@ export class EditorApp {
     void this.refreshPresets();
     void this.refreshRecents();
 
+    if (params.get("gallery")) this.ui.set({ modal: "gallery" });
     const open = params.get("open");
     const sample = params.get("sample");
-    if (open || sample || style || size) {
+    if (open || sample || style || size || params.get("gallery")) {
       const url = new URL(window.location.href);
       url.search = "";
       window.history.replaceState(null, "", url.toString());
