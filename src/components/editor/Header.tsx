@@ -8,6 +8,7 @@ import {
   type SizePreset,
   PROJECT_EXTENSION,
   SIZE_PRESETS,
+  getSizePreset,
   layoutScene,
   maxExportScale,
   rotateSize,
@@ -16,12 +17,22 @@ import { GITHUB_URL, SUPPORT_URL } from "@/config/site";
 import { useModKey } from "@/lib/platform";
 import { setTheme, useThemePref } from "@/lib/theme";
 import { Icon, LogoMark } from "../icons";
-import { Popover, Segmented, menuKeys } from "../ui/controls";
+import { Popover, Segmented, Switch, menuKeys } from "../ui/controls";
 import { Slider } from "../ui/Slider";
 import { formatBytes } from "./app";
 import { useApp, useScene, useUi } from "./context";
 import { openFilePicker } from "./EmptyState";
 import { MotionExportPanel } from "./MotionExport";
+import {
+  COPY_MAX_LONG,
+  DESTINATIONS,
+  type FitVerdict,
+  type ScaleChoice,
+  exportTag,
+  fitVerdict,
+  getDestination,
+  ratioOk,
+} from "./export-plan";
 import { ModeSwitch } from "./ModeSwitch";
 import { APPSTORE_SIZES, setCanvasSize } from "@/engine";
 import { useStore } from "@/lib/store";
@@ -93,7 +104,7 @@ export function SizeChip({ compact = false }: { compact?: boolean }) {
         onClick={() => app.ui.set({ popover: open ? null : "size" })}
       >
         <Icon name="ratio" size="sm" /> {sizeLabel(size)}
-        {!compact && <span className="mono">{meta}</span>}
+        {!compact && <span className={/\d/.test(meta) ? "mono" : "meta-txt"}>{meta}</span>}
         <Icon name="chevronDown" size="sm" />
       </button>
       <SizeMenu anchor={ref} open={open} />
@@ -130,9 +141,10 @@ function SizeMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
       >
         <Glyph w={dims[0]!} h={dims[1]!} />
         {p.label.replace(/"/g, "″")}
-        <span className="mono">
-          {hint ?? (p.size.kind === "fixed" ? `${dims[0]} × ${dims[1]}` : p.hint)}
-        </span>
+        {(() => {
+          const h = hint ?? (p.size.kind === "fixed" ? `${dims[0]} × ${dims[1]}` : p.hint);
+          return <span className={/^\d/.test(h) ? "mono" : "meta-txt"}>{h}</span>;
+        })()}
       </button>
     );
   };
@@ -168,7 +180,7 @@ function SizeMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
               Fit
             </div>
             <div role="radiogroup" aria-labelledby="sz-fit">
-              {item(g("free")[0]!, "hugs your image")}
+              {item(g("free")[0]!, "fits your image")}
             </div>
             <div className="menu-label" id="sz-ratio">
               Ratio
@@ -261,17 +273,17 @@ const TOKENS = [
   ["{preset}", "size preset"],
 ] as const;
 
-export function useExportEstimate(active: boolean) {
+/** Bytes per pixel of the current design in a format (from a 1x test encode, debounced). */
+export function useExportEstimate(active: boolean, format: ExportFormat, quality: number) {
   const app = useApp();
   const scene = useScene((s) => s.scene);
-  const settings = useUi((s) => s.exportSettings);
   const [bpp, setBpp] = useState<number | null>(null);
   useEffect(() => {
     if (!active || !app.ui.get().hasContent) return;
     let alive = true;
     const t = setTimeout(() => {
       app
-        .runExport(settings.format, 1, settings.quality)
+        .runExport(format, 1, format === "png" ? undefined : quality)
         .then((r) => alive && setBpp(r.blob.size / (r.width * r.height)))
         .catch(() => undefined);
     }, 350);
@@ -279,7 +291,7 @@ export function useExportEstimate(active: boolean) {
       alive = false;
       clearTimeout(t);
     };
-  }, [active, app, scene, settings.format, settings.quality]);
+  }, [active, app, scene, format, quality]);
   return bpp;
 }
 
@@ -392,6 +404,67 @@ export function ExportPopover({ onDone }: { onDone?: () => void }) {
   );
 }
 
+/** The plan the current export settings produce (size, format, scale). */
+export function useExportPlan(copy = false) {
+  const app = useApp();
+  const scene = useScene((s) => s.scene);
+  const settings = useUi((s) => s.exportSettings);
+  const v = useUi((s) => s.assetsVersion);
+  const mode = useUi((s) => s.mode);
+  return useMemo(
+    () => app.exportPlan(settings, { copy }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [app, scene, settings, v, mode, copy],
+  );
+}
+
+function FitBadge({ verdict }: { verdict: FitVerdict }) {
+  if (verdict.kind === "none") return null;
+  return (
+    <span className={`fit-badge ${verdict.kind}`} data-testid="fit-badge">
+      <Icon name={verdict.kind === "fits" ? "check" : "alert"} size="xs" />
+      {verdict.label}
+    </span>
+  );
+}
+
+/** Destination chips: each picks format, scale and size for a place. */
+export function DestinationChips() {
+  const app = useApp();
+  const dest = useUi((s) => s.exportSettings.destination);
+  return (
+    <div className="dest-chips" role="radiogroup" aria-label="Export for">
+      {DESTINATIONS.map((d) => (
+        <button
+          key={d.id}
+          type="button"
+          role="radio"
+          aria-checked={dest === d.id}
+          className={`chip dest${dest === d.id ? " on" : " soft"}`}
+          title={d.blurb}
+          onClick={() => app.setExportSettings({ destination: d.id })}
+          onKeyDown={(e) => {
+            const dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+            if (!dir) return;
+            e.preventDefault();
+            const i = DESTINATIONS.findIndex((x) => x.id === dest);
+            const next = DESTINATIONS[(i + dir + DESTINATIONS.length) % DESTINATIONS.length]!;
+            app.setExportSettings({ destination: next.id });
+            const root = e.currentTarget.parentElement;
+            requestAnimationFrame(() =>
+              root?.querySelector<HTMLButtonElement>(`[data-dest="${next.id}"]`)?.focus(),
+            );
+          }}
+          data-dest={d.id}
+          tabIndex={dest === d.id ? 0 : -1}
+        >
+          {d.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function ExportPanel({
   onDone,
   compact = false,
@@ -404,21 +477,32 @@ export function ExportPanel({
   const app = useApp();
   const mod = useModKey();
   const settings = useUi((s) => s.exportSettings);
+  const copyState = useUi((s) => s.copyState);
+  const exportBusy = useUi((s) => s.exportBusy);
   const size = useScene((s) => s.scene.canvas.size);
   const fill = useScene((s) => s.scene.background.fill.kind);
   const layout = useCanvasSize();
-  const bpp = useExportEstimate(true);
+  const plan = useExportPlan();
+  const copyPlan = useExportPlan(true);
+  const dest = getDestination(settings.destination);
+  const bpp = useExportEstimate(true, plan.format, plan.quality);
   const [tokensOpen, setTokensOpen] = useState(false);
   const tokRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const max = Math.max(1, maxExportScale(layout));
   const W = layout.canvas.width;
   const H = layout.canvas.height;
-  const oW = W * settings.scale;
-  const oH = H * settings.scale;
-  const est = bpp ? bpp * oW * oH * (settings.format === "png" ? 0.85 : 0.9) : null;
-  const preview = app.filenameFor({ width: oW, height: oH }, settings);
+  const est = bpp ? bpp * plan.width * plan.height * (plan.format === "png" ? 0.85 : 0.9) : null;
+  const verdict = fitVerdict(dest, est, plan.format);
+  const heavy = dest.id === "original" && est !== null && est > 5 * 1024 * 1024;
+  const preview = app.filenameFor(
+    { width: plan.width, height: plan.height },
+    { ...settings, format: plan.format },
+    plan.scale,
+  );
   const appstore = size.kind === "fixed" && size.presetId?.startsWith("appstore");
+  const ratioBad = !ratioOk(dest, W, H);
+  const fullLong = Math.max(W, H) * (settings.scale || plan.autoScale || 1);
   const insert = (tok: string) => {
     const el = inputRef.current;
     const v = settings.pattern;
@@ -433,76 +517,134 @@ export function ExportPanel({
   };
   return (
     <div className="export-panel">
-      {!compact && !titled && (
-        <div className="mono muted export-native">
-          {W} × {H} at 1×
-        </div>
-      )}
       {!compact && titled && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-            marginBottom: 14,
-          }}
-        >
-          <h2
-            style={{
-              font: "700 17px/22px var(--sc-font-display)",
-              letterSpacing: "-.015em",
-            }}
-          >
-            Export
-          </h2>
-          <span className="mono muted">
-            {W} × {H} at 1×
-          </span>
+        <div className="export-head">
+          <h2>Export</h2>
         </div>
       )}
-      <div className="sub">Format</div>
-      <Segmented<ExportFormat>
-        label="Format"
-        value={settings.format}
-        onChange={(format) => app.setExportSettings({ format })}
-        options={[
-          { value: "png", label: "PNG" },
-          { value: "jpeg", label: "JPEG" },
-          { value: "webp", label: "WebP" },
-        ]}
-      />
-      <div className="sub" style={{ marginTop: 14 }}>
-        Size{" "}
-        <span className="mono muted" data-testid="export-dims">
-          {oW} × {oH} px{est ? ` · ≈ ${formatBytes(est)}` : ""}
-        </span>
+      <div className="sub">For</div>
+      <DestinationChips />
+      <div className="export-summary" data-testid="export-summary">
+        <div className="dims">
+          <span className="mono" data-testid="export-dims">
+            {plan.width} × {plan.height}
+          </span>
+          <span className="fmt">{plan.format === "jpeg" ? "JPEG" : plan.format.toUpperCase()}</span>
+          {est !== null && (
+            <span className="mono est" data-testid="export-size">
+              ≈ {formatBytes(est)}
+            </span>
+          )}
+        </div>
+        <div className="why">
+          {verdict.kind !== "none" ? (
+            <FitBadge verdict={verdict} />
+          ) : heavy ? (
+            <span className="fit-badge switch">
+              <Icon name="alert" size="xs" /> Large for X or LinkedIn: try JPEG or For X
+            </span>
+          ) : (
+            <span className="blurb">
+              {dest.id === "original"
+                ? settings.scale === 0
+                  ? plan.autoScale === 1
+                    ? "Auto: your screenshot’s own pixels, nothing upscaled."
+                    : `Auto: ${plan.autoScale}× so text stays crisp on retina screens.`
+                  : `${settings.scale}× the canvas.`
+                : dest.blurb}
+            </span>
+          )}
+        </div>
+        {ratioBad && dest.ratio && (
+          <div className="why">
+            <span className="fit-badge switch">
+              <Icon name="alert" size="xs" /> {dest.label} crops this shape
+            </span>
+            <button
+              type="button"
+              className="link"
+              onClick={() => {
+                const p = getSizePreset(dest.ratio!.fix);
+                if (p) app.setSize(p.size);
+              }}
+            >
+              {dest.ratio.fixLabel}
+            </button>
+          </div>
+        )}
       </div>
-      <Segmented
-        label="Scale"
-        value={String(settings.scale)}
-        onChange={(v) => app.setExportSettings({ scale: Number(v) })}
-        options={[1, 2, 3, 4].map((s) => ({
-          value: String(s),
-          label: `${s}×`,
-          disabled: s > max,
-          title: s > max ? "Too large for this browser's canvas limit" : undefined,
-        }))}
-      />
-      <div style={{ marginTop: 10 }}>
-        <Slider
-          label="Quality"
-          value={settings.format === "png" ? 100 : Math.round(settings.quality * 100)}
-          min={30}
-          max={100}
-          disabled={settings.format === "png"}
-          valueLabel={settings.format === "png" ? "Lossless" : undefined}
-          format={(v) => `${Math.round(v)}`}
-          onChange={(v) => app.setExportSettings({ quality: v / 100 })}
-        />
-      </div>
+      {dest.id === "original" && (
+        <>
+          <div className="sub" style={{ marginTop: 14 }}>
+            Format
+          </div>
+          <Segmented<ExportFormat>
+            label="Format"
+            value={settings.format}
+            onChange={(format) => app.setExportSettings({ format })}
+            options={[
+              { value: "png", label: "PNG" },
+              { value: "jpeg", label: "JPEG" },
+              { value: "webp", label: "WebP" },
+            ]}
+          />
+          <div className="sub" style={{ marginTop: 14 }}>
+            Scale
+          </div>
+          <Segmented
+            label="Scale"
+            value={String(settings.scale)}
+            onChange={(v) => app.setExportSettings({ scale: Number(v) as ScaleChoice })}
+            options={[0, 1, 2, 3, 4].map((s) => ({
+              value: String(s),
+              label: s === 0 ? `Auto ${plan.autoScale ?? 1}×` : `${s}×`,
+              disabled: s > max,
+              title:
+                s === 0
+                  ? "1× when your screenshot is already at full resolution"
+                  : s > max
+                    ? "Too large for this browser's canvas limit"
+                    : undefined,
+            }))}
+          />
+          {settings.format === "png" ? (
+            <p className="quality-line">
+              Quality <span>Lossless (PNG)</span>
+            </p>
+          ) : (
+            <div style={{ marginTop: 10 }}>
+              <Slider
+                label="Quality"
+                value={Math.round(settings.quality * 100)}
+                min={30}
+                max={100}
+                format={(v) => `${Math.round(v)}`}
+                onChange={(v) => app.setExportSettings({ quality: v / 100 })}
+              />
+            </div>
+          )}
+        </>
+      )}
+      {dest.id === "original" && fullLong > COPY_MAX_LONG && (
+        <div className="toggle-row">
+          <span className="label">
+            Copy at full size
+            <small>
+              {settings.copyFull
+                ? `Copies ${plan.width} × ${plan.height}`
+                : `Copies ${copyPlan.width} × ${copyPlan.height}, light enough to paste`}
+            </small>
+          </span>
+          <Switch
+            checked={settings.copyFull}
+            label="Copy at full size"
+            onChange={(v) => app.setExportSettings({ copyFull: v })}
+          />
+        </div>
+      )}
       {!compact && (
         <>
-          <div className="sub" style={{ marginTop: 8 }}>
+          <div className="sub" style={{ marginTop: 10 }}>
             File name
           </div>
           <div className="input mono-input">
@@ -557,7 +699,7 @@ export function ExportPanel({
           </Popover>
           <div
             className="mono muted"
-            style={{ margin: "6px 2px 16px" }}
+            style={{ margin: "6px 2px 16px", overflowWrap: "anywhere" }}
             data-testid="filename-preview"
           >
             → {preview}
@@ -570,14 +712,15 @@ export function ExportPanel({
           background, or export JPEG.
         </div>
       )}
-      {settings.format === "jpeg" && fill === "none" && !appstore && (
+      {plan.format === "jpeg" && fill === "none" && !appstore && (
         <p className="note">JPEG has no transparency, so the background becomes white.</p>
       )}
       {!compact && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 8 }}>
           <button
             type="button"
-            className="btn btn-secondary"
+            className={`btn btn-secondary${copyState === "busy" ? " pressed shimmer-busy" : ""}`}
+            aria-busy={copyState === "busy"}
             onClick={(e) => {
               app.copy(e.currentTarget);
               onDone?.();
@@ -587,7 +730,8 @@ export function ExportPanel({
           </button>
           <button
             type="button"
-            className="btn btn-primary"
+            className={`btn btn-primary${exportBusy ? " pressed shimmer-busy" : ""}`}
+            aria-busy={exportBusy}
             data-testid="download"
             onClick={(e) => {
               void app.downloadImage(e.currentTarget);
@@ -706,7 +850,13 @@ function MoreMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
         </div>
         <div className="menu-sep" role="separator" />
         <div role="menu" aria-label="Project">
-          <Link role="menuitem" className="menu-item" href="/about/" onClick={close}>
+          <Link
+            role="menuitem"
+            className="menu-item"
+            href="/about/"
+            prefetch={false}
+            onClick={close}
+          >
             <LogoMark className="i-sm" /> About Shotcandy
           </Link>
           <a
@@ -759,6 +909,8 @@ export function Header() {
     m.format === "gif"
       ? `GIF · ${m.gifSize}`
       : `${m.format.toUpperCase()} · ${m.videoRes === 2160 ? "4K" : `${m.videoRes}p`}`;
+  const plan = useExportPlan();
+  const tag = exportTag(plan, getDestination(settings.destination), settings.scale);
   const moreRef = useRef<HTMLButtonElement>(null);
   const exportRef = useRef<HTMLButtonElement>(null);
   const mainRef = useRef<HTMLButtonElement>(null);
@@ -771,7 +923,12 @@ export function Header() {
 
   return (
     <header className="header">
-      <Link className="brand" href="/about/" aria-label="Shotcandy — about this project">
+      <Link
+        className="brand"
+        href="/about/"
+        prefetch={false}
+        aria-label="Shotcandy — about this project"
+      >
         <LogoMark className="mark" />
         <span className="word">shotcandy</span>
       </Link>
@@ -813,8 +970,9 @@ export function Header() {
       <span className="sep" aria-hidden="true" />
       <button
         type="button"
-        className={`btn btn-secondary copy-btn${copyState === "done" ? " copied pop" : ""}${copyState === "busy" ? " shimmer-busy" : ""}`}
+        className={`btn btn-secondary copy-btn${copyState === "done" ? " copied pop" : ""}${copyState === "busy" ? " pressed shimmer-busy" : ""}`}
         disabled={!hasContent}
+        aria-busy={copyState === "busy"}
         data-copy-anchor
         data-testid="copy"
         title={hasContent ? "Copy image (⌘C)" : "Paste a screenshot first"}
@@ -834,9 +992,9 @@ export function Header() {
         <button
           ref={mainRef}
           type="button"
-          className={`btn btn-primary${exportBusy || motionJob ? " pressed" : ""}`}
+          className={`btn btn-primary${exportBusy || motionJob ? " pressed" : ""}${exportBusy ? " shimmer-busy" : ""}`}
           disabled={!hasContent}
-          aria-busy={!!motionJob}
+          aria-busy={!!motionJob || exportBusy}
           data-testid="export"
           title={
             hasContent
@@ -861,10 +1019,7 @@ export function Header() {
               ) : motionKind ? (
                 motionTag
               ) : (
-                <>
-                  {settings.format === "jpeg" ? "JPG" : settings.format.toUpperCase()} ·{" "}
-                  {settings.scale}×
-                </>
+                tag
               )}
             </span>
           )}

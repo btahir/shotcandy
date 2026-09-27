@@ -63,6 +63,7 @@ import {
   importImage,
   isBuiltinAssetId,
   layoutScene,
+  maxExportScale,
   openStore,
   parseProject,
   projectToBlob,
@@ -74,7 +75,7 @@ import {
 } from "@/engine";
 import { createExportWorker } from "@/engine/export/worker-factory";
 import { createAnimationWorker } from "@/engine/animation/worker-factory";
-import { createEditorStore, type EditorStore } from "@/state/editor-store";
+import { createEditorStore, type EditorHistory, type EditorStore } from "@/state/editor-store";
 import { APP_VERSION } from "@/config/site";
 import { loadCanvasFonts, registerBrandFonts } from "@/lib/fonts";
 import { GHOST_H, GHOST_ID, GHOST_W, loadGhost } from "@/lib/ghost";
@@ -84,6 +85,18 @@ import { sprinkle } from "@/lib/sprinkles";
 import { prefersReducedMotion } from "@/lib/platform";
 import { type Mode, initialCodeScene, initialPostScene, modeForScene } from "./modes";
 import { SetController } from "./appstore";
+import { shuffleComposition } from "./shuffle";
+import {
+  COPY_MAX_LONG,
+  type DestinationId,
+  type ExportPlan,
+  type ScaleChoice,
+  DESTINATIONS,
+  drawRatio,
+  getDestination,
+  nextAttempt,
+  planExport,
+} from "./export-plan";
 
 registerBrandFonts();
 
@@ -117,7 +130,12 @@ export interface MotionExportSettings {
 
 export interface ExportSettings {
   format: ExportFormat;
-  scale: number;
+  /** 0 = Auto (1x when the screenshot is already at native pixels). */
+  scale: ScaleChoice;
+  /** Where the image is going: picks format, scale and limits. */
+  destination: DestinationId;
+  /** Copy at full size instead of capping the long side at 4096 px. */
+  copyFull: boolean;
   quality: number;
   pattern: string;
   /** What the Export button produces: a still image or the motion clip. */
@@ -227,22 +245,37 @@ function loadMotionSettings(raw: unknown): MotionExportSettings {
   };
 }
 
-function loadSettings(): ExportSettings {
-  const d: ExportSettings = {
+const SETTINGS_VERSION = 2;
+
+export function defaultExportSettings(): ExportSettings {
+  return {
     format: "png",
-    scale: 2,
+    scale: 0,
+    destination: "original",
+    copyFull: false,
     quality: 0.92,
     pattern: DEFAULT_FILENAME_PATTERN,
     kind: "image",
     motion: { ...DEFAULT_MOTION_EXPORT },
   };
+}
+
+function loadSettings(): ExportSettings {
+  const d: ExportSettings = defaultExportSettings();
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return d;
-    const p = JSON.parse(raw) as Partial<ExportSettings>;
+    const p = JSON.parse(raw) as Partial<ExportSettings> & { v?: number };
+    // Settings from before smart scale kept the old 2x default: start them on Auto.
+    const scale =
+      p.v === SETTINGS_VERSION && [0, 1, 2, 3, 4].includes(Number(p.scale)) ? Number(p.scale) : 0;
     return {
       format: p.format === "jpeg" || p.format === "webp" ? p.format : "png",
-      scale: [1, 2, 3, 4].includes(Number(p.scale)) ? Number(p.scale) : 2,
+      scale: scale as ScaleChoice,
+      destination: DESTINATIONS.some((x) => x.id === p.destination)
+        ? (p.destination as DestinationId)
+        : "original",
+      copyFull: p.copyFull === true,
       quality: typeof p.quality === "number" ? Math.min(1, Math.max(0.3, p.quality)) : 0.92,
       pattern: typeof p.pattern === "string" && p.pattern.trim() ? p.pattern : d.pattern,
       kind: "image",
@@ -319,13 +352,22 @@ export class EditorApp {
   readonly animator = new AnimationExporter({ createWorker: createAnimationWorker });
   readonly ui: Store<UiState>;
   readonly playback: Store<PlaybackState> = createStore<PlaybackState>({ playing: false, t: null });
+  /** Hover-to-preview: a scene shown on the stage instead of the real one (never in history). */
+  readonly preview: Store<{ scene: Scene | null; label: string | null }> = createStore<{
+    scene: Scene | null;
+    label: string | null;
+  }>({ scene: null, label: null });
+  private previewTimer: ReturnType<typeof setTimeout> | null = null;
   /** App Store set slides and options (App Store mode). */
   readonly sets: SetController;
   private motionAbort: AbortController | null = null;
   private tickRaf = 0;
   /** Each mode's design while another mode is shown. */
   private stash: Partial<
-    Record<Mode, { scene: Scene; hasContent: boolean; designId: string | null }>
+    Record<
+      Mode,
+      { scene: Scene; hasContent: boolean; designId: string | null; history?: EditorHistory }
+    >
   > = {};
   private highlightTimer: ReturnType<typeof setTimeout> | null = null;
   private highlightJob = 0;
@@ -363,14 +405,7 @@ export class EditorApp {
       toasts: [],
       copyState: "idle",
       exportBusy: false,
-      exportSettings: {
-        format: "png",
-        scale: 2,
-        quality: 0.92,
-        pattern: DEFAULT_FILENAME_PATTERN,
-        kind: "image",
-        motion: { ...DEFAULT_MOTION_EXPORT },
-      },
+      exportSettings: defaultExportSettings(),
       editingText: null,
       customPresets: [],
       recents: [],
@@ -433,6 +468,10 @@ export class EditorApp {
     });
     this.store.subscribe(() => this.onSceneChange());
     this.store.subscribe(() => this.scheduleHighlight());
+    // A hover preview is built from the scene at hover time; any edit ends it.
+    this.store.subscribe(() => {
+      if (this.preview.get().scene) this.clearPreview(true);
+    });
     const idle = (cb: () => void) =>
       (
         window as unknown as { requestIdleCallback?: (c: () => void, o?: object) => void }
@@ -669,6 +708,24 @@ export class EditorApp {
         detail: "Paste the image itself.",
         prose: true,
       });
+    } else if (text.trim() && this.ui.get().mode !== "code") {
+      this.toast({
+        kind: "info",
+        title: "That’s text",
+        detail: "Copy an image or take a screenshot, then paste it here.",
+        prose: true,
+        ...(this.ui.get().hasContent
+          ? {}
+          : {
+              action: {
+                label: "Make it a code image",
+                run: () => {
+                  this.setMode("code");
+                  this.setCode({ code: text, language: "auto", highlight: [] });
+                },
+              },
+            }),
+      });
     }
   }
 
@@ -742,6 +799,7 @@ export class EditorApp {
     const patch: StylePatch | undefined = builtin?.patch ?? custom?.patch;
     if (!patch) return;
     this.userPickedStyle = true;
+    this.clearPreview(true);
     this.store.update((s) => applyStylePatch(s, patch, id), {
       ...(opts.history === false ? { transient: true } : {}),
     });
@@ -773,6 +831,78 @@ export class EditorApp {
     const pick = pool[Math.floor(Math.random() * pool.length)]!;
     this.applyStyle(pick.id);
     this.announce(`Style: ${pick.name}`);
+  }
+
+  private shuffleSeed = 0;
+
+  /**
+   * Candy Shuffle: re-roll the whole composition (style, background, tilt or
+   * bleed, frame, shadow) from curated rules. One undo step.
+   */
+  shuffle(): void {
+    if (this.ui.get().mode !== "screenshot") return this.surprise();
+    this.clearPreview(true);
+    const c = this.scene.content;
+    const palette =
+      c.kind === "image" && c.assetId ? (this.library.get(c.assetId)?.palette ?? null) : null;
+    this.shuffleSeed = (this.shuffleSeed + 1 + Math.floor(Math.random() * 1e6)) >>> 0;
+    const r = shuffleComposition(this.scene, {
+      seed: this.shuffleSeed,
+      size: this.contentSize(),
+      palette,
+      current: this.scene.meta.stylePresetId,
+      isImage: c.kind === "image",
+    });
+    this.userPickedStyle = true;
+    this.store.update(() => r.scene);
+    if (this.ui.get().hasContent) this.ui.set((s) => ({ xfade: s.xfade + 1 }));
+    this.emit("shuffled", r.summary);
+    this.announce(`Shuffled: ${r.summary}`);
+    if (this.ui.get().hasContent)
+      this.toast({
+        kind: "undo",
+        title: "Shuffled",
+        detail: r.summary,
+        prose: true,
+        action: { label: "Undo", run: () => this.store.undo() },
+      });
+  }
+
+  // ----------------------------------------------------------------- preview
+  /** Show a scene on the stage without committing it (hover to preview). */
+  previewScene(make: (s: Scene) => Scene, label: string): void {
+    if (this.previewTimer) clearTimeout(this.previewTimer);
+    if (!this.ui.get().hasContent || this.playback.get().playing) return;
+    this.previewTimer = setTimeout(() => {
+      this.previewTimer = null;
+      const next = make(this.scene);
+      this.ensureBuiltins(next);
+      this.preview.set({ scene: next, label });
+    }, 90);
+  }
+
+  /** Back to the real scene (after a short grace so moving between tiles doesn't flash). */
+  clearPreview(now = false): void {
+    if (this.previewTimer) clearTimeout(this.previewTimer);
+    this.previewTimer = null;
+    if (!this.preview.get().scene) return;
+    if (now) {
+      this.preview.set({ scene: null, label: null });
+      return;
+    }
+    this.previewTimer = setTimeout(() => {
+      this.previewTimer = null;
+      this.preview.set({ scene: null, label: null });
+    }, 60);
+  }
+
+  /** Preview a style from its tile. */
+  previewStyle(id: string): void {
+    const builtin = getStylePreset(id);
+    const custom = this.ui.get().customPresets.find((p) => p.id === id);
+    const patch = builtin?.patch ?? custom?.patch;
+    if (!patch || id === this.scene.meta.stylePresetId) return this.clearPreview();
+    this.previewScene((s) => applyStylePatch(s, patch, id), builtin?.name ?? custom?.name ?? id);
   }
 
   contentSize(): { width: number; height: number } | null {
@@ -931,7 +1061,12 @@ export class EditorApp {
     const ui = this.ui.get();
     if (ui.mode === mode) return;
     this.stopPreview();
-    this.stash[ui.mode] = { scene: this.scene, hasContent: ui.hasContent, designId: this.designId };
+    this.stash[ui.mode] = {
+      scene: this.scene,
+      hasContent: ui.hasContent,
+      designId: this.designId,
+      history: this.store.history(),
+    };
     const next = this.stash[mode];
     let scene: Scene;
     let has: boolean;
@@ -945,7 +1080,8 @@ export class EditorApp {
       this.designId = has ? newId("d") : null;
       this.designCreated = Date.now();
     }
-    this.store.reset(scene);
+    // Each mode keeps its own undo history across switches.
+    this.store.reset(scene, next?.history);
     this.store.select(null);
     this.ui.set((s) => ({
       mode,
@@ -1340,19 +1476,54 @@ export class EditorApp {
   }
 
   maxScale(): number {
-    return 4;
+    return Math.max(1, maxExportScale(layoutScene(this.exportTarget(), this.resolver)));
   }
 
-  filenameFor(r: { width: number; height: number }, settings: ExportSettings): string {
-    const s = this.scene;
+  /** Inputs for export planning (canvas size, how the screenshot is drawn, limits). */
+  planInput(scene: Scene = this.exportTarget()) {
+    const layout = layoutScene(scene, this.resolver);
+    return {
+      width: layout.canvas.width,
+      height: layout.canvas.height,
+      drawRatio: drawRatio(layout, scene.content.kind === "image"),
+      fixed: scene.canvas.size.kind === "fixed",
+      maxScale: Math.max(1, maxExportScale(layout)),
+    };
+  }
+
+  /** What an export with these settings produces (Copy caps the long side unless asked not to). */
+  exportPlan(
+    settings: ExportSettings = this.ui.get().exportSettings,
+    opts: { copy?: boolean } = {},
+  ): ExportPlan {
+    const plan = planExport(this.planInput(), {
+      scale: settings.scale,
+      format: opts.copy ? "png" : settings.format,
+      quality: settings.quality,
+      destination: settings.destination,
+      ...(opts.copy && !settings.copyFull ? { maxLong: COPY_MAX_LONG } : {}),
+    });
+    return opts.copy ? { ...plan, format: "png" } : plan;
+  }
+
+  filenameFor(
+    r: { width: number; height: number },
+    settings: ExportSettings,
+    scale?: number,
+  ): string {
+    const s = this.exportTarget();
     const size = s.canvas.size;
-    return formatFilename(settings.pattern, {
+    const sc = scale ?? this.exportPlan(settings).scale;
+    const whole = Math.abs(sc - Math.round(sc)) < 0.01;
+    // "@0.32x" says nothing useful: destination sizes drop the scale suffix.
+    const pattern = whole ? settings.pattern : settings.pattern.replace(/@\{scale\}x/g, "");
+    return formatFilename(pattern, {
       name: s.meta.name,
       style: s.meta.stylePresetId ?? "custom",
       preset: size.kind === "auto" ? "auto" : (size.presetId ?? "custom"),
       width: r.width,
       height: r.height,
-      scale: settings.scale,
+      scale: whole ? Math.round(sc) : Math.round(sc * 100) / 100,
       format: settings.format,
       now: new Date(),
     });
@@ -1374,21 +1545,59 @@ export class EditorApp {
     });
   }
 
+  /**
+   * Export a plan; when the destination has a size limit, retry (JPEG, then
+   * lower quality, then fewer pixels) until the file fits.
+   */
+  async runPlan(
+    plan: ExportPlan,
+    settings: ExportSettings = this.ui.get().exportSettings,
+    opts: { pngOnly?: boolean } = {},
+  ): Promise<ExportResult & { fitted: boolean }> {
+    const dest = getDestination(settings.destination);
+    let attempt = { format: plan.format, quality: plan.quality, scale: plan.scale };
+    let r = await this.runExport(attempt.format, attempt.scale, attempt.quality);
+    let fitted = false;
+    const limit = dest.limitBytes;
+    for (let i = 0; limit && r.blob.size > limit && i < 5; i++) {
+      attempt = nextAttempt(attempt, r.blob.size, limit, dest.format === "auto" && !opts.pngOnly);
+      r = await this.runExport(attempt.format, attempt.scale, attempt.quality);
+      fitted = true;
+    }
+    return { ...r, fitted };
+  }
+
   setExportSettings(patch: Partial<ExportSettings>): void {
     const next = { ...this.ui.get().exportSettings, ...patch };
     this.ui.set({ exportSettings: next });
     try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...next, v: SETTINGS_VERSION }));
     } catch {
       /* ignore */
     }
   }
 
+  /** Nothing to export yet: say so instead of doing nothing. */
+  nothingYet(what: "copy" | "export"): void {
+    const mod = /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent) ? "⌘" : "Ctrl+";
+    this.toast({
+      kind: "info",
+      title: "Paste a screenshot first",
+      detail: `Press ${mod}V, drop an image or choose a file, then ${what} it.`,
+      prose: true,
+    });
+  }
+
   /** Copy PNG to the clipboard. Call synchronously from the user gesture. */
-  copy(anchor?: Element | null): void {
-    if (!this.ui.get().hasContent || this.ui.get().copyState === "busy") return;
-    const { scale } = this.ui.get().exportSettings;
-    const job = this.runExport("png", scale);
+  copy(anchor?: Element | null, opts: { full?: boolean } = {}): void {
+    if (!this.ui.get().hasContent) return this.nothingYet("copy");
+    if (this.ui.get().copyState === "busy") return;
+    const settings = {
+      ...this.ui.get().exportSettings,
+      ...(opts.full ? { copyFull: true } : {}),
+    };
+    const plan = this.exportPlan(settings, { copy: true });
+    const job = this.runPlan(plan, settings, { pngOnly: true });
     this.ui.set({ copyState: "busy" });
     let write: Promise<void>;
     try {
@@ -1404,12 +1613,16 @@ export class EditorApp {
         }, 1600);
         sprinkle(anchor ?? null);
         this.emit("copied", r);
+        const original = getDestination(settings.destination).id === "original";
+        const capped = plan.capped && original;
         this.toast({
           kind: "wrap",
           title: "Copied to clipboard",
-          detail: `${r.width} × ${r.height} PNG · paste anywhere`,
+          detail: `${r.width} × ${r.height} PNG · ${formatBytes(r.blob.size)}${capped ? " · sized for pasting" : ""}`,
           thumb: await thumbUrl(r.blob),
-          action: { label: "Download", run: () => void this.downloadImage() },
+          action: capped
+            ? { label: "Copy full size", run: () => this.copy(null, { full: true }) }
+            : { label: "Download", run: () => void this.downloadImage() },
         });
         this.announce(`Copied ${r.width} by ${r.height} PNG to the clipboard.`);
       },
@@ -1417,8 +1630,7 @@ export class EditorApp {
         this.ui.set({ copyState: "idle" });
         try {
           const r = await job;
-          const settings = { ...this.ui.get().exportSettings, format: "png" as const };
-          downloadBlob(r.blob, this.filenameFor(r, settings));
+          downloadBlob(r.blob, this.filenameFor(r, { ...settings, format: "png" }, plan.scale));
           this.toast({
             kind: "error",
             title: "Your browser blocked clipboard access",
@@ -1439,6 +1651,7 @@ export class EditorApp {
 
   /** The Export button: the motion clip when motion export is chosen, else the image. */
   async download(anchor?: Element | null): Promise<void> {
+    if (!this.ui.get().hasContent) return this.nothingYet("export");
     if (this.ui.get().mode === "appstore")
       return this.sets.exportZip(this.ui.get().exportSettings.format === "jpeg" ? "jpeg" : "png");
     if (this.ui.get().exportSettings.kind === "motion" && this.scene.animation)
@@ -1452,22 +1665,29 @@ export class EditorApp {
     const settings = { ...this.ui.get().exportSettings, ...override };
     this.ui.set({ exportBusy: true });
     try {
-      const r = await this.runExport(settings.format, settings.scale, settings.quality);
+      const plan = this.exportPlan(settings);
+      const r = await this.runPlan(plan, settings);
       const actual = r.mime.includes("png")
         ? "png"
         : r.mime.includes("jpeg")
           ? "jpeg"
           : r.mime.includes("webp")
             ? "webp"
-            : settings.format;
-      const name = this.filenameFor(r, { ...settings, format: actual as ExportFormat });
+            : plan.format;
+      const name = this.filenameFor(r, { ...settings, format: actual as ExportFormat }, plan.scale);
       downloadBlob(r.blob, name);
       sprinkle(anchor ?? null);
-      const fallback = actual !== settings.format;
+      const fallback = actual !== plan.format && !r.fitted;
+      const dest = getDestination(settings.destination);
+      const fit =
+        dest.limitLabel && dest.limitBytes && r.blob.size <= dest.limitBytes
+          ? ` · fits ${dest.limitLabel}`
+          : "";
+      this.emit("downloaded", r);
       this.toast({
         kind: "wrap",
         title: `Saved ${name}`,
-        detail: `${r.width} × ${r.height} ${actual.toUpperCase()} · ${formatBytes(r.blob.size)}${fallback ? ` (${settings.format.toUpperCase()} isn't supported here)` : ""}`,
+        detail: `${r.width} × ${r.height} ${actual.toUpperCase()} · ${formatBytes(r.blob.size)}${fit}${fallback ? ` (${plan.format.toUpperCase()} isn't supported here)` : ""}`,
         thumb: await thumbUrl(r.blob),
         action: { label: "Copy too", run: () => this.copy() },
       });
@@ -1489,8 +1709,9 @@ export class EditorApp {
     const settings = this.ui.get().exportSettings;
     this.ui.set({ exportBusy: true });
     try {
-      const r = await this.runExport(settings.format, settings.scale, settings.quality);
-      const name = this.filenameFor(r, settings);
+      const plan = this.exportPlan(settings);
+      const r = await this.runPlan(plan, settings);
+      const name = this.filenameFor(r, settings, plan.scale);
       const file = new File([r.blob], name, { type: r.mime });
       const nav = navigator as Navigator & {
         canShare?: (d: ShareData) => boolean;

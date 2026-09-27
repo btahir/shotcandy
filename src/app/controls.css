@@ -1,0 +1,583 @@
+/* Editor controls added after the first design pass: export destinations,
+   Edit gradient, position grid, stage notes, hover preview, Candy Jar
+   highlight. Confectionery tokens only; editor route only (imported by
+   Editor.tsx). */
+
+@layer components {
+  /* ---------- Words in Figtree, numbers in Geist Mono (fonts.md) ---------- */
+  .meta-txt {
+    font:
+      var(--sc-weight-medium) 12px/16px var(--sc-font-ui),
+      sans-serif;
+    color: var(--sc-ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .chip .meta-txt {
+    font-weight: var(--sc-weight-medium);
+  }
+  .chip.on .meta-txt,
+  .chip[aria-expanded="true"] .meta-txt {
+    color: inherit;
+    opacity: 0.75;
+  }
+  .menu-item .meta-txt {
+    margin-left: auto;
+  }
+  .tray-head .meta,
+  .jar-sec .meta {
+    font:
+      var(--sc-weight-medium) 12px/16px var(--sc-font-ui),
+      sans-serif;
+    color: var(--sc-ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .tray-head .head-links {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  /* ---------- Keycaps: readable glyphs (P2-17) ---------- */
+  .kbd {
+    font-size: 11px;
+    color: var(--sc-ink-2);
+  }
+  .kb-row .kbd {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    font-size: 12px;
+    color: var(--sc-ink);
+    background: var(--sc-surface);
+    box-shadow:
+      inset 0 -2px 0 var(--sc-line-strong),
+      0 0 0 1px var(--sc-line);
+  }
+  .kbd.glyph {
+    font-family: var(--sc-font-ui);
+    font-size: 13px;
+    font-weight: var(--sc-weight-semibold);
+  }
+  .kb-row .kbd.glyph {
+    font-size: 14px;
+  }
+  .dialog-body {
+    min-height: 0;
+  }
+
+  /* ---------- Preset tiles: single-line names, a check on the chosen one ---------- */
+  .preset .name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sel-check {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--sc-accent-fill);
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(74, 45, 20, 0.3);
+    animation: sc-pop-in var(--sc-dur-fast) var(--sc-ease-pop);
+  }
+
+  /* ---------- Frame tiles with labels (P2-16) ---------- */
+  .tile.labelled {
+    aspect-ratio: auto;
+    height: 58px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+  }
+  .tile .tile-label {
+    font-size: 10.5px;
+    line-height: 12px;
+    font-weight: var(--sc-weight-semibold);
+  }
+  .tile.labelled svg {
+    width: 24px;
+    height: 20px;
+  }
+  .theme-seg button {
+    gap: 5px;
+  }
+
+  /* ---------- Candy Jar ---------- */
+  .jar-card.hl .th {
+    outline: 2px solid var(--sc-ink);
+    outline-offset: 3px;
+    transform: translateY(-4px) scale(1.015);
+  }
+  .jar-card.hl .apply {
+    opacity: 1;
+  }
+  .save-chip {
+    flex: none;
+  }
+  .jar-foot .kbd + .kbd {
+    margin-left: -2px;
+  }
+
+  /* ---------- Export: destinations, summary, limits ---------- */
+  .dest-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .dest-chips .chip {
+    height: 30px;
+    padding: 0 11px;
+    font-size: 12.5px;
+  }
+  .export-summary {
+    margin-top: 12px;
+    background: var(--sc-well);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: var(--sc-shadow-well);
+    display: grid;
+    gap: 6px;
+  }
+  .export-summary .dims {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .export-summary .dims .mono:first-child {
+    font-size: 14px;
+    font-weight: var(--sc-weight-medium);
+    color: var(--sc-ink);
+  }
+  .export-summary .fmt {
+    font-size: 11px;
+    font-weight: var(--sc-weight-bold);
+    color: var(--sc-ink-2);
+    background: var(--sc-surface);
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+  .export-summary .est {
+    margin-left: auto;
+    color: var(--sc-ink-2);
+  }
+  .export-summary .why {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 20px;
+  }
+  .export-summary .blurb {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--sc-ink-3);
+  }
+  .fit-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: var(--sc-weight-semibold);
+    line-height: 16px;
+    border-radius: 8px;
+    padding: 2px 8px 2px 6px;
+  }
+  .fit-badge.fits {
+    color: var(--sc-success);
+    background: var(--sc-success-soft);
+  }
+  .fit-badge.switch,
+  .fit-badge.over {
+    color: var(--sc-warning);
+    background: var(--sc-warning-soft);
+  }
+  .quality-line {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: var(--sc-weight-semibold);
+    color: var(--sc-ink-2);
+  }
+  .quality-line span {
+    font-weight: var(--sc-weight-medium);
+    color: var(--sc-ink-3);
+  }
+  .export-panel .toggle-row .label small,
+  .position .side-note {
+    display: block;
+    font-size: 11.5px;
+    line-height: 15px;
+    font-weight: var(--sc-weight-medium);
+    color: var(--sc-ink-3);
+  }
+  .export-panel .toggle-row {
+    margin-top: 8px;
+  }
+
+  /* ---------- Position: 3x3 grid, fit, bleed ---------- */
+  .position-row {
+    display: grid;
+    grid-template-columns: 78px 1fr;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .pos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    padding: 4px;
+    background: var(--sc-well);
+    border-radius: 12px;
+    box-shadow: var(--sc-shadow-well);
+    width: 78px;
+    height: 62px;
+  }
+  .pos-cell {
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    transition: background var(--sc-dur-fast);
+  }
+  .pos-cell i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sc-ink-4);
+    transition:
+      transform var(--sc-dur-fast) var(--sc-ease-pop),
+      background var(--sc-dur-fast);
+  }
+  .pos-cell:hover {
+    background: var(--sc-well-hover);
+  }
+  .pos-cell:hover i {
+    background: var(--sc-ink-2);
+  }
+  .pos-cell.on {
+    background: var(--sc-surface);
+    box-shadow:
+      0 1px 2px rgba(74, 45, 20, 0.14),
+      inset 0 -1.5px 0 rgba(74, 45, 20, 0.07);
+  }
+  .pos-cell.on i {
+    width: 14px;
+    height: 10px;
+    border-radius: 3px;
+    background: var(--sc-accent);
+  }
+  .position-side {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+  .position-side .side-label {
+    font-size: 12px;
+    font-weight: var(--sc-weight-semibold);
+    color: var(--sc-ink-2);
+  }
+  .position-side .seg button {
+    padding: 0 6px;
+  }
+
+  /* ---------- Edit gradient ---------- */
+  .grad-edit {
+    margin-top: 12px;
+    display: grid;
+    gap: 12px;
+  }
+  .grad-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .grad-main {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .angle-dial-wrap {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    flex: none;
+  }
+  .angle-dial {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--sc-well);
+    box-shadow: var(--sc-shadow-well);
+    cursor: grab;
+    touch-action: none;
+    outline: none;
+  }
+  .angle-dial:active {
+    cursor: grabbing;
+  }
+  .angle-dial:focus-visible {
+    box-shadow: var(--sc-shadow-well), var(--sc-focus-ring);
+  }
+  .angle-dial svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .angle-dial .tick {
+    fill: var(--sc-ink-4);
+  }
+  .angle-dial .tick.on {
+    fill: var(--sc-accent);
+  }
+  .angle-dial .hand {
+    stroke: var(--sc-ink-3);
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+  .angle-dial .knob {
+    fill: var(--sc-accent);
+    stroke: var(--sc-surface);
+    stroke-width: 2;
+  }
+  .angle-dial .hub {
+    fill: var(--sc-ink-3);
+  }
+  .angle-val {
+    color: var(--sc-ink-2);
+  }
+  .stop-bar {
+    position: relative;
+    height: 26px;
+    border-radius: 9px;
+    margin: 0 10px;
+    box-shadow:
+      inset 0 0 0 1px rgba(0, 0, 0, 0.08),
+      var(--sc-shadow-raised);
+  }
+  .stop-bar .stop {
+    position: absolute;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 2.5px #fff,
+      0 1px 4px 2px rgba(42, 31, 26, 0.3);
+    cursor: ew-resize;
+    touch-action: none;
+    transition: transform var(--sc-dur-fast) var(--sc-ease-pop);
+  }
+  .stop-bar .stop.on {
+    transform: scale(1.14);
+    box-shadow:
+      0 0 0 2.5px #fff,
+      0 0 0 5px var(--sc-accent),
+      0 2px 6px 2px rgba(42, 31, 26, 0.3);
+  }
+  .mesh-chips {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .mesh-chips .btn {
+    margin-left: auto;
+  }
+  .stop-chip {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    box-shadow: var(--sc-shadow-swatch);
+    transition: transform var(--sc-dur-fast) var(--sc-ease-pop);
+  }
+  .stop-chip:hover {
+    transform: translateY(-1px);
+  }
+  .stop-chip.on {
+    box-shadow: var(--sc-selected-ring), var(--sc-shadow-swatch);
+  }
+  .stop-tools {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stop-tools .stop-label {
+    flex: 1;
+    font-size: 12px;
+    font-weight: var(--sc-weight-semibold);
+    color: var(--sc-ink-2);
+  }
+  .stop-tools .stop-label .mono {
+    color: var(--sc-ink-3);
+    margin-left: 2px;
+  }
+  .grad-suggest {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .grad-suggest > span {
+    font-size: 12px;
+    font-weight: var(--sc-weight-semibold);
+    color: var(--sc-ink-2);
+    margin-right: 2px;
+  }
+  .grad-suggest .sw.sm {
+    width: 22px;
+    height: 22px;
+  }
+  .grad-actions:empty {
+    display: none;
+  }
+
+  /* ---------- Stage: notes, preview pill, code lines ---------- */
+  .stage-notes {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    z-index: 8;
+    display: grid;
+    gap: 6px;
+    justify-items: start;
+    max-width: min(560px, calc(100% - 32px));
+    pointer-events: none;
+  }
+  .stage-notes.narrow {
+    top: 8px;
+    left: 8px;
+    max-width: calc(100% - 16px);
+  }
+  .stage-note {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 6px 5px 11px;
+    border-radius: var(--sc-radius-pill);
+    background: var(--sc-surface);
+    box-shadow: var(--sc-shadow-float);
+    font-size: 12.5px;
+    font-weight: var(--sc-weight-semibold);
+    color: var(--sc-ink-2);
+    white-space: nowrap;
+    animation: sc-rise var(--sc-dur-base) var(--sc-ease-out) both;
+  }
+  .stage-note > svg {
+    color: var(--sc-accent-text);
+  }
+  .stage-note > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stage-note .note-act {
+    height: 26px;
+    padding: 0 10px;
+    border-radius: var(--sc-radius-pill);
+    background: var(--sc-well);
+    color: var(--sc-ink);
+    font-size: 12px;
+    font-weight: var(--sc-weight-bold);
+    transition: background var(--sc-dur-fast);
+  }
+  .stage-note .note-act:hover {
+    background: var(--sc-well-hover);
+  }
+  .stage-note .note-x {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--sc-ink-3);
+  }
+  .stage-note .note-x:hover {
+    background: var(--sc-well);
+    color: var(--sc-ink);
+  }
+  .stage-note .note-act:focus-visible,
+  .stage-note .note-x:focus-visible {
+    outline: none;
+    box-shadow: var(--sc-focus-ring);
+  }
+  @media (max-width: 767px) {
+    .stage-note {
+      white-space: normal;
+      font-size: 12px;
+    }
+  }
+  .preview-pill {
+    position: absolute;
+    bottom: 24px;
+    left: 18px;
+    z-index: 9;
+    padding: 5px 11px;
+    border-radius: var(--sc-radius-pill);
+    background: var(--sc-ink);
+    color: var(--sc-on-ink);
+    font-size: 12px;
+    font-weight: var(--sc-weight-bold);
+    pointer-events: none;
+    animation: sc-fade-in var(--sc-dur-fast) var(--sc-ease-out);
+  }
+  .code-lines {
+    position: absolute;
+    z-index: 5;
+  }
+  .code-line-hover {
+    position: absolute;
+    background: color-mix(in srgb, var(--sc-accent) 14%, transparent);
+    box-shadow: inset 3px 0 0 var(--sc-accent);
+    pointer-events: none;
+    border-radius: 2px;
+  }
+  .code-line-hover.on {
+    background: color-mix(in srgb, var(--sc-ink) 10%, transparent);
+    box-shadow: inset 3px 0 0 var(--sc-ink-3);
+  }
+  .code-line-tip {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 2px 8px;
+    border-radius: 7px;
+    background: var(--sc-ink);
+    color: var(--sc-on-ink);
+    font-size: 11px;
+    font-weight: var(--sc-weight-bold);
+    white-space: nowrap;
+  }
+
+  /* ---------- Toasts under the Export button, off the composition (P2-21) ---------- */
+  @media (min-width: 768px) {
+    .stage .toast-layer,
+    .stage.has-timeline .toast-layer {
+      top: 14px;
+      bottom: auto;
+      left: auto;
+      right: 16px;
+      transform: none;
+      align-items: flex-end;
+    }
+  }
+
+  /* An unselected blur shows its outline only while the Select tool hovers it (P2-26). */
+  .ann-layer .outline.idle {
+    opacity: 0;
+    transition: opacity var(--sc-dur-fast);
+  }
+  .ann-layer g:hover > .outline.idle {
+    opacity: 0.5;
+  }
+}

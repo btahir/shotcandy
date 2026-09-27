@@ -1,9 +1,11 @@
 "use client";
 /** The editor root: wires the controller, global input, layout and modals. */
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 // Editor-only styles (motion, modes), kept out of the landing pages' CSS.
 import "@/app/motion.css";
 import "@/app/modes.css";
+import "@/app/controls.css";
 import { imageFromDataTransfer } from "@/engine";
 import { EditorApp } from "./app";
 import { AppContext, useUi } from "./context";
@@ -89,13 +91,31 @@ function useDragAndDrop(app: EditorApp) {
   }, [app]);
 }
 
+/** Screen-reader announcements; portalled so an open modal (which inerts the page) doesn't mute it. */
 function LiveRegion() {
   const msg = useUi((s) => s.announce);
-  return (
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = document.createElement("div");
+    el.setAttribute("data-modal-keep", "");
+    document.body.appendChild(el);
+    setHost(el);
+    return () => el.remove();
+  }, []);
+  const region = (
     <div className="sr-only" role="status" aria-live="polite" data-testid="status">
       {msg}
     </div>
   );
+  return host ? createPortal(region, host) : region;
+}
+
+/** The page's h1 once the empty state (which carries its own) is gone. */
+function EditorHeading() {
+  const mode = useUi((s) => s.mode);
+  const hasContent = useUi((s) => s.hasContent);
+  if (mode === "screenshot" && !hasContent) return null;
+  return <h1 className="sr-only">Shotcandy editor</h1>;
 }
 
 export function Editor() {
@@ -142,6 +162,7 @@ export function Editor() {
       <Gallery narrow={!!narrow} />
       <ShortcutsSheet />
       <RecentsDialog />
+      <EditorHeading />
       <LiveRegion />
     </AppContext.Provider>
   );

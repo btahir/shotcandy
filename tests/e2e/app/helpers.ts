@@ -58,7 +58,7 @@ export async function chooseSize(page: Page, label: string) {
 
 export async function setScale(page: Page, scale: number) {
   await page.getByTestId("export-options").click();
-  await page.getByRole("radio", { name: `${scale}×` }).click();
+  await page.getByRole("radio", { name: `${scale}×`, exact: true }).click();
 }
 
 export async function openMore(page: Page) {

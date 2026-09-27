@@ -38,6 +38,16 @@ for (const scheme of ["light", "dark"] as const) {
       await loadSample(page);
       await page.waitForTimeout(400);
       await axe(page, "loaded");
+      await page.getByRole("button", { name: /Edit gradient/ }).click();
+      await page.waitForTimeout(300);
+      await axe(page, "edit gradient");
+      await page.getByTestId("export-options").click();
+      await page.getByRole("radio", { name: "X", exact: true }).click();
+      await page.waitForTimeout(600);
+      await axe(page, "export for X");
+      await page.getByRole("radio", { name: "Original" }).click();
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
       await page.getByTestId("export-options").click();
       await page.waitForTimeout(300);
       await axe(page, "export popover");

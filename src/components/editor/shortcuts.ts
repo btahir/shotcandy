@@ -51,12 +51,11 @@ export function useShortcuts(app: EditorApp) {
         } else if (key === "c") {
           const sel = window.getSelection();
           if (sel && !sel.isCollapsed) return;
-          if (!ui.hasContent) return;
           e.preventDefault();
           app.copy(document.querySelector("[data-copy-anchor]"));
         } else if (key === "s") {
-          if (!ui.hasContent) return;
           e.preventDefault();
+          if (!ui.hasContent) return app.nothingYet("export");
           if (e.shiftKey) app.ui.set({ popover: "export" });
           else void app.download(document.querySelector("[data-testid=export]"));
         } else if (key === "o") {
@@ -140,7 +139,7 @@ export function useShortcuts(app: EditorApp) {
           app.stepStyle(1);
           break;
         case "s":
-          app.surprise();
+          app.shuffle();
           break;
         case "k":
           app.ui.set({ popover: ui.popover === "size" ? null : "size" });
@@ -151,8 +150,12 @@ export function useShortcuts(app: EditorApp) {
         case "f": {
           const f = app.scene.card.frame;
           if (e.shiftKey) {
-            app.set(["card", "frame", "theme"], f.theme === "light" ? "dark" : "light");
-            app.announce(`Frame ${f.theme === "light" ? "dark" : "light"}`);
+            const order = ["auto", "light", "dark"] as const;
+            const next = order[(order.indexOf(f.theme) + 1) % order.length]!;
+            app.set(["card", "frame", "theme"], next);
+            app.announce(
+              next === "auto" ? "Frame theme: auto, matches your screenshot" : `Frame ${next}`,
+            );
           } else {
             const next = FRAME_CYCLE[(FRAME_CYCLE.indexOf(f.id) + 1) % FRAME_CYCLE.length]!;
             app.set(["card", "frame", "id"], next);

@@ -7,6 +7,7 @@
 import { memo, useMemo, useRef, useState } from "react";
 import {
   type CodeContent,
+  codeLayout,
   type Scene,
   CODE_LANGUAGES,
   CODE_STYLES,
@@ -62,7 +63,7 @@ function LanguageMenu({ c }: { c: CodeContent }) {
             ? (getCodeLanguage(c.tokens?.language ?? detectLanguage(c.code))?.label ?? "Plain text")
             : languageLabel(c)}
         </span>
-        {c.language === "auto" && <span className="lang-auto mono">auto</span>}
+        {c.language === "auto" && <span className="lang-auto">auto</span>}
         <Icon name="chevronDown" size="sm" />
       </button>
       <Popover
@@ -283,7 +284,7 @@ export const WindowTray = memo(function WindowTray({ bare = false }: { bare?: bo
         />
       </div>
       <div className="sub">
-        Highlight lines <span className="mono muted">e.g. 2, 5-7</span>
+        Highlight lines <span className="meta-txt">e.g. 2, 5-7, or click a line</span>
       </div>
       <label className="input mono-input">
         <span className="sr-only">Highlight lines</span>
@@ -313,6 +314,7 @@ export const WindowTray = memo(function WindowTray({ bare = false }: { bare?: bo
           format={(v) => `${Math.round(v)}px`}
           onChange={(v) => app.setCode({ fontSize: Math.round(v) }, "code:fontSize")}
         />
+        <WidthSlider c={c} />
         <Slider
           label="Inner space"
           value={c.padding}
@@ -334,3 +336,38 @@ export const WindowTray = memo(function WindowTray({ bare = false }: { bare?: bo
     </section>
   );
 });
+
+/** Window width: "Auto" hugs the code; wider values give short snippets room to breathe. */
+function WidthSlider({ c }: { c: CodeContent }) {
+  const app = useApp();
+  const natural = codeLayout(c).naturalWidth;
+  const max = Math.max(natural + 600, 1400);
+  const value = c.width && c.width > natural ? c.width : natural;
+  return (
+    <Slider
+      label="Width"
+      value={value}
+      min={natural}
+      max={max}
+      step={10}
+      valueLabel={value <= natural ? "Auto" : undefined}
+      format={(v) => `${Math.round(v)}`}
+      valueText={(v) => (v <= natural ? "auto, hugs the code" : `${Math.round(v)} pixels`)}
+      onChange={(v) => {
+        const w = Math.round(v);
+        app.store.update(
+          (s) => {
+            if (s.content.kind !== "code") return s;
+            const { width: _w, ...rest } = s.content;
+            void _w;
+            return {
+              ...s,
+              content: w <= natural + 4 ? rest : { ...rest, width: w },
+            };
+          },
+          { coalesce: "code:width" },
+        );
+      }}
+    />
+  );
+}

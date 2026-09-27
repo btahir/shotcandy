@@ -23,13 +23,18 @@ import { DropVeil, EmptyState } from "./EmptyState";
 import { Toasts } from "./Toasts";
 import { RenderPill, Timeline } from "./Timeline";
 import { Board } from "./Board";
+import { CodeLineLayer, StageNotes } from "./StageNotes";
 
 const MAX_PREVIEW_SIDE = 8192;
 const MAX_PREVIEW_AREA = 36_000_000;
 
 export function Stage({ narrow = false }: { narrow?: boolean }) {
   const app = useApp();
-  const scene = useScene((s) => s.scene);
+  const realScene = useScene((s) => s.scene);
+  // Hover-to-preview shows another look without touching the design.
+  const previewScene = useStore(app.preview, (s) => s.scene);
+  const previewLabel = useStore(app.preview, (s) => s.label);
+  const scene = previewScene ?? realScene;
   const selection = useScene((s) => s.selection);
   const hasContent = useUi((s) => s.hasContent);
   const zoomPref = useUi((s) => s.zoom);
@@ -345,7 +350,13 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
     : "#FF8FAB";
 
   const showMarks =
-    hasContent && !selection && tool === "select" && !editing && !narrow && !showFrames;
+    hasContent &&
+    !selection &&
+    tool === "select" &&
+    !editing &&
+    !narrow &&
+    !showFrames &&
+    !previewScene;
   const zoomed = zoom > fit * 1.01;
 
   return (
@@ -399,14 +410,23 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
               )}
             </div>
           )}
-          {!showFrames && (
+          {!showFrames && !previewScene && (
             <AnnotationLayer geo={{ layout, zoom }} left={left} top={top} compRef={compRef} />
           )}
+          {mode === "code" && !showFrames && !previewScene && (
+            <CodeLineLayer layout={layout} zoom={zoom} left={left} top={top} />
+          )}
+          {previewLabel && (
+            <div className="preview-pill" aria-hidden="true">
+              Preview · {previewLabel}
+            </div>
+          )}
+          {!previewScene && !showFrames && <StageNotes narrow={narrow} />}
           {motion && <Timeline narrow={narrow} />}
           {!narrow && <Dock />}
         </>
       )}
-      {!narrow && !board && <ZoomControl disabled={!hasContent} />}
+      {!narrow && !board && hasContent && <ZoomControl />}
       <RenderPill />
       <Toasts />
       <DropVeil />

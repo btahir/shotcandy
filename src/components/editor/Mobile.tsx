@@ -8,7 +8,8 @@ import { AnnotationInspector } from "./AnnotationInspector";
 import { type MobileTab, formatBytes, styleName } from "./app";
 import { useApp, useScene, useUi } from "./context";
 import { TOOLS } from "./Dock";
-import { SizeChip, sizeLabel, useExportEstimate } from "./Header";
+import { DestinationChips, SizeChip, sizeLabel, useExportEstimate, useExportPlan } from "./Header";
+import { type ScaleChoice, fitVerdict, getDestination } from "./export-plan";
 import { BackgroundTray, FrameTray, LayoutTray, useStyleRow } from "./Inspector";
 import { Stage } from "./Stage";
 import { MotionTray } from "./MotionTray";
@@ -369,14 +370,15 @@ function MobileExport() {
   const busy = useUi((s) => s.exportBusy);
   const scene = useScene((s) => s.scene);
   const custom = useUi((s) => s.customPresets);
-  const bpp = useExportEstimate(open);
+  const plan = useExportPlan();
+  const bpp = useExportEstimate(open, plan.format, plan.quality);
   const [closing, setClosing] = useState(false);
   if (!open && !closing) return null;
-  const layout = layoutScene(scene, app.resolver);
-  const W = layout.canvas.width;
-  const H = layout.canvas.height;
-  const oW = W * settings.scale;
-  const oH = H * settings.scale;
+  const oW = plan.width;
+  const oH = plan.height;
+  const dest = getDestination(settings.destination);
+  const est = bpp ? bpp * oW * oH * (plan.format === "png" ? 0.85 : 0.9) : null;
+  const verdict = fitVerdict(dest, est, plan.format);
   const close = () => {
     setClosing(true);
     setTimeout(() => {
@@ -384,7 +386,11 @@ function MobileExport() {
       app.ui.set({ mobileExport: false });
     }, 200);
   };
-  const file = app.filenameFor({ width: oW, height: oH }, settings);
+  const file = app.filenameFor(
+    { width: oW, height: oH },
+    { ...settings, format: plan.format },
+    plan.scale,
+  );
   const motionTab = settings.kind === "motion" && !!scene.animation;
   return (
     <>
@@ -410,8 +416,8 @@ function MobileExport() {
               ]}
             />
           ) : (
-            <span className="mono muted">
-              {W} × {H}
+            <span className="mono muted" data-testid="m-export-dims">
+              {oW} × {oH}
             </span>
           )}
         </div>
@@ -440,33 +446,56 @@ function MobileExport() {
                 </span>
               </div>
             </div>
-            <div className="sub">Format</div>
-            <Segmented<ExportFormat>
-              label="Format"
-              value={settings.format}
-              onChange={(format) => app.setExportSettings({ format })}
-              options={[
-                { value: "png", label: "PNG" },
-                { value: "jpeg", label: "JPEG" },
-                { value: "webp", label: "WebP" },
-              ]}
-            />
-            <div className="sub">
-              Size{" "}
-              <span className="mono muted">
-                {oW} × {oH}
-                {bpp ? ` · ≈ ${formatBytes(bpp * oW * oH * 0.85)}` : ""}
-              </span>
+            <div className="sub">For</div>
+            <DestinationChips />
+            <div className="export-summary">
+              <div className="dims">
+                <span className="mono">
+                  {oW} × {oH}
+                </span>
+                <span className="fmt">
+                  {plan.format === "jpeg" ? "JPEG" : plan.format.toUpperCase()}
+                </span>
+                {est !== null && <span className="mono est">≈ {formatBytes(est)}</span>}
+              </div>
+              {verdict.kind !== "none" && (
+                <div className="why">
+                  <span className={`fit-badge ${verdict.kind}`}>
+                    <Icon name={verdict.kind === "fits" ? "check" : "alert"} size="xs" />
+                    {verdict.label}
+                  </span>
+                </div>
+              )}
             </div>
-            <Segmented
-              label="Scale"
-              value={String(settings.scale)}
-              onChange={(v) => app.setExportSettings({ scale: Number(v) })}
-              options={[1, 2, 3, 4].map((s) => ({ value: String(s), label: `${s}×` }))}
-            />
+            {dest.id === "original" && (
+              <>
+                <div className="sub">Format</div>
+                <Segmented<ExportFormat>
+                  label="Format"
+                  value={settings.format}
+                  onChange={(format) => app.setExportSettings({ format })}
+                  options={[
+                    { value: "png", label: "PNG" },
+                    { value: "jpeg", label: "JPEG" },
+                    { value: "webp", label: "WebP" },
+                  ]}
+                />
+                <div className="sub">Scale</div>
+                <Segmented
+                  label="Scale"
+                  value={String(settings.scale)}
+                  onChange={(v) => app.setExportSettings({ scale: Number(v) as ScaleChoice })}
+                  options={[0, 1, 2, 3, 4].map((s) => ({
+                    value: String(s),
+                    label: s === 0 ? "Auto" : `${s}×`,
+                  }))}
+                />
+              </>
+            )}
             <button
               type="button"
-              className={`btn btn-primary btn-block${busy ? " pressed" : ""}`}
+              className={`btn btn-primary btn-block${busy ? " pressed shimmer-busy" : ""}`}
+              aria-busy={busy}
               style={{ height: 52, marginTop: 18, fontSize: 15.5 }}
               onClick={() => void app.share("save")}
               data-autofocus
