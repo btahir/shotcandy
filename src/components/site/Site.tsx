@@ -42,7 +42,8 @@ export function SiteNav({ active }: { active?: "about" | "tools" | "editor" }) {
         href="/"
         style={{ height: 40, padding: "0 16px 3px" }}
       >
-        Open the editor
+        <span className="label-long">Open the editor</span>
+        <span className="label-short">Open editor</span>
       </Link>
     </header>
   );
