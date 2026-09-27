@@ -1,6 +1,9 @@
 "use client";
 /** The editor root: wires the controller, global input, layout and modals. */
 import { useEffect, useState, useSyncExternalStore } from "react";
+// Editor-only styles (motion, modes), kept out of the landing pages' CSS.
+import "@/app/motion.css";
+import "@/app/modes.css";
 import { imageFromDataTransfer } from "@/engine";
 import { EditorApp } from "./app";
 import { AppContext, useUi } from "./context";

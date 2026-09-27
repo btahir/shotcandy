@@ -2,8 +2,6 @@
 @import "./fonts.css";
 @import "./tokens.css";
 @import "./ui.css";
-@import "./motion.css";
-@import "./modes.css";
 @import "./pages.css";
 
 /* Tailwind v4 theme: every utility maps to a Confectionery token, so utilities

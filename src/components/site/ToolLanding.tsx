@@ -63,7 +63,7 @@ export function ToolLanding({ d }: { d: ToolPageData }) {
               alt={d.hero.alt}
               width={d.hero.width}
               height={d.hero.height}
-              fetchPriority="high"
+              decoding="async"
             />
             <div className="pill" aria-hidden="true">
               {d.hero.pills.map((p) => (

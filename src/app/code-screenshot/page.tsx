@@ -32,7 +32,7 @@ const d: ToolPageData = {
       Turn code into a <em>beautiful image</em>
     </>
   ),
-  lede: "Paste a snippet and get a crisp, highlighted code window on a lovely background, ready for your post, docs or slides. Free, private and instant: your code never leaves the browser.",
+  lede: "Paste a snippet and get a crisp, highlighted code window on a lovely background. Free, private and instant: your code stays in your browser.",
   style: "sherbet",
   frameLabel: "code window",
   editorHref: "/?mode=code",

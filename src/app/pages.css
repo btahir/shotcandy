@@ -739,3 +739,53 @@
     }
   }
 }
+
+/* The paste-your-code box on the /code-screenshot landing page. */
+@layer components {
+  /* Code screenshot landing page: paste box */
+  .code-inline {
+    border: 2px dashed var(--sc-line-strong);
+    border-radius: 22px;
+    background: var(--sc-surface);
+    padding: 14px;
+  }
+  .code-inline:focus-within {
+    border-color: var(--sc-accent);
+  }
+  .code-inline textarea {
+    display: block;
+    width: 100%;
+    resize: vertical;
+    min-height: 118px;
+    border: 0;
+    outline: none;
+    border-radius: 14px;
+    background: var(--sc-well);
+    box-shadow: var(--sc-shadow-well);
+    padding: 12px 14px;
+    /* System monospace: no web font on the landing page's critical path. */
+    font:
+      400 13px/20px ui-monospace,
+      "SF Mono",
+      Menlo,
+      Consolas,
+      monospace;
+    color: var(--sc-ink);
+    white-space: pre;
+  }
+  .code-inline textarea::placeholder {
+    color: var(--sc-ink-3);
+  }
+  .code-inline-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .code-inline-row .muted {
+    font-size: 13px;
+    color: var(--sc-ink-3);
+  }
+}
