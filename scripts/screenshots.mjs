@@ -106,7 +106,12 @@ const desktop = [
     async (page) => {
       await sample("sample-dashboard-light")(page);
       await page.click("[data-testid=export-options]");
-      await page.waitForTimeout(1200);
+      await page.waitForFunction(
+        () => !document.querySelector("[data-testid=export-size]")?.textContent?.includes("sizing"),
+        null,
+        { timeout: 30000 },
+      );
+      await page.waitForTimeout(300);
     },
   ],
   [
@@ -124,7 +129,12 @@ const desktop = [
       await sample("sample-dashboard-light")(page);
       await page.click("[data-testid=export-options]");
       await page.getByRole("radio", { name: "X", exact: true }).click();
-      await page.waitForTimeout(1500);
+      await page.waitForFunction(
+        () => !document.querySelector("[data-testid=export-size]")?.textContent?.includes("sizing"),
+        null,
+        { timeout: 30000 },
+      );
+      await page.waitForTimeout(300);
     },
   ],
   [
@@ -279,7 +289,13 @@ const desktop = [
       await page.evaluate(() => window.__shotcandy.app.seek(1.2));
       await page.click("[data-testid=export-options]");
       await page.getByRole("tab", { name: "Video" }).click();
-      await page.waitForTimeout(700);
+      // The size comes from a real sample encode: wait for it.
+      await page.waitForFunction(
+        () => document.querySelector("[data-testid=motion-size]")?.textContent?.includes("≈"),
+        null,
+        { timeout: 30000 },
+      );
+      await page.waitForTimeout(300);
     },
   ],
   [
