@@ -51,7 +51,7 @@ export const StyleThumb = memo(function StyleThumb({
       canvas: { ...scene.canvas, size: { kind: "aspect", ratioW: aw, ratioH: ah } },
       card: {
         ...scene.card,
-        frame: { ...scene.card.frame, title: title ?? "", url: url || "shotcandy.app" },
+        frame: { ...scene.card.frame, title: title ?? "", url: url || "shotcandy-dev.vercel.app" },
       },
     };
     const layout = layoutScene(scene, app.resolver);

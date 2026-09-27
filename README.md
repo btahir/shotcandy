@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://shotcandy.app">
+<a href="https://shotcandy-dev.vercel.app">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="brand/logo-dark-bg.svg">
     <img src="brand/logo.svg" alt="Shotcandy" width="300">
@@ -13,7 +13,7 @@ Shotcandy turns a plain screenshot into a share-ready image or video in seconds.
 Free, open source, and it runs entirely in your browser. No account, no upload.
 
 <p>
-  <a href="https://shotcandy.app"><img src="https://img.shields.io/badge/Try_it-shotcandy.app-e23a66?style=for-the-badge&labelColor=2a1f1a" alt="Try it at shotcandy.app"></a>
+  <a href="https://shotcandy-dev.vercel.app"><img src="https://img.shields.io/badge/Try_it-shotcandy--dev.vercel.app-e23a66?style=for-the-badge&labelColor=2a1f1a" alt="Try it at shotcandy-dev.vercel.app"></a>
 </p>
 
 <p>
