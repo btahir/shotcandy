@@ -103,6 +103,18 @@ export {
   type CodeStyle,
 } from "./code/presets";
 
+// Post and testimonial cards
+export { postLayout, initials, type PostLayout } from "./post/render";
+export {
+  POST_THEMES,
+  POST_STYLES,
+  getPostTheme,
+  getPostStyle,
+  samplePost,
+  type PostTheme,
+  type PostStyle,
+} from "./post/themes";
+
 // Frames
 export {
   registerFrame,

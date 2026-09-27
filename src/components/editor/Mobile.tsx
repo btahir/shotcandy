@@ -14,6 +14,7 @@ import { Stage } from "./Stage";
 import { MotionTray } from "./MotionTray";
 import { MotionExportPanel } from "./MotionExport";
 import { CodeTray, ThemesTray, WindowTray } from "./CodeInspector";
+import { CardTray, PostStylesTray, PostTray } from "./PostInspector";
 import { MobileModeButton } from "./ModeSwitch";
 import { StyleThumb } from "./StyleThumb";
 
@@ -28,9 +29,19 @@ const CODE_TABS: TabDef[] = [
   { id: "draw", label: "Draw", icon: "arrow" },
 ];
 
+const POST_TABS: TabDef[] = [
+  { id: "post", label: "Card", icon: "message" },
+  { id: "theme", label: "Style", icon: "sparkle" },
+  { id: "motion", label: "Motion", icon: "motion" },
+  { id: "background", label: "Background", icon: "image" },
+  { id: "layout", label: "Layout", icon: "sliders" },
+  { id: "draw", label: "Draw", icon: "arrow" },
+];
+
 export function useMobileTabs(): TabDef[] {
   const mode = useUi((s) => s.mode);
   if (mode === "code") return CODE_TABS;
+  if (mode === "post") return POST_TABS;
   return TABS;
 }
 
@@ -186,6 +197,7 @@ function DrawTools() {
 function MobileSheet() {
   const app = useApp();
   const tabs = useMobileTabs();
+  const mode = useUi((s) => s.mode);
   const rawTab = useUi((s) => s.mobileTab);
   const tab = tabs.some((t) => t.id === rawTab) ? rawTab : tabs[0]!.id;
   const expanded = useUi((s) => s.mobileExpanded);
@@ -248,7 +260,14 @@ function MobileSheet() {
       />
       <div className="m-body" role="tabpanel" aria-label={tabs.find((t) => t.id === tab)?.label}>
         {tab === "code" && <CodeTray bare />}
-        {tab === "theme" && <ThemesTray bare />}
+        {tab === "theme" && mode === "code" && <ThemesTray bare />}
+        {tab === "theme" && mode === "post" && (
+          <>
+            <PostStylesTray bare />
+            <CardTray bare />
+          </>
+        )}
+        {tab === "post" && <PostTray bare />}
         {tab === "window" && <WindowTray bare />}
         {tab === "styles" && (
           <>

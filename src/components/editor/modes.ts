@@ -10,6 +10,8 @@ import {
   applyStylePatch,
   createScene,
   getCodeStyle,
+  getPostStyle,
+  samplePost,
 } from "@/engine";
 import type { IconName } from "../icons";
 
@@ -23,7 +25,13 @@ export const MODES: { id: Mode; label: string; short: string; icon: IconName; bl
     icon: "screenshot",
     blurb: "Frame a screenshot on a lovely background",
   },
-  { id: "code", label: "Code", short: "Code", icon: "code", blurb: "Paste code, get a beautiful image" },
+  {
+    id: "code",
+    label: "Code",
+    short: "Code",
+    icon: "code",
+    blurb: "Paste code, get a beautiful image",
+  },
   {
     id: "post",
     label: "Post",
@@ -67,5 +75,16 @@ export function initialCodeContent(): CodeContent {
 export function initialCodeScene(): Scene {
   const style = getCodeStyle(DEFAULT_CODE_STYLE)!;
   const s = createScene({ content: initialCodeContent(), meta: { name: "code" } });
+  return applyStylePatch(s, style.patch, style.id);
+}
+
+export const DEFAULT_POST_STYLE = "post-sherbet";
+
+export function initialPostScene(): Scene {
+  const style = getPostStyle(DEFAULT_POST_STYLE)!;
+  const s = createScene({
+    content: { ...samplePost("social"), theme: style.theme, accent: style.accent },
+    meta: { name: "post" },
+  });
   return applyStylePatch(s, style.patch, style.id);
 }

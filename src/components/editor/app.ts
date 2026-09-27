@@ -14,6 +14,7 @@ import {
   type Annotation,
   type AnnotationKind,
   type CodeContent,
+  type PostContent,
   type AssetResolver,
   type AssetSource,
   type CanvasSize,
@@ -45,6 +46,8 @@ import {
   evaluateScene,
   getMotionPreset,
   getCodeStyle,
+  getPostStyle,
+  samplePost,
   clearTextMeasureCache,
   codeTokensKey,
   isAbortError,
@@ -78,7 +81,7 @@ import { createStore, type Store } from "@/lib/store";
 import { ThumbService } from "@/lib/thumbs/service";
 import { sprinkle } from "@/lib/sprinkles";
 import { prefersReducedMotion } from "@/lib/platform";
-import { type Mode, initialCodeScene, modeForScene } from "./modes";
+import { type Mode, initialCodeScene, initialPostScene, modeForScene } from "./modes";
 
 registerBrandFonts();
 
@@ -257,6 +260,7 @@ export function styleName(id: string | undefined, custom: PresetRecord[] = []): 
   return (
     getStylePreset(id)?.name ??
     getCodeStyle(id)?.name ??
+    getPostStyle(id)?.name ??
     custom.find((p) => p.id === id)?.name ??
     "Custom"
   );
@@ -316,7 +320,9 @@ export class EditorApp {
   private motionAbort: AbortController | null = null;
   private tickRaf = 0;
   /** Each mode's design while another mode is shown. */
-  private stash: Partial<Record<Mode, { scene: Scene; hasContent: boolean; designId: string | null }>> = {};
+  private stash: Partial<
+    Record<Mode, { scene: Scene; hasContent: boolean; designId: string | null }>
+  > = {};
   private highlightTimer: ReturnType<typeof setTimeout> | null = null;
   private highlightJob = 0;
   private lastTick = 0;
@@ -895,14 +901,20 @@ export class EditorApp {
       zoom: null,
       pan: { x: 0, y: 0 },
       xfade: s.xfade + 1,
-      exportSettings: { ...s.exportSettings, kind: scene.animation ? s.exportSettings.kind : "image" },
+      exportSettings: {
+        ...s.exportSettings,
+        kind: scene.animation ? s.exportSettings.kind : "image",
+      },
     }));
     this.emit("mode", mode);
-    this.announce(`${mode === "appstore" ? "App Store set" : mode[0]!.toUpperCase() + mode.slice(1)} mode`);
+    this.announce(
+      `${mode === "appstore" ? "App Store set" : mode[0]!.toUpperCase() + mode.slice(1)} mode`,
+    );
   }
 
   protected freshScene(mode: Mode): Scene {
     if (mode === "code") return initialCodeScene();
+    if (mode === "post") return initialPostScene();
     return initialScene();
   }
 
@@ -911,7 +923,11 @@ export class EditorApp {
     const mode = modeForScene(scene);
     const ui = this.ui.get();
     if (ui.mode !== mode) {
-      this.stash[ui.mode] = { scene: this.scene, hasContent: ui.hasContent, designId: this.designId };
+      this.stash[ui.mode] = {
+        scene: this.scene,
+        hasContent: ui.hasContent,
+        designId: this.designId,
+      };
       delete this.stash[mode];
       this.ui.set({ mode });
     }
@@ -960,7 +976,8 @@ export class EditorApp {
         if (job !== this.highlightJob || this.disposed) return;
         this.store.update(
           (s) =>
-            s.content.kind === "code" && codeTokensKey(s.content.code, s.content.language) === tokens.key
+            s.content.kind === "code" &&
+            codeTokensKey(s.content.code, s.content.language) === tokens.key
               ? { ...s, content: { ...s.content, tokens } }
               : s,
           { transient: true },
@@ -970,6 +987,76 @@ export class EditorApp {
         /* keep plain text */
       }
     }, 90);
+  }
+
+  // -------------------------------------------------------------------- post
+  get post(): PostContent | null {
+    const c = this.scene.content;
+    return c.kind === "post" ? c : null;
+  }
+
+  setPost(patch: Partial<PostContent>, coalesce?: string): void {
+    this.store.update(
+      (s) => (s.content.kind === "post" ? { ...s, content: { ...s.content, ...patch } } : s),
+      { coalesce: coalesce ?? `post:${Object.keys(patch).join(",")}` },
+    );
+  }
+
+  /** Switch between social post and testimonial, filling sample copy only if untouched. */
+  setPostVariant(variant: PostContent["variant"]): void {
+    const cur = this.post;
+    if (!cur || cur.variant === variant) return;
+    const sampleFrom = samplePost(cur.variant);
+    const sampleTo = samplePost(variant);
+    const untouched = (k: "text" | "handle" | "date") => cur[k] === sampleFrom[k];
+    this.setPost({
+      variant,
+      text: untouched("text") ? sampleTo.text : cur.text,
+      handle: untouched("handle") ? sampleTo.handle : cur.handle,
+      date: untouched("date") ? sampleTo.date : cur.date,
+      rating: variant === "testimonial" && cur.rating === 0 ? 5 : cur.rating,
+    });
+  }
+
+  applyPostStyle(id: string): void {
+    const style = getPostStyle(id);
+    if (!style) return;
+    this.store.update((s) => {
+      const next = applyStylePatch(s, style.patch, id);
+      return next.content.kind === "post"
+        ? { ...next, content: { ...next.content, theme: style.theme, accent: style.accent } }
+        : next;
+    });
+    this.ui.set((u) => ({ xfade: u.xfade + 1 }));
+    this.announce(`Card style: ${style.name}`);
+  }
+
+  /** Use an uploaded photo as the post avatar (stays on the device). */
+  async setAvatar(blob: Blob): Promise<void> {
+    try {
+      const img = await importImage(blob);
+      this.library.add(img);
+      void this.thumbs?.setAsset(img.id, img.proxy, img.width, img.height, img.palette);
+      this.setPost({ avatarAssetId: img.id });
+      this.bumpAssets();
+      if (this.db) {
+        void this.db.assets
+          .put({
+            id: img.id,
+            blob: img.blob,
+            mime: img.mime,
+            width: img.width,
+            height: img.height,
+            role: "content",
+            createdAt: Date.now(),
+          })
+          .catch(() => undefined);
+      }
+      this.announce("Avatar added");
+    } catch (e) {
+      const m = importMessage(e);
+      this.toast({ kind: "error", title: m.title, detail: m.detail, prose: true });
+    }
   }
 
   // ------------------------------------------------------------------ motion

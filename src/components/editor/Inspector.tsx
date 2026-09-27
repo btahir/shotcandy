@@ -30,6 +30,7 @@ import { openFilePicker } from "./EmptyState";
 import { StyleThumb } from "./StyleThumb";
 import { MotionTray } from "./MotionTray";
 import { CodeTray, ThemesTray, WindowTray } from "./CodeInspector";
+import { CardTray, PostStylesTray, PostTray } from "./PostInspector";
 
 const DEFAULT_ROW = ["sherbet", "mint-julep", "grape-soda", "paper", "midnight", "satin"];
 
@@ -1045,6 +1046,17 @@ function ModeTrays() {
         <ThemesTray />
         <MotionTray />
         <WindowTray />
+        <BackgroundTray />
+        <LayoutTray />
+      </>
+    );
+  if (mode === "post")
+    return (
+      <>
+        <PostTray />
+        <PostStylesTray />
+        <CardTray />
+        <MotionTray />
         <BackgroundTray />
         <LayoutTray />
       </>
