@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
   images: { unoptimized: true },
   reactStrictMode: true,
   poweredByHeader: false,
+  // Do not write AGENTS.md/CLAUDE.md into the repo on `next dev`.
+  agentRules: false,
 };
 
 export default nextConfig;

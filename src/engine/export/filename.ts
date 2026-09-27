@@ -1,7 +1,7 @@
 /**
  * Export filename patterns.
  *
- * Tokens: {name} {preset} {w} {h} {scale} {format} {date} {time} {n}
+ * Tokens: {name} {style} {preset} {w} {h} {scale} {format} {date} {time} {n}
  * Example: "{name}-{preset}-{w}x{h}@{scale}x" -> "shotcandy-og-2400x1260@2x.png"
  */
 import { type ExportFormat, FILE_EXTENSIONS } from "./formats";
@@ -11,6 +11,8 @@ export const DEFAULT_FILENAME_PATTERN = "{name}-{w}x{h}@{scale}x";
 export interface FilenameVars {
   name: string;
   preset?: string;
+  /** Style preset id or name (e.g. "sherbet"). */
+  style?: string;
   width: number;
   height: number;
   scale: number;
@@ -29,6 +31,7 @@ export function formatFilename(pattern: string, v: FilenameVars): string {
   const tokens: Record<string, string> = {
     name: v.name || "shotcandy",
     preset: v.preset ?? "custom",
+    style: v.style ?? "custom",
     w: String(v.width),
     h: String(v.height),
     scale: String(v.scale),

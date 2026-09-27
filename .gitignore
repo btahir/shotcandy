@@ -25,5 +25,11 @@ test-results/
 next-env.d.ts
 tests/e2e/.harness/
 
-# Generated from brand/ by scripts/copy-brand-assets.mjs
+# Generated from brand/ and Fontsource by scripts/copy-brand-assets.mjs
 public/backgrounds/
+public/samples/
+public/empty/
+public/icons/
+public/og/
+public/fonts/
+public/logo-mark.svg

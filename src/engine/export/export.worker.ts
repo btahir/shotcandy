@@ -5,13 +5,15 @@
  */
 import { decodeAssets, exportWithResolver } from "./export";
 import type { WorkerRequest, WorkerResponse } from "./protocol";
-import type { FontDefinition } from "../render/fonts";
+import { type FontDefinition, registerFont } from "../render/fonts";
 
 declare const self: DedicatedWorkerGlobalScope;
 
 const loadedFonts = new Set<string>();
 
 async function ensureFonts(fonts: FontDefinition[]): Promise<void> {
+  // Mirror the page's font registry so text uses the same stacks as the preview.
+  for (const f of fonts) registerFont(f);
   const set = (self as unknown as { fonts?: FontFaceSet }).fonts;
   if (!set || typeof FontFace === "undefined") return;
   const jobs: Promise<unknown>[] = [];

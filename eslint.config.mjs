@@ -54,6 +54,11 @@ export default defineConfig([
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
       "@typescript-eslint/consistent-type-imports": ["error", { fixStyle: "inline-type-imports" }],
+      // Static export with unoptimized images: plain <img> is intended.
+      "@next/next/no-img-element": "off",
+      // Mount/unmount animation state and syncing to external stores legitimately
+      // set state from effects; the compiler heuristic flags those false positives.
+      "react-hooks/set-state-in-effect": "off",
     },
   },
   globalIgnores([

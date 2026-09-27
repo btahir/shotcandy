@@ -1,15 +1,57 @@
 @import "tailwindcss";
+@import "./fonts.css";
+@import "./tokens.css";
+@import "./ui.css";
+@import "./pages.css";
 
-/* Neutral functional shell. The visual identity lives in docs/design and brand/. */
-:root {
-  color-scheme: light dark;
-}
-
-body {
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    sans-serif;
+/* Tailwind v4 theme: every utility maps to a Confectionery token, so utilities
+   and component classes switch light/dark together. */
+@theme inline {
+  --color-paper: var(--sc-paper);
+  --color-stage: var(--sc-stage);
+  --color-surface: var(--sc-surface);
+  --color-well: var(--sc-well);
+  --color-well-hover: var(--sc-well-hover);
+  --color-line: var(--sc-line);
+  --color-line-strong: var(--sc-line-strong);
+  --color-ink: var(--sc-ink);
+  --color-ink-2: var(--sc-ink-2);
+  --color-ink-3: var(--sc-ink-3);
+  --color-ink-4: var(--sc-ink-4);
+  --color-on-ink: var(--sc-on-ink);
+  --color-accent: var(--sc-accent);
+  --color-accent-text: var(--sc-accent-text);
+  --color-accent-fill: var(--sc-accent-fill);
+  --color-accent-soft: var(--sc-accent-soft);
+  --color-success: var(--sc-success);
+  --color-warning: var(--sc-warning);
+  --color-danger: var(--sc-danger);
+  --color-candy-500: var(--sc-candy-500);
+  --color-tangerine-500: var(--sc-tangerine-500);
+  --color-mint-500: var(--sc-mint-500);
+  --color-lemon-500: var(--sc-lemon-500);
+  --color-grape-500: var(--sc-grape-500);
+  --color-blueberry-500: var(--sc-blueberry-500);
+  --font-display: var(--sc-font-display);
+  --font-sans: var(--sc-font-ui);
+  --font-mono: var(--sc-font-mono);
+  --text-2xs: var(--sc-text-2xs);
+  --text-xs: var(--sc-text-xs);
+  --text-sm: var(--sc-text-sm);
+  --text-base: var(--sc-text-base);
+  --text-md: var(--sc-text-md);
+  --text-lg: var(--sc-text-lg);
+  --radius-xs: var(--sc-radius-xs);
+  --radius-sm: var(--sc-radius-sm);
+  --radius-md: var(--sc-radius-md);
+  --radius-lg: var(--sc-radius-lg);
+  --radius-xl: var(--sc-radius-xl);
+  --radius-2xl: var(--sc-radius-2xl);
+  --shadow-tray: var(--sc-shadow-tray);
+  --shadow-raised: var(--sc-shadow-raised);
+  --shadow-float: var(--sc-shadow-float);
+  --shadow-modal: var(--sc-shadow-modal);
+  --ease-out: var(--sc-ease-out);
+  --ease-in: var(--sc-ease-in);
+  --ease-pop: var(--sc-ease-pop);
 }
