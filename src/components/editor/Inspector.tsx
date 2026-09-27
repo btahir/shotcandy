@@ -482,7 +482,7 @@ export const BackgroundTray = memo(function BackgroundTray({ bare = false }: { b
       )}
       {fill.kind === "image" && <ImageDetails fill={fill} />}
       <div
-        style={{ display: "flex", justifyContent: "space-between", marginTop: 10, minHeight: 18 }}
+        style={{ display: "flex", justifyContent: "space-between", marginTop: 8, marginBottom: -4 }}
       >
         {tab === "gradient" && list.length <= FEATURED.length ? (
           <button type="button" className="link quiet" onClick={() => setAllGradients(true)}>

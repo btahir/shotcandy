@@ -595,6 +595,9 @@ function TextEditor({
         width: Math.max(40, maxX - minX + 4),
         height: maxY - minY,
         font: `${a.weight} ${fontPx}px/${fontPx * 1.2}px ${getFont(a.font).stack}`,
+        // The canvas picks Bricolage's optical size from its device-pixel size; match it.
+        fontOpticalSizing: "none",
+        fontVariationSettings: `"opsz" ${Math.max(12, Math.min(96, fontPx * (window.devicePixelRatio || 1)))}`,
         color: a.color,
         textAlign: a.align,
         padding: `${padY}px ${padX}px`,
