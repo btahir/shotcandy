@@ -193,14 +193,9 @@ export default function AboutPage() {
                 tip helps pay for the domain and the evenings spent maintaining it. Thank you!
               </p>
               <div style={{ display: "flex", gap: 10, marginTop: 22, flexWrap: "wrap" }}>
-                <a
-                  className="btn btn-primary btn-xl"
-                  href={SUPPORT_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                >
+                <Link className="btn btn-primary btn-xl" href={SUPPORT_URL}>
                   <Icon name="heart" /> Support this project
-                </a>
+                </Link>
                 <a
                   className="btn btn-secondary btn-xl"
                   href={GITHUB_URL}

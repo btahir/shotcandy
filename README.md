@@ -253,7 +253,7 @@ Issues and pull requests are welcome.
 
 ## Support
 
-Shotcandy is free and always will be. If it saves you time, you can [support the project](https://example.com/support). <!-- SUPPORT_URL: replace with the real support link (same value as SUPPORT_URL in src/config/site.ts) -->
+Shotcandy is free and always will be. If it saves you time, you can [support the project](https://shotcandy-dev.vercel.app/support/) with a one-off tip or a small monthly contribution.
 
 ## License
 

@@ -8,6 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: `${SITE_URL}/`, lastModified: now, changeFrequency: "monthly", priority: 1 },
     { url: `${SITE_URL}/about/`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${SITE_URL}/support/`, lastModified: now, changeFrequency: "yearly", priority: 0.4 },
     ...TOOL_PAGES.map((t) => ({
       url: `${SITE_URL}${t.href}`,
       lastModified: now,

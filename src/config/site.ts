@@ -1,8 +1,22 @@
 /**
- * Site-wide constants. SUPPORT_URL is the single place the owner sets the
- * "Support this project" destination; every support link reads it from here.
+ * Site-wide constants. Every "Support this project" link goes to our own
+ * /support/ page, which reads its payment links from DONATION_LINKS below.
  */
-export const SUPPORT_URL = "https://example.com/support";
+export const SUPPORT_URL = "/support/";
+
+/**
+ * Owner: paste the Stripe payment links here. An empty href shows the button
+ * as "coming soon" instead of a broken link.
+ */
+export const DONATION_LINKS = {
+  once: "",
+  monthly: [
+    { label: "$5", note: "Supporter", href: "" },
+    { label: "$15", note: "Backer", href: "" },
+    { label: "$50", note: "Sponsor", href: "" },
+    { label: "$100", note: "Company sponsor", href: "" },
+  ],
+} as const;
 export const GITHUB_URL = "https://github.com/btahir/shotcandy";
 /** Canonical origin for metadata, sitemap and robots (update when the domain is known). */
 export const SITE_URL = "https://shotcandy-dev.vercel.app";
