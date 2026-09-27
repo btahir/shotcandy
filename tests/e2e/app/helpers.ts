@@ -8,10 +8,11 @@ export const SAMPLE_B64 = readFileSync(SAMPLE).toString("base64");
 /** Open the editor and wait until storage is ready. */
 export async function open(page: Page, path = "/") {
   await page.goto(path);
-  await expect(page.getByTestId("stage")).toBeVisible();
+  // Wait for hydration first: the prerendered HTML carries both layouts.
   await page.waitForFunction(
     () => !!(window as unknown as { __shotcandy?: { ready: boolean } }).__shotcandy?.ready,
   );
+  await expect(page.getByTestId("stage")).toBeVisible();
 }
 
 /** Load the sample through the real "Choose file" button. */
