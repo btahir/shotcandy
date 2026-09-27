@@ -387,7 +387,7 @@ async function shoot(name, scheme, viewport, fn, path = "/", full = false) {
   await fn(page);
   const file = `${outDir}/${name}-${scheme}.png`;
   await page.screenshot({ path: file, fullPage: full });
-  if (flags.webp !== undefined) {
+  if ("webp" in flags) {
     const webp = file.replace(/\.png$/, ".webp");
     execFileSync("cwebp", ["-quiet", "-q", "90", "-m", "6", file, "-o", webp]);
     rmSync(file);
