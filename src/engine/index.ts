@@ -234,6 +234,23 @@ export {
   type BackgroundGroup,
 } from "./presets/backgrounds";
 
+export {
+  GRADIENT_TYPES,
+  GRADIENT_ANGLES,
+  MIN_STOPS,
+  MAX_STOPS,
+  toGradientEdit,
+  fromGradientEdit,
+  setStopCount,
+  normalizeStops,
+  colorAt,
+  shuffleMesh,
+  hueShiftFill,
+  paletteStopSuggestions,
+  type GradientEdit,
+  type GradientType,
+} from "./presets/gradient";
+
 // Export
 export {
   EXPORT_FORMATS,
