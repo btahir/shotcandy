@@ -32,7 +32,7 @@ test("loads with no third-party requests and no errors", async ({ page, baseURL 
   page.on("pageerror", (e) => errors.push(e.message));
   await open(page);
   await loadSample(page);
-  await page.getByRole("button", { name: /^Midnight style/ }).click();
+  await page.getByRole("button", { name: /^Midnight Spotlight style/ }).click();
   await page.waitForTimeout(300);
   expect(foreign).toEqual([]);
   expect(errors).toEqual([]);
@@ -129,7 +129,7 @@ test("copies a PNG to the clipboard", async ({ page, context, browserName }) => 
 test("recent designs are autosaved, survive a reload and render identically", async ({ page }) => {
   await open(page);
   await loadSample(page);
-  await page.getByRole("button", { name: /^Midnight style/ }).click();
+  await page.getByRole("button", { name: /^Midnight Spotlight style/ }).click();
   await page.waitForFunction(
     () =>
       (

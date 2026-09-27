@@ -52,8 +52,8 @@ test("size presets, styles and inspector controls update the preview live", asyn
   const a = await previewData(page);
   await chooseSize(page, "Instagram story");
   await expect(page.getByTestId("size-tag")).toHaveText("1080 × 1920");
-  await page.getByRole("button", { name: /^Grape Soda style/ }).click();
-  await expect(page.getByRole("button", { name: /^Grape Soda style/ })).toHaveAttribute(
+  await page.getByRole("button", { name: /^Grape Isometric style/ }).click();
+  await expect(page.getByRole("button", { name: /^Grape Isometric style/ })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
@@ -86,10 +86,10 @@ test("Candy Jar: filters, keyboard apply, save/rename/delete a custom style that
   await expect(jar.getByRole("button", { name: /Sorbet Phone/ })).toBeVisible();
   await jar.getByRole("tab", { name: /^All/ }).click();
   await jar.getByPlaceholder("Search styles").fill("mint");
-  await jar.getByRole("button", { name: /^Mint Julep/ }).focus();
+  await jar.getByRole("button", { name: /^Mint Peek/ }).focus();
   await page.keyboard.press("Enter");
   await expect(jar).toBeHidden();
-  await expect(page.getByRole("button", { name: /^Mint Julep style/ })).toHaveAttribute(
+  await expect(page.getByRole("button", { name: /^Mint Peek style/ })).toHaveAttribute(
     "aria-pressed",
     "true",
   );

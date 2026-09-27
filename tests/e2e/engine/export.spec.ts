@@ -66,7 +66,7 @@ test.describe("formats", () => {
 
   test("auto size exports the screenshot at native resolution", async ({ harness }) => {
     const scene = setIn(
-      sceneFor("dashboard", { kind: "auto" }, "mint-julep"),
+      sceneFor("dashboard", { kind: "auto" }, "from-your-shot"),
       ["canvas", "padding"],
       100,
     );
