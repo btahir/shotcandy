@@ -25,7 +25,7 @@ Free, open source, and it runs entirely in your browser. No account, no upload.
 
 <img src="docs/media/hero.webp" alt="A plain dashboard screenshot blooms into a styled image, then shuffles through Grape Isometric, Strawberry Satin, Midnight Spotlight, Tangerine Tilt, Caramel Laptop, Grape Aurora and Retro Pop" width="1000">
 
-<sub><a href="docs/media/shotcandy-launch.mp4">Watch the 38-second launch film</a> · <a href="docs/media/shotcandy-feed-4x5.mp4">4:5 cut for feeds</a></sub>
+<sub><a href="docs/media/shotcandy-launch.mp4">Watch the 38-second launch film</a> · <a href="docs/media/shotcandy-feed-4x5.mp4">27-second 4:5 cut for feeds</a></sub>
 
 </div>
 
@@ -69,6 +69,15 @@ Every "after" below is a real export from Shotcandy's engine, one click from the
 </picture>
 
 Backgrounds cover solid colours, linear, radial and mesh gradients with an editor, 12 original wallpapers and your own images. Layout controls have named stops for padding, corners and shadow, plus borders, an inset plate, 3D tilt and position.
+
+### Caption card
+
+Turn a landscape screenshot into a tall post in one step. Pick a 9:16 story, a 4:5 portrait or any tall size and Shotcandy adds a headline and subhead above your screenshot, set in the brand's display type with ink or white picked to suit the background. Click the text on the canvas to edit it in place.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/editor-caption-dark.webp">
+  <img src="docs/screenshots/editor-caption-light.webp" alt="A landscape dashboard screenshot on a 1080 by 1920 Instagram story with the headline Your week at a glance above it">
+</picture>
 
 ### Frames
 
