@@ -15,7 +15,12 @@ export const metadata: Metadata = {
     url: "/og-image-maker/",
     images: [{ url: "/og/og-image-maker.png", width: 1200, height: 630 }],
   },
-  twitter: { card: "summary_large_image", title: TITLE, description: DESC, images: ["/og/og-image-maker.png"] },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESC,
+    images: ["/og/og-image-maker.png"],
+  },
 };
 
 const d: ToolPageData = {
@@ -39,7 +44,10 @@ const d: ToolPageData = {
   },
   steps: [
     ["Paste", "Copy a screenshot of your page and press ⌘V (Ctrl+V), drop a file, or pick one."],
-    ["Pick a style", "The canvas is already 1200 × 630. Choose a background, frame and shadow; your shot fits automatically."],
+    [
+      "Pick a style",
+      "The canvas is already 1200 × 630. Choose a background, frame and shadow; your shot fits automatically.",
+    ],
     ["Export", "Download a PNG or JPEG at 1× or 2× and add it to your page's og:image tag."],
   ],
   examples: [
@@ -48,10 +56,22 @@ const d: ToolPageData = {
     { src: "/showcase/og-3.webp", name: "Gummy", note: "on a wallpaper", width: 720, height: 378 },
   ],
   faq: [
-    ["What size should an Open Graph image be?", "1200 × 630 pixels (1.91:1). Meta recommends at least that size for high-resolution displays; smaller images may show as a thumbnail instead of a large card."],
-    ["Does it work for X and LinkedIn link cards?", "Yes. X link cards and LinkedIn link previews use the same 1.91:1 shape; there are dedicated 1200 × 628 presets too."],
-    ["Is it free and private?", "Yes. No sign-up, no watermark, and your screenshot never leaves your browser."],
-    ["Can I export at higher resolution?", "Yes, up to 4×. Keep the file under 8 MB for Facebook and 5 MB for X."],
+    [
+      "What size should an Open Graph image be?",
+      "1200 × 630 pixels (1.91:1). Meta recommends at least that size for high-resolution displays; smaller images may show as a thumbnail instead of a large card.",
+    ],
+    [
+      "Does it work for X and LinkedIn link cards?",
+      "Yes. X link cards and LinkedIn link previews use the same 1.91:1 shape; there are dedicated 1200 × 628 presets too.",
+    ],
+    [
+      "Is it free and private?",
+      "Yes. No sign-up, no watermark, and your screenshot never leaves your browser.",
+    ],
+    [
+      "Can I export at higher resolution?",
+      "Yes, up to 4×. Keep the file under 8 MB for Facebook and 5 MB for X.",
+    ],
   ],
   related: [
     { label: "Screenshot beautifier", href: "/screenshot-beautifier/" },

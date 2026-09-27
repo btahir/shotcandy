@@ -73,7 +73,8 @@ function StyleRail() {
     "licorice",
     "from-your-shot",
   ];
-  const list = current && !ids.includes(current) && getStylePreset(current) ? [current, ...ids] : ids;
+  const list =
+    current && !ids.includes(current) && getStylePreset(current) ? [current, ...ids] : ids;
   return (
     <div className="rail" role="group" aria-label="Styles">
       {list.map((id) => {
@@ -88,7 +89,13 @@ function StyleRail() {
             onClick={() => app.applyStyle(id)}
           >
             <div className="thumb">
-              <StyleThumb styleKey={id} patch={p.patch} aspect={[4, 5]} target={130} priority={10} />
+              <StyleThumb
+                styleKey={id}
+                patch={p.patch}
+                aspect={[4, 5]}
+                target={130}
+                priority={10}
+              />
             </div>
             <span className="name">{p.name}</span>
           </button>
@@ -100,7 +107,10 @@ function StyleRail() {
         onClick={() => app.ui.set({ modal: "gallery" })}
         aria-label="All styles"
       >
-        <div className="thumb" style={{ display: "grid", placeItems: "center", color: "var(--sc-ink-2)" }}>
+        <div
+          className="thumb"
+          style={{ display: "grid", placeItems: "center", color: "var(--sc-ink-2)" }}
+        >
           <Icon name="plus" />
         </div>
         <span className="name">All styles</span>
@@ -172,7 +182,10 @@ function MobileSheet() {
   };
   const onMove = (e: React.PointerEvent) => {
     if (!drag.current) return;
-    const h = Math.max(160, Math.min(window.innerHeight * 0.8, drag.current.h - (e.clientY - drag.current.y)));
+    const h = Math.max(
+      160,
+      Math.min(window.innerHeight * 0.8, drag.current.h - (e.clientY - drag.current.y)),
+    );
     setDragH(h);
   };
   const onUp = (e: React.PointerEvent) => {
@@ -258,18 +271,27 @@ function CurrentThumb() {
     const scale = Math.min(1, 200 / Math.max(layout.canvas.width, layout.canvas.height));
     const key = `current:${JSON.stringify(scene).length}:${Date.now()}`;
     let alive = true;
-    app.thumbs?.request(key, scene, scale, 20).then((b) => {
-      const c = ref.current;
-      if (!alive || !c) return;
-      c.width = b.width;
-      c.height = b.height;
-      c.getContext("2d")?.drawImage(b, 0, 0);
-    }, () => undefined);
+    app.thumbs?.request(key, scene, scale, 20).then(
+      (b) => {
+        const c = ref.current;
+        if (!alive || !c) return;
+        c.width = b.width;
+        c.height = b.height;
+        c.getContext("2d")?.drawImage(b, 0, 0);
+      },
+      () => undefined,
+    );
     return () => {
       alive = false;
     };
   }, [app, scene]);
-  return <canvas ref={ref} style={{ display: "block", width: "100%", height: "auto" }} aria-hidden="true" />;
+  return (
+    <canvas
+      ref={ref}
+      style={{ display: "block", width: "100%", height: "auto" }}
+      aria-hidden="true"
+    />
+  );
 }
 
 function MobileExport() {
@@ -360,10 +382,18 @@ function MobileExport() {
           <Icon name="download" /> Save to Photos
         </button>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
-          <button type="button" className="btn btn-secondary" onClick={(e) => app.copy(e.currentTarget)}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={(e) => app.copy(e.currentTarget)}
+          >
             <Icon name="copy" /> Copy
           </button>
-          <button type="button" className="btn btn-secondary" onClick={() => void app.share("share")}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => void app.share("share")}
+          >
             <Icon name="link" /> Share…
           </button>
         </div>

@@ -177,7 +177,11 @@ function importMessage(e: unknown): { title: string; detail: string } {
   if (e instanceof ImportError) {
     switch (e.code) {
       case "heic":
-        return { title: "HEIC photos aren't supported yet", detail: e.message };
+        return {
+          title: "HEIC photos aren't supported yet",
+          detail:
+            "Save it as PNG or JPEG and try again. On iPhone: Settings › Camera › Formats › Most Compatible.",
+        };
       case "too-large":
         return { title: "That image is too big to edit", detail: e.message };
       case "empty":
@@ -707,7 +711,9 @@ export class EditorApp {
       const p = conv(a.x, a.y);
       patch = { x: p.x, y: p.y } as Partial<Annotation>;
     }
-    this.store.update((s) => updateAnnotation(s, id, { ...patch, anchor: to } as Partial<Annotation>));
+    this.store.update((s) =>
+      updateAnnotation(s, id, { ...patch, anchor: to } as Partial<Annotation>),
+    );
   }
 
   moveAnnotation(id: string, to: number): void {

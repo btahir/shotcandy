@@ -18,7 +18,12 @@ export const metadata: Metadata = {
     url: "/about/",
     images: [{ url: "/og/about.png", width: 1200, height: 630 }],
   },
-  twitter: { card: "summary_large_image", title: TITLE, description: DESC, images: ["/og/about.png"] },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESC,
+    images: ["/og/about.png"],
+  },
 };
 
 const FEATURES: [string, string][] = [
@@ -74,7 +79,12 @@ export default function AboutPage() {
               <Link className="btn btn-primary btn-xl" href="/">
                 Open the editor
               </Link>
-              <a className="btn btn-secondary btn-xl" href={GITHUB_URL} target="_blank" rel="noreferrer">
+              <a
+                className="btn btn-secondary btn-xl"
+                href={GITHUB_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
                 <Icon name="code" /> View the source
               </a>
             </div>
@@ -149,7 +159,10 @@ export default function AboutPage() {
             <div className="card-soft pillar">
               <div
                 className="icon-badge"
-                style={{ background: "color-mix(in srgb, var(--sc-grape-500) 18%, transparent)", color: "var(--sc-grape-700)" }}
+                style={{
+                  background: "color-mix(in srgb, var(--sc-grape-500) 18%, transparent)",
+                  color: "var(--sc-grape-700)",
+                }}
               >
                 <Icon name="code" />
               </div>
@@ -175,14 +188,24 @@ export default function AboutPage() {
                 Keep the candy jar full
               </h2>
               <p className="body-copy" style={{ marginTop: 12, maxWidth: 480 }}>
-                Shotcandy costs nothing to use and never will. If it saves you time, a small one-off tip
-                helps pay for the domain and the evenings spent maintaining it. Thank you!
+                Shotcandy costs nothing to use and never will. If it saves you time, a small one-off
+                tip helps pay for the domain and the evenings spent maintaining it. Thank you!
               </p>
               <div style={{ display: "flex", gap: 10, marginTop: 22, flexWrap: "wrap" }}>
-                <a className="btn btn-primary btn-xl" href={SUPPORT_URL} target="_blank" rel="noreferrer">
+                <a
+                  className="btn btn-primary btn-xl"
+                  href={SUPPORT_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   <Icon name="heart" /> Support this project
                 </a>
-                <a className="btn btn-secondary btn-xl" href={GITHUB_URL} target="_blank" rel="noreferrer">
+                <a
+                  className="btn btn-secondary btn-xl"
+                  href={GITHUB_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   Star the repo
                 </a>
               </div>
@@ -243,7 +266,10 @@ export default function AboutPage() {
             <tbody>
               <tr>
                 <th scope="row">Type</th>
-                <td>Bricolage Grotesque, Figtree and Geist Mono, all under the SIL Open Font License 1.1</td>
+                <td>
+                  Bricolage Grotesque, Figtree and Geist Mono, all under the SIL Open Font License
+                  1.1
+                </td>
               </tr>
               <tr>
                 <th scope="row">Wallpapers</th>

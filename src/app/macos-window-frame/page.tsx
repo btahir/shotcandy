@@ -15,7 +15,12 @@ export const metadata: Metadata = {
     url: "/macos-window-frame/",
     images: [{ url: "/og/macos-window-frame.png", width: 1200, height: 630 }],
   },
-  twitter: { card: "summary_large_image", title: TITLE, description: DESC, images: ["/og/macos-window-frame.png"] },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESC,
+    images: ["/og/macos-window-frame.png"],
+  },
 };
 
 const d: ToolPageData = {
@@ -38,19 +43,55 @@ const d: ToolPageData = {
   },
   steps: [
     ["Paste", "Copy a screenshot and press ⌘V (Ctrl+V), drop a file, or pick one."],
-    ["Pick a style", "The macOS frame is already on. Choose light or dark, a background, padding and shadow."],
-    ["Export", "Copy to clipboard or download PNG, JPEG or WebP up to 4×, sized for any social network."],
+    [
+      "Pick a style",
+      "The macOS frame is already on. Choose light or dark, a background, padding and shadow.",
+    ],
+    [
+      "Export",
+      "Copy to clipboard or download PNG, JPEG or WebP up to 4×, sized for any social network.",
+    ],
   ],
   examples: [
-    { src: "/showcase/macos-1.webp", name: "Sherbet", note: "light window", width: 720, height: 540 },
-    { src: "/showcase/macos-2.webp", name: "Grape Soda", note: "dark window", width: 720, height: 540 },
-    { src: "/showcase/macos-3.webp", name: "Strawberry Satin", note: "on a wallpaper", width: 720, height: 540 },
+    {
+      src: "/showcase/macos-1.webp",
+      name: "Sherbet",
+      note: "light window",
+      width: 720,
+      height: 540,
+    },
+    {
+      src: "/showcase/macos-2.webp",
+      name: "Grape Soda",
+      note: "dark window",
+      width: 720,
+      height: 540,
+    },
+    {
+      src: "/showcase/macos-3.webp",
+      name: "Strawberry Satin",
+      note: "on a wallpaper",
+      width: 720,
+      height: 540,
+    },
   ],
   faq: [
-    ["Is it free to add a macOS frame?", "Yes. Shotcandy is free and open source, with no watermark and no sign-up. Export up to 4× resolution as PNG, JPEG or WebP."],
-    ["Is my screenshot uploaded?", "No. The frame is drawn in your browser with the canvas API. Your image never leaves your device."],
-    ["Can I use a dark window or add a title?", "Yes. Switch the frame between light and dark, add a window title, or use muted grey window buttons."],
-    ["Does it work with Windows or Linux screenshots?", "Any PNG, JPEG or WebP works. The frame is our own macOS-style drawing, so it suits any desktop screenshot."],
+    [
+      "Is it free to add a macOS frame?",
+      "Yes. Shotcandy is free and open source, with no watermark and no sign-up. Export up to 4× resolution as PNG, JPEG or WebP.",
+    ],
+    [
+      "Is my screenshot uploaded?",
+      "No. The frame is drawn in your browser with the canvas API. Your image never leaves your device.",
+    ],
+    [
+      "Can I use a dark window or add a title?",
+      "Yes. Switch the frame between light and dark, add a window title, or use muted grey window buttons.",
+    ],
+    [
+      "Does it work with Windows or Linux screenshots?",
+      "Any PNG, JPEG or WebP works. The frame is our own macOS-style drawing, so it suits any desktop screenshot.",
+    ],
   ],
   related: [
     { label: "Screenshot beautifier", href: "/screenshot-beautifier/" },

@@ -15,147 +15,146 @@
   color-scheme: light;
 
   /* ---- Brand candy palette (theme independent) ------------------------- */
-  --sc-candy-50:  #FFF0F4;
-  --sc-candy-100: #FFDCE5;
-  --sc-candy-200: #FFB4C6;
-  --sc-candy-300: #FF8FAB;
-  --sc-candy-400: #FF6A8F;
-  --sc-candy-500: #FF4F7B;   /* strawberry — the brand colour */
-  --sc-candy-600: #D42A5F;   /* text-bearing fill (white text AA) */
-  --sc-candy-700: #C0214F;   /* candy text on light */
-  --sc-candy-800: #9A1A40;   /* button lip */
+  --sc-candy-50: #fff0f4;
+  --sc-candy-100: #ffdce5;
+  --sc-candy-200: #ffb4c6;
+  --sc-candy-300: #ff8fab;
+  --sc-candy-400: #ff6a8f;
+  --sc-candy-500: #ff4f7b; /* strawberry — the brand colour */
+  --sc-candy-600: #d42a5f; /* text-bearing fill (white text AA) */
+  --sc-candy-700: #c0214f; /* candy text on light */
+  --sc-candy-800: #9a1a40; /* button lip */
 
-  --sc-tangerine-200: #FFD9B5;
-  --sc-tangerine-300: #FFC08A;
-  --sc-tangerine-500: #FF9A3C;
-  --sc-tangerine-700: #B85A0A;
+  --sc-tangerine-200: #ffd9b5;
+  --sc-tangerine-300: #ffc08a;
+  --sc-tangerine-500: #ff9a3c;
+  --sc-tangerine-700: #b85a0a;
 
-  --sc-mint-200: #CDF5E3;
-  --sc-mint-300: #A6EBCF;
-  --sc-mint-500: #5FD4A8;
-  --sc-mint-700: #1A7A57;
+  --sc-mint-200: #cdf5e3;
+  --sc-mint-300: #a6ebcf;
+  --sc-mint-500: #5fd4a8;
+  --sc-mint-700: #1a7a57;
 
-  --sc-lemon-200: #FFF1B8;
-  --sc-lemon-300: #FFE991;
-  --sc-lemon-500: #FFD84D;
-  --sc-lemon-700: #8F7000;
+  --sc-lemon-200: #fff1b8;
+  --sc-lemon-300: #ffe991;
+  --sc-lemon-500: #ffd84d;
+  --sc-lemon-700: #8f7000;
 
-  --sc-grape-200: #E2D9FF;
-  --sc-grape-300: #C9B8FF;
-  --sc-grape-500: #8B6CFF;
-  --sc-grape-700: #5B3FD6;
+  --sc-grape-200: #e2d9ff;
+  --sc-grape-300: #c9b8ff;
+  --sc-grape-500: #8b6cff;
+  --sc-grape-700: #5b3fd6;
 
-  --sc-blueberry-300: #A9C8FF;
-  --sc-blueberry-500: #4F8BFF;
-  --sc-blueberry-700: #2459C9;
+  --sc-blueberry-300: #a9c8ff;
+  --sc-blueberry-500: #4f8bff;
+  --sc-blueberry-700: #2459c9;
 
-  --sc-cocoa-900: #1A1411;
+  --sc-cocoa-900: #1a1411;
   --sc-cocoa-800: #211915;
-  --sc-cocoa-700: #261D19;
-  --sc-cocoa-600: #2F2520;
-  --sc-cocoa-500: #3A2E27;
-  --sc-cocoa-400: #4A3B32;
+  --sc-cocoa-700: #261d19;
+  --sc-cocoa-600: #2f2520;
+  --sc-cocoa-500: #3a2e27;
+  --sc-cocoa-400: #4a3b32;
 
-  --sc-cream-50:  #FFFCF7;
-  --sc-cream-100: #FBF5EC;
-  --sc-cream-200: #F6EEE2;
-  --sc-cream-300: #F4EBDD;
-  --sc-cream-400: #EFE4D4;
-  --sc-cream-500: #EADFCF;
-  --sc-cream-600: #DCCDB8;
+  --sc-cream-50: #fffcf7;
+  --sc-cream-100: #fbf5ec;
+  --sc-cream-200: #f6eee2;
+  --sc-cream-300: #f4ebdd;
+  --sc-cream-400: #efe4d4;
+  --sc-cream-500: #eadfcf;
+  --sc-cream-600: #dccdb8;
 
   /* ---- Semantic colour: LIGHT ------------------------------------------ */
-  --sc-paper:      var(--sc-cream-100);  /* app background */
-  --sc-stage:      var(--sc-cream-300);  /* the canvas tray behind the composition */
-  --sc-surface:    var(--sc-cream-50);   /* trays, popovers, dock */
-  --sc-well:       var(--sc-cream-200);  /* inputs, segmented bg, slider track, idle tiles */
+  --sc-paper: var(--sc-cream-100); /* app background */
+  --sc-stage: var(--sc-cream-300); /* the canvas tray behind the composition */
+  --sc-surface: var(--sc-cream-50); /* trays, popovers, dock */
+  --sc-well: var(--sc-cream-200); /* inputs, segmented bg, slider track, idle tiles */
   --sc-well-hover: var(--sc-cream-400);
-  --sc-line:       var(--sc-cream-500);  /* hairlines */
-  --sc-line-strong:var(--sc-cream-600);  /* ticks, input borders */
-  --sc-dots:       rgba(120, 90, 60, 0.14); /* stage dot grid */
+  --sc-line: var(--sc-cream-500); /* hairlines */
+  --sc-line-strong: var(--sc-cream-600); /* ticks, input borders */
+  --sc-dots: rgba(120, 90, 60, 0.14); /* stage dot grid */
 
-  --sc-ink:   #2A1F1A;  /* primary text, selected segment fill */
-  --sc-ink-2: #6B5A4E;  /* labels, secondary text */
-  --sc-ink-3: #786456;  /* tertiary text, values meta */
-  --sc-ink-4: #B5A495;  /* disabled, decorative only */
+  --sc-ink: #2a1f1a; /* primary text, selected segment fill */
+  --sc-ink-2: #6b5a4e; /* labels, secondary text */
+  --sc-ink-3: #786456; /* tertiary text, values meta */
+  --sc-ink-4: #b5a495; /* disabled, decorative only */
   --sc-on-ink: var(--sc-cream-100); /* text/icon on --sc-ink fills */
   --sc-on-ink-accent: var(--sc-candy-300); /* accent text on --sc-ink fills (toast action) */
 
-  --sc-accent:        var(--sc-candy-500);
-  --sc-accent-text:   var(--sc-candy-700);
-  --sc-accent-fill:   var(--sc-candy-600);
-  --sc-accent-soft:   var(--sc-candy-50);
-  --sc-accent-ring:   var(--sc-candy-600);  /* 4.5:1 on cream, used for focus + selection */
-  --sc-on-accent:     #FFFFFF;
+  --sc-accent: var(--sc-candy-500);
+  --sc-accent-text: var(--sc-candy-700);
+  --sc-accent-fill: var(--sc-candy-600);
+  --sc-accent-soft: var(--sc-candy-50);
+  --sc-accent-ring: var(--sc-candy-600); /* 4.5:1 on cream, used for focus + selection */
+  --sc-on-accent: #ffffff;
 
   --sc-success: var(--sc-mint-700);
   --sc-success-soft: var(--sc-mint-200);
   --sc-warning: var(--sc-tangerine-700);
   --sc-warning-soft: var(--sc-tangerine-200);
-  --sc-danger:  #C8322A;
-  --sc-danger-soft: #FDE2DF;
+  --sc-danger: #c8322a;
+  --sc-danger-soft: #fde2df;
 
   --sc-selection: rgba(255, 79, 123, 0.22); /* text selection highlight */
-  --sc-scrim: rgba(42, 31, 26, 0.36);       /* modal backdrop */
+  --sc-scrim: rgba(42, 31, 26, 0.36); /* modal backdrop */
 
   /* Gradients */
-  --sc-grad-candy: linear-gradient(180deg, #FF6A8F 0%, #F0467A 48%, #D42A5F 100%);
-  --sc-grad-candy-hover: linear-gradient(180deg, #FF7A9B 0%, #F5507F 48%, #DB3166 100%);
-  --sc-grad-knob: linear-gradient(180deg, #FFFFFF 0%, #F3EBE2 100%);
+  --sc-grad-candy: linear-gradient(180deg, #ff6a8f 0%, #f0467a 48%, #d42a5f 100%);
+  --sc-grad-candy-hover: linear-gradient(180deg, #ff7a9b 0%, #f5507f 48%, #db3166 100%);
+  --sc-grad-knob: linear-gradient(180deg, #ffffff 0%, #f3ebe2 100%);
   --sc-grad-fill: linear-gradient(90deg, var(--sc-candy-300) 0%, var(--sc-candy-500) 100%);
-  --sc-grad-auto: conic-gradient(from 200deg, #FF4F7B, #FF9A3C, #FFD84D, #5FD4A8, #4F8BFF, #8B6CFF, #FF4F7B);
-  --sc-grad-sheen: linear-gradient(180deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 55%);
+  --sc-grad-auto: conic-gradient(
+    from 200deg,
+    #ff4f7b,
+    #ff9a3c,
+    #ffd84d,
+    #5fd4a8,
+    #4f8bff,
+    #8b6cff,
+    #ff4f7b
+  );
+  --sc-grad-sheen: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0) 55%
+  );
 
   /* ---- Elevation (light) ------------------------------------------------ */
   /* tray: panels resting on paper */
   --sc-shadow-tray:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 1px 2px rgba(74, 45, 20, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(74, 45, 20, 0.06),
     0 8px 24px -12px rgba(74, 45, 20, 0.16);
   /* raised: buttons, chips, knobs — the moulded "lip" is the inset bottom shadow */
   --sc-shadow-raised:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -2px 0 rgba(74, 45, 20, 0.07),
-    0 1px 2px rgba(74, 45, 20, 0.10);
+    inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -2px 0 rgba(74, 45, 20, 0.07),
+    0 1px 2px rgba(74, 45, 20, 0.1);
   --sc-shadow-raised-hover:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -2px 0 rgba(74, 45, 20, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -2px 0 rgba(74, 45, 20, 0.07),
     0 3px 8px -2px rgba(74, 45, 20, 0.16);
   /* pressed: lip collapses, content moves down 1px */
-  --sc-shadow-pressed:
-    inset 0 1px 2px rgba(74, 45, 20, 0.14),
-    inset 0 0 0 rgba(0, 0, 0, 0);
+  --sc-shadow-pressed: inset 0 1px 2px rgba(74, 45, 20, 0.14), inset 0 0 0 rgba(0, 0, 0, 0);
   /* well: recessed tracks, idle segmented controls */
-  --sc-shadow-well:
-    inset 0 1px 2px rgba(74, 45, 20, 0.09),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.7);
+  --sc-shadow-well: inset 0 1px 2px rgba(74, 45, 20, 0.09), inset 0 -1px 0 rgba(255, 255, 255, 0.7);
   /* float: dock, popovers, menus, toasts */
   --sc-shadow-float:
-    inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    0 2px 6px rgba(74, 45, 20, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 2px 6px rgba(74, 45, 20, 0.08),
     0 16px 40px -12px rgba(74, 45, 20, 0.28);
   /* modal: gallery sheet, dialogs */
-  --sc-shadow-modal:
-    0 4px 12px rgba(74, 45, 20, 0.10),
-    0 40px 90px -20px rgba(74, 45, 20, 0.40);
+  --sc-shadow-modal: 0 4px 12px rgba(74, 45, 20, 0.1), 0 40px 90px -20px rgba(74, 45, 20, 0.4);
   /* knob: slider thumb */
   --sc-shadow-knob:
-    inset 0 -2px 0 rgba(74, 45, 20, 0.08),
-    0 0 0 1px rgba(74, 45, 20, 0.06),
+    inset 0 -2px 0 rgba(74, 45, 20, 0.08), 0 0 0 1px rgba(74, 45, 20, 0.06),
     0 2px 5px rgba(60, 30, 10, 0.22);
   /* primary candy button */
   --sc-shadow-candy:
-    inset 0 -3px 0 var(--sc-candy-800),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -3px 0 var(--sc-candy-800), inset 0 1px 0 rgba(255, 255, 255, 0.45),
     0 6px 16px -6px rgba(212, 42, 95, 0.55);
   --sc-shadow-candy-pressed:
-    inset 0 -1px 0 var(--sc-candy-800),
-    inset 0 2px 3px rgba(120, 10, 40, 0.30),
-    0 2px 6px -3px rgba(212, 42, 95, 0.50);
+    inset 0 -1px 0 var(--sc-candy-800), inset 0 2px 3px rgba(120, 10, 40, 0.3),
+    0 2px 6px -3px rgba(212, 42, 95, 0.5);
   /* candy swatch (boiled-sweet look) */
   --sc-shadow-swatch:
-    inset 0 -2px 0 rgba(0, 0, 0, 0.12),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(0, 0, 0, 0.06),
     0 2px 4px rgba(74, 45, 20, 0.14);
   /* focus: double ring so it reads on any fill */
   --sc-focus-ring: 0 0 0 2px var(--sc-paper), 0 0 0 4px var(--sc-accent-ring);
@@ -164,21 +163,32 @@
 
   /* ---- Typography -------------------------------------------------------- */
   --sc-font-display: "Bricolage Grotesque", "Figtree", ui-sans-serif, system-ui, sans-serif;
-  --sc-font-ui:      "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --sc-font-mono:    "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --sc-font-ui: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sc-font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   /* size / line-height pairs. UI sizes are fractional on purpose (Figtree runs small). */
-  --sc-text-2xs: 10.5px;  --sc-leading-2xs: 14px;   /* keycaps, tiny tags */
-  --sc-text-xs:  11.5px;  --sc-leading-xs:  16px;   /* values (mono), meta */
-  --sc-text-sm:  12.5px;  --sc-leading-sm:  18px;   /* tray titles, labels */
-  --sc-text-base:13.5px;  --sc-leading-base:20px;   /* default UI text */
-  --sc-text-md:  15px;    --sc-leading-md:  22px;   /* buttons (lg), body on pages */
-  --sc-text-lg:  17px;    --sc-leading-lg:  26px;   /* page body large */
-  --sc-text-xl:  21px;    --sc-leading-xl:  28px;   /* logo wordmark, dialog titles */
-  --sc-text-2xl: 28px;    --sc-leading-2xl: 34px;   /* empty-state title, section titles */
-  --sc-text-3xl: 38px;    --sc-leading-3xl: 42px;   /* page h2 */
-  --sc-text-4xl: 54px;    --sc-leading-4xl: 56px;   /* page h1 (mobile 38) */
-  --sc-text-5xl: 76px;    --sc-leading-5xl: 76px;   /* hero display */
+  --sc-text-2xs: 10.5px;
+  --sc-leading-2xs: 14px; /* keycaps, tiny tags */
+  --sc-text-xs: 11.5px;
+  --sc-leading-xs: 16px; /* values (mono), meta */
+  --sc-text-sm: 12.5px;
+  --sc-leading-sm: 18px; /* tray titles, labels */
+  --sc-text-base: 13.5px;
+  --sc-leading-base: 20px; /* default UI text */
+  --sc-text-md: 15px;
+  --sc-leading-md: 22px; /* buttons (lg), body on pages */
+  --sc-text-lg: 17px;
+  --sc-leading-lg: 26px; /* page body large */
+  --sc-text-xl: 21px;
+  --sc-leading-xl: 28px; /* logo wordmark, dialog titles */
+  --sc-text-2xl: 28px;
+  --sc-leading-2xl: 34px; /* empty-state title, section titles */
+  --sc-text-3xl: 38px;
+  --sc-leading-3xl: 42px; /* page h2 */
+  --sc-text-4xl: 54px;
+  --sc-leading-4xl: 56px; /* page h1 (mobile 38) */
+  --sc-text-5xl: 76px;
+  --sc-leading-5xl: 76px; /* hero display */
 
   --sc-weight-regular: 400;
   --sc-weight-medium: 500;
@@ -186,10 +196,10 @@
   --sc-weight-bold: 700;
   --sc-weight-black: 800; /* display only */
 
-  --sc-tracking-display: -0.035em;  /* Bricolage at >= 28px */
-  --sc-tracking-tight: -0.015em;    /* Bricolage 17–27px, Figtree >= 21px */
+  --sc-tracking-display: -0.035em; /* Bricolage at >= 28px */
+  --sc-tracking-tight: -0.015em; /* Bricolage 17–27px, Figtree >= 21px */
   --sc-tracking-normal: 0;
-  --sc-tracking-caps: 0.06em;       /* rare all-caps micro labels */
+  --sc-tracking-caps: 0.06em; /* rare all-caps micro labels */
 
   /* ---- Spacing (4px grid) ------------------------------------------------ */
   --sc-space-0: 0;
@@ -213,44 +223,44 @@
   --sc-space-32: 128px;
 
   /* ---- Radii ------------------------------------------------------------- */
-  --sc-radius-xs: 5px;    /* keycaps, tiny tags */
-  --sc-radius-sm: 9px;    /* segmented inner buttons, small chips */
-  --sc-radius-md: 12px;   /* tiles, icon buttons, inputs */
-  --sc-radius-lg: 14px;   /* buttons */
-  --sc-radius-xl: 20px;   /* trays */
-  --sc-radius-2xl: 28px;  /* stage, sheets, modals */
+  --sc-radius-xs: 5px; /* keycaps, tiny tags */
+  --sc-radius-sm: 9px; /* segmented inner buttons, small chips */
+  --sc-radius-md: 12px; /* tiles, icon buttons, inputs */
+  --sc-radius-lg: 14px; /* buttons */
+  --sc-radius-xl: 20px; /* trays */
+  --sc-radius-2xl: 28px; /* stage, sheets, modals */
   --sc-radius-pill: 999px;
 
   /* ---- Layout ------------------------------------------------------------ */
   --sc-header-h: 60px;
   --sc-inspector-w: 340px;
-  --sc-inspector-w-compact: 300px;  /* 1024–1279px viewports */
+  --sc-inspector-w-compact: 300px; /* 1024–1279px viewports */
   --sc-dock-h: 52px;
   --sc-control-h-sm: 28px;
   --sc-control-h: 36px;
   --sc-control-h-lg: 44px;
-  --sc-hit-min: 40px;               /* min touch target on coarse pointers: 44px */
+  --sc-hit-min: 40px; /* min touch target on coarse pointers: 44px */
   --sc-stage-gutter: 24px;
-  --sc-page-max: 1120px;            /* marketing/about pages */
+  --sc-page-max: 1120px; /* marketing/about pages */
   --sc-prose-max: 660px;
 
   /* Breakpoints (for reference; CSS vars can't be used in media queries)
      sm 640 · md 768 (narrow editor → bottom sheet below this) · lg 1024 · xl 1280 · 2xl 1536 */
 
   /* ---- Motion ------------------------------------------------------------ */
-  --sc-dur-instant: 80ms;    /* press-down, colour swaps */
-  --sc-dur-fast: 140ms;      /* hover, focus, small toggles */
-  --sc-dur-base: 220ms;      /* popovers, tab switches, knob settle */
-  --sc-dur-slow: 360ms;      /* sheets, preset apply cross-fade, bloom reveal */
-  --sc-dur-landing: 420ms;   /* image drop squash */
-  --sc-dur-delight: 900ms;   /* wrap toast + sprinkles total */
-  --sc-dur-toast: 2600ms;    /* toast dwell before auto-dismiss */
+  --sc-dur-instant: 80ms; /* press-down, colour swaps */
+  --sc-dur-fast: 140ms; /* hover, focus, small toggles */
+  --sc-dur-base: 220ms; /* popovers, tab switches, knob settle */
+  --sc-dur-slow: 360ms; /* sheets, preset apply cross-fade, bloom reveal */
+  --sc-dur-landing: 420ms; /* image drop squash */
+  --sc-dur-delight: 900ms; /* wrap toast + sprinkles total */
+  --sc-dur-toast: 2600ms; /* toast dwell before auto-dismiss */
 
-  --sc-ease-out: cubic-bezier(0.22, 1, 0.36, 1);        /* default for entering */
-  --sc-ease-in: cubic-bezier(0.55, 0, 1, 0.45);         /* leaving */
-  --sc-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);     /* moving between states */
-  --sc-ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);     /* overshoot: selection, knobs, chips */
-  --sc-ease-squish: cubic-bezier(0.5, 1.8, 0.4, 0.8);   /* strong overshoot: sprinkles only */
+  --sc-ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* default for entering */
+  --sc-ease-in: cubic-bezier(0.55, 0, 1, 0.45); /* leaving */
+  --sc-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* moving between states */
+  --sc-ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1); /* overshoot: selection, knobs, chips */
+  --sc-ease-squish: cubic-bezier(0.5, 1.8, 0.4, 0.8); /* strong overshoot: sprinkles only */
   --sc-ease-linear: linear;
 
   /* JS spring equivalents (for WAAPI/Framer-style springs), documented in motion.md
@@ -274,21 +284,21 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --sc-paper:      var(--sc-cocoa-900);
-    --sc-stage:      var(--sc-cocoa-800);
-    --sc-surface:    var(--sc-cocoa-700);
-    --sc-well:       var(--sc-cocoa-600);
+    --sc-paper: var(--sc-cocoa-900);
+    --sc-stage: var(--sc-cocoa-800);
+    --sc-surface: var(--sc-cocoa-700);
+    --sc-well: var(--sc-cocoa-600);
     --sc-well-hover: var(--sc-cocoa-500);
-    --sc-line:       var(--sc-cocoa-500);
-    --sc-line-strong:var(--sc-cocoa-400);
-    --sc-dots:       rgba(255, 220, 190, 0.07);
-    --sc-ink:   #FBEFE4;
-    --sc-ink-2: #D2BEAE;
-    --sc-ink-3: #A89484;
-    --sc-ink-4: #6E5D51;
+    --sc-line: var(--sc-cocoa-500);
+    --sc-line-strong: var(--sc-cocoa-400);
+    --sc-dots: rgba(255, 220, 190, 0.07);
+    --sc-ink: #fbefe4;
+    --sc-ink-2: #d2beae;
+    --sc-ink-3: #a89484;
+    --sc-ink-4: #6e5d51;
     --sc-on-ink: var(--sc-cocoa-900);
     --sc-on-ink-accent: var(--sc-candy-700);
-    --sc-accent:      var(--sc-candy-400);
+    --sc-accent: var(--sc-candy-400);
     --sc-accent-text: var(--sc-candy-300);
     --sc-accent-fill: var(--sc-candy-600);
     --sc-accent-soft: rgba(255, 79, 123, 0.14);
@@ -297,40 +307,30 @@
     --sc-success-soft: rgba(95, 212, 168, 0.14);
     --sc-warning: var(--sc-tangerine-500);
     --sc-warning-soft: rgba(255, 154, 60, 0.14);
-    --sc-danger: #FF7A6E;
+    --sc-danger: #ff7a6e;
     --sc-danger-soft: rgba(255, 122, 110, 0.14);
     --sc-scrim: rgba(10, 6, 4, 0.6);
-    --sc-grad-knob: linear-gradient(180deg, #FFF8F1 0%, #E9DCCF 100%);
+    --sc-grad-knob: linear-gradient(180deg, #fff8f1 0%, #e9dccf 100%);
     --sc-shadow-tray:
-      inset 0 1px 0 rgba(255, 240, 225, 0.05),
-      0 1px 2px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 240, 225, 0.05), 0 1px 2px rgba(0, 0, 0, 0.35),
       0 10px 30px -12px rgba(0, 0, 0, 0.55);
     --sc-shadow-raised:
-      inset 0 1px 0 rgba(255, 240, 225, 0.06),
-      inset 0 -2px 0 rgba(0, 0, 0, 0.30),
+      inset 0 1px 0 rgba(255, 240, 225, 0.06), inset 0 -2px 0 rgba(0, 0, 0, 0.3),
       0 1px 2px rgba(0, 0, 0, 0.35);
     --sc-shadow-raised-hover:
-      inset 0 1px 0 rgba(255, 240, 225, 0.08),
-      inset 0 -2px 0 rgba(0, 0, 0, 0.30),
+      inset 0 1px 0 rgba(255, 240, 225, 0.08), inset 0 -2px 0 rgba(0, 0, 0, 0.3),
       0 4px 10px -2px rgba(0, 0, 0, 0.45);
     --sc-shadow-pressed: inset 0 1px 3px rgba(0, 0, 0, 0.45);
-    --sc-shadow-well:
-      inset 0 1px 2px rgba(0, 0, 0, 0.35),
-      inset 0 -1px 0 rgba(255, 240, 225, 0.04);
+    --sc-shadow-well: inset 0 1px 2px rgba(0, 0, 0, 0.35), inset 0 -1px 0 rgba(255, 240, 225, 0.04);
     --sc-shadow-float:
-      inset 0 1px 0 rgba(255, 240, 225, 0.06),
-      0 2px 6px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 240, 225, 0.06), 0 2px 6px rgba(0, 0, 0, 0.35),
       0 18px 44px -12px rgba(0, 0, 0, 0.65);
-    --sc-shadow-modal:
-      0 4px 12px rgba(0, 0, 0, 0.4),
-      0 40px 90px -20px rgba(0, 0, 0, 0.75);
+    --sc-shadow-modal: 0 4px 12px rgba(0, 0, 0, 0.4), 0 40px 90px -20px rgba(0, 0, 0, 0.75);
     --sc-shadow-knob:
-      inset 0 -2px 0 rgba(74, 45, 20, 0.12),
-      0 0 0 1px rgba(0, 0, 0, 0.25),
+      inset 0 -2px 0 rgba(74, 45, 20, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.25),
       0 2px 6px rgba(0, 0, 0, 0.5);
     --sc-shadow-swatch:
-      inset 0 -2px 0 rgba(0, 0, 0, 0.18),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.06),
       0 2px 4px rgba(0, 0, 0, 0.35);
   }
 }
@@ -338,21 +338,21 @@
 /* Forced dark (same values as the media query block above). */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --sc-paper:      var(--sc-cocoa-900);
-  --sc-stage:      var(--sc-cocoa-800);
-  --sc-surface:    var(--sc-cocoa-700);
-  --sc-well:       var(--sc-cocoa-600);
+  --sc-paper: var(--sc-cocoa-900);
+  --sc-stage: var(--sc-cocoa-800);
+  --sc-surface: var(--sc-cocoa-700);
+  --sc-well: var(--sc-cocoa-600);
   --sc-well-hover: var(--sc-cocoa-500);
-  --sc-line:       var(--sc-cocoa-500);
-  --sc-line-strong:var(--sc-cocoa-400);
-  --sc-dots:       rgba(255, 220, 190, 0.07);
-  --sc-ink:   #FBEFE4;
-  --sc-ink-2: #D2BEAE;
-  --sc-ink-3: #A89484;
-  --sc-ink-4: #6E5D51;
+  --sc-line: var(--sc-cocoa-500);
+  --sc-line-strong: var(--sc-cocoa-400);
+  --sc-dots: rgba(255, 220, 190, 0.07);
+  --sc-ink: #fbefe4;
+  --sc-ink-2: #d2beae;
+  --sc-ink-3: #a89484;
+  --sc-ink-4: #6e5d51;
   --sc-on-ink: var(--sc-cocoa-900);
   --sc-on-ink-accent: var(--sc-candy-700);
-  --sc-accent:      var(--sc-candy-400);
+  --sc-accent: var(--sc-candy-400);
   --sc-accent-text: var(--sc-candy-300);
   --sc-accent-fill: var(--sc-candy-600);
   --sc-accent-soft: rgba(255, 79, 123, 0.14);
@@ -361,40 +361,30 @@
   --sc-success-soft: rgba(95, 212, 168, 0.14);
   --sc-warning: var(--sc-tangerine-500);
   --sc-warning-soft: rgba(255, 154, 60, 0.14);
-  --sc-danger: #FF7A6E;
+  --sc-danger: #ff7a6e;
   --sc-danger-soft: rgba(255, 122, 110, 0.14);
   --sc-scrim: rgba(10, 6, 4, 0.6);
-  --sc-grad-knob: linear-gradient(180deg, #FFF8F1 0%, #E9DCCF 100%);
+  --sc-grad-knob: linear-gradient(180deg, #fff8f1 0%, #e9dccf 100%);
   --sc-shadow-tray:
-    inset 0 1px 0 rgba(255, 240, 225, 0.05),
-    0 1px 2px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 240, 225, 0.05), 0 1px 2px rgba(0, 0, 0, 0.35),
     0 10px 30px -12px rgba(0, 0, 0, 0.55);
   --sc-shadow-raised:
-    inset 0 1px 0 rgba(255, 240, 225, 0.06),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 240, 225, 0.06), inset 0 -2px 0 rgba(0, 0, 0, 0.3),
     0 1px 2px rgba(0, 0, 0, 0.35);
   --sc-shadow-raised-hover:
-    inset 0 1px 0 rgba(255, 240, 225, 0.08),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 240, 225, 0.08), inset 0 -2px 0 rgba(0, 0, 0, 0.3),
     0 4px 10px -2px rgba(0, 0, 0, 0.45);
   --sc-shadow-pressed: inset 0 1px 3px rgba(0, 0, 0, 0.45);
-  --sc-shadow-well:
-    inset 0 1px 2px rgba(0, 0, 0, 0.35),
-    inset 0 -1px 0 rgba(255, 240, 225, 0.04);
+  --sc-shadow-well: inset 0 1px 2px rgba(0, 0, 0, 0.35), inset 0 -1px 0 rgba(255, 240, 225, 0.04);
   --sc-shadow-float:
-    inset 0 1px 0 rgba(255, 240, 225, 0.06),
-    0 2px 6px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 240, 225, 0.06), 0 2px 6px rgba(0, 0, 0, 0.35),
     0 18px 44px -12px rgba(0, 0, 0, 0.65);
-  --sc-shadow-modal:
-    0 4px 12px rgba(0, 0, 0, 0.4),
-    0 40px 90px -20px rgba(0, 0, 0, 0.75);
+  --sc-shadow-modal: 0 4px 12px rgba(0, 0, 0, 0.4), 0 40px 90px -20px rgba(0, 0, 0, 0.75);
   --sc-shadow-knob:
-    inset 0 -2px 0 rgba(74, 45, 20, 0.12),
-    0 0 0 1px rgba(0, 0, 0, 0.25),
+    inset 0 -2px 0 rgba(74, 45, 20, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.25),
     0 2px 6px rgba(0, 0, 0, 0.5);
   --sc-shadow-swatch:
-    inset 0 -2px 0 rgba(0, 0, 0, 0.18),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.06),
     0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
@@ -410,4 +400,6 @@
 }
 
 /* ---- Base ---------------------------------------------------------------- */
-::selection { background: var(--sc-selection); }
+::selection {
+  background: var(--sc-selection);
+}

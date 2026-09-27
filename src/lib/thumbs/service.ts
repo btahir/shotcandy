@@ -181,7 +181,8 @@ export class ThumbService {
         // Never render before the content image has reached the worker.
         const c = job.scene.content;
         const waitFor = c.kind === "image" && c.assetId ? this.assetJobs.get(c.assetId) : undefined;
-        const send = () => this.post({ type: "render", job: id, scene: job.scene, scale: job.scale });
+        const send = () =>
+          this.post({ type: "render", job: id, scene: job.scene, scale: job.scale });
         if (waitFor) void waitFor.then(send);
         else send();
       } else {

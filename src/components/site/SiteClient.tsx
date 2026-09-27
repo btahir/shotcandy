@@ -35,7 +35,13 @@ export function ToolsMenu({ active }: { active?: boolean }) {
       >
         <div onKeyDown={menuKeys}>
           {TOOL_PAGES.map((t) => (
-            <Link key={t.href} role="menuitem" className="menu-item" href={t.href} onClick={() => setOpen(false)}>
+            <Link
+              key={t.href}
+              role="menuitem"
+              className="menu-item"
+              href={t.href}
+              onClick={() => setOpen(false)}
+            >
               {t.label}
             </Link>
           ))}
@@ -68,7 +74,15 @@ const ACCEPT = "image/png,image/jpeg,image/webp";
  * "Paste a screenshot here": hands the image to the editor (via IndexedDB, or
  * sessionStorage when IndexedDB is unavailable) and opens it with a preset.
  */
-export function DropInline({ style, size, frameLabel }: { style: string; size?: string; frameLabel: string }) {
+export function DropInline({
+  style,
+  size,
+  frameLabel,
+}: {
+  style: string;
+  size?: string;
+  frameLabel: string;
+}) {
   const router = useRouter();
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);

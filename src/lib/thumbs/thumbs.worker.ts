@@ -35,9 +35,16 @@ function loadFonts(fonts: FontDefinition[]) {
   if (!set || typeof FontFace === "undefined") return Promise.resolve();
   const jobs: Promise<unknown>[] = [];
   for (const f of fonts) {
-    const family = f.stack.split(",")[0]!.trim().replace(/^["']|["']$/g, "");
+    const family = f.stack
+      .split(",")[0]!
+      .trim()
+      .replace(/^["']|["']$/g, "");
     for (const src of f.sources ?? []) {
-      const face = new FontFace(family, `url(${src.url})`, src.weight ? { weight: src.weight } : {});
+      const face = new FontFace(
+        family,
+        `url(${src.url})`,
+        src.weight ? { weight: src.weight } : {},
+      );
       set.add(face);
       jobs.push(face.load().catch(() => null));
     }

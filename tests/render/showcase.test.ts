@@ -45,9 +45,7 @@ describe.skipIf(!RUN)("showcase art", () => {
       "editor-dark",
       "tablet-reader",
     ];
-    const srcs = await Promise.all(
-      names.map((n) => loadAsset(n, `brand/samples/sample-${n}.png`)),
-    );
+    const srcs = await Promise.all(names.map((n) => loadAsset(n, `brand/samples/sample-${n}.png`)));
     const walls = await Promise.all(
       ["strawberry-satin", "peach-dunes", "grape-aurora", "gummy-blobs"].map(async (w) => {
         const img = await loadImage(`brand/backgrounds/${w}.webp`);
@@ -55,7 +53,9 @@ describe.skipIf(!RUN)("showcase art", () => {
           id: `builtin:${w}`,
           width: img.width,
           height: img.height,
-          images: [{ image: img as unknown as CanvasImageSource, width: img.width, height: img.height }],
+          images: [
+            { image: img as unknown as CanvasImageSource, width: img.width, height: img.height },
+          ],
         };
       }),
     );
@@ -80,10 +80,12 @@ describe.skipIf(!RUN)("showcase art", () => {
       console.log(out, r.width, r.height);
     };
     const aspect = (w: number, h: number) => ({ kind: "aspect" as const, ratioW: w, ratioH: h });
-    const title = (t: string, url = "") => (s: Scene) => ({
-      ...s,
-      card: { ...s.card, frame: { ...s.card.frame, title: t, url } },
-    });
+    const title =
+      (t: string, url = "") =>
+      (s: Scene) => ({
+        ...s,
+        card: { ...s.card, frame: { ...s.card.frame, title: t, url } },
+      });
 
     mkdirSync("brand/empty", { recursive: true });
     render("brand/empty/fan-mint.webp", "mint-julep", "dashboard-light", 340, aspect(16, 11));
@@ -110,12 +112,29 @@ describe.skipIf(!RUN)("showcase art", () => {
 
     mkdirSync("brand/showcase", { recursive: true });
     // About page: before/after.
-    render("brand/showcase/about-after.webp", "tangerine", "kanban-light", 840, aspect(4, 3), title("Marmalade"));
+    render(
+      "brand/showcase/about-after.webp",
+      "tangerine",
+      "kanban-light",
+      840,
+      aspect(4, 3),
+      title("Marmalade"),
+    );
     // Tool pages: hero + three examples each.
-    const hero = (id: string, style: string, sample: string, size: Scene["canvas"]["size"] = aspect(16, 11), t = title("")) =>
-      render(`brand/showcase/${id}.webp`, style, sample, 1100, size, t);
-    const ex = (id: string, style: string, sample: string, size: Scene["canvas"]["size"] = aspect(4, 3), t = title("")) =>
-      render(`brand/showcase/${id}.webp`, style, sample, 720, size, t);
+    const hero = (
+      id: string,
+      style: string,
+      sample: string,
+      size: Scene["canvas"]["size"] = aspect(16, 11),
+      t = title(""),
+    ) => render(`brand/showcase/${id}.webp`, style, sample, 1100, size, t);
+    const ex = (
+      id: string,
+      style: string,
+      sample: string,
+      size: Scene["canvas"]["size"] = aspect(4, 3),
+      t = title(""),
+    ) => render(`brand/showcase/${id}.webp`, style, sample, 720, size, t);
     hero("macos-hero", "sherbet", "dashboard-light", aspect(16, 11), title("Quokka — Overview"));
     ex("macos-1", "sherbet", "dashboard-light");
     ex("macos-2", "grape-soda", "terminal-code", aspect(4, 3), (s) => ({

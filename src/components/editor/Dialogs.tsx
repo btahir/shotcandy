@@ -108,7 +108,11 @@ export function ShortcutsSheet() {
                   <span className="keys">
                     {keys.map((k, i) =>
                       k === "·" || k === "–" || k === "drag" || k === "double-click stage" ? (
-                        <span key={i} className="muted" style={{ fontSize: 12, alignSelf: "center" }}>
+                        <span
+                          key={i}
+                          className="muted"
+                          style={{ fontSize: 12, alignSelf: "center" }}
+                        >
                           {k}
                         </span>
                       ) : (
@@ -180,7 +184,11 @@ export function RecentsDialog() {
         {recents.length === 0 ? (
           <p className="jar-empty">Nothing here yet. Paste a screenshot to start.</p>
         ) : (
-          <ul className="recent-grid" aria-label="Saved designs" style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          <ul
+            className="recent-grid"
+            aria-label="Saved designs"
+            style={{ listStyle: "none", padding: 0, margin: 0 }}
+          >
             {recents.map((d) => (
               <li key={d.id} className="recent-card">
                 <button

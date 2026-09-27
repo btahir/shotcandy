@@ -1,3 +1,5 @@
+"use client";
+import { useEffect, useState } from "react";
 /** Platform helpers for keycaps and shortcuts. */
 export function isApple(): boolean {
   if (typeof navigator === "undefined") return true;
@@ -30,4 +32,11 @@ export function prefersReducedMotion(): boolean {
     typeof window !== "undefined" &&
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
   );
+}
+
+/** "⌘" on Apple platforms, "Ctrl" elsewhere, resolved after mount (SSR renders ⌘). */
+export function useModKey(): string {
+  const [mod, setMod] = useState("⌘");
+  useEffect(() => setMod(modLabel()), []);
+  return mod;
 }

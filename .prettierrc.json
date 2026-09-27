@@ -2,5 +2,6 @@
   "printWidth": 100,
   "singleQuote": false,
   "trailingComma": "all",
-  "plugins": ["prettier-plugin-tailwindcss"]
+  "plugins": ["prettier-plugin-tailwindcss"],
+  "tailwindPreserveWhitespace": true
 }

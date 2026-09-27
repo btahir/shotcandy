@@ -50,7 +50,10 @@ export function sprinkle(from: Element | DOMRect | null): void {
           offset: 0.55,
           easing: "cubic-bezier(.55,0,1,.45)",
         },
-        { transform: `translate(${dx}px,${dy + 12}px) rotate(${rot * 1.3}deg) scale(.9)`, opacity: 0 },
+        {
+          transform: `translate(${dx}px,${dy + 12}px) rotate(${rot * 1.3}deg) scale(.9)`,
+          opacity: 0,
+        },
       ],
       { duration: 700, easing: "cubic-bezier(.5,1.8,.4,.8)", fill: "forwards" },
     );

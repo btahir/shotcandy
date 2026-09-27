@@ -7,7 +7,13 @@ import type { EditorApp, Tool } from "./app";
 import { stepZoom } from "./Dock";
 import { openFilePicker } from "./EmptyState";
 
-const TOOL_KEYS: Record<string, Tool> = { v: "select", t: "text", a: "arrow", r: "rect", b: "redact" };
+const TOOL_KEYS: Record<string, Tool> = {
+  v: "select",
+  t: "text",
+  a: "arrow",
+  r: "rect",
+  b: "redact",
+};
 const FRAME_CYCLE = ["none", "macos", "browser", "phone", "tablet", "laptop"];
 const PAD_CYCLE = [40, 80, 120, 160, 0];
 

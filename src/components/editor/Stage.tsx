@@ -332,12 +332,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
               )}
             </div>
           )}
-          <AnnotationLayer
-            geo={{ layout, zoom }}
-            left={left}
-            top={top}
-            compRef={compRef}
-          />
+          <AnnotationLayer geo={{ layout, zoom }} left={left} top={top} compRef={compRef} />
           {!narrow && <Dock />}
         </>
       )}

@@ -78,7 +78,10 @@ export function Gallery({ narrow = false }: { narrow?: boolean }) {
     const cards = Array.from(e.currentTarget.querySelectorAll<HTMLElement>(".card-btn"));
     const i = cards.indexOf(t);
     const top0 = cards[0]!.getBoundingClientRect().top;
-    const cols = Math.max(1, cards.filter((c) => Math.abs(c.getBoundingClientRect().top - top0) < 4).length);
+    const cols = Math.max(
+      1,
+      cards.filter((c) => Math.abs(c.getBoundingClientRect().top - top0) < 4).length,
+    );
     const d = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols }[e.key]!;
     e.preventDefault();
     cards[Math.max(0, Math.min(cards.length - 1, i + d))]?.focus();
@@ -110,11 +113,15 @@ export function Gallery({ narrow = false }: { narrow?: boolean }) {
 
   return (
     <Modal open={open} onClose={close} labelledBy="jar-title" className="jar">
-      <div className="jar-head" style={narrow ? { flexWrap: "wrap", padding: "18px 16px 12px" } : undefined}>
+      <div
+        className="jar-head"
+        style={narrow ? { flexWrap: "wrap", padding: "18px 16px 12px" } : undefined}
+      >
         <div style={{ minWidth: 0 }}>
           <h2 id="jar-title">Candy Jar</h2>
           <p>
-            Every style, shown on your own screenshot. Click to apply, <span aria-hidden="true">↵</span>
+            Every style, shown on your own screenshot. Click to apply,{" "}
+            <span aria-hidden="true">↵</span>
             <span className="sr-only">Enter</span> to apply and close.
           </p>
         </div>
@@ -124,6 +131,7 @@ export function Gallery({ narrow = false }: { narrow?: boolean }) {
           <span className="sr-only">Search styles</span>
           <input
             ref={searchRef}
+            data-autofocus={narrow ? undefined : true}
             placeholder="Search styles"
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -149,7 +157,13 @@ export function Gallery({ narrow = false }: { narrow?: boolean }) {
         >
           <Icon name="shuffle" size="sm" /> Surprise me
         </button>
-        <button type="button" className="icon-btn" aria-label="Close (Esc)" onClick={close}>
+        <button
+          type="button"
+          className="icon-btn jar-close"
+          aria-label="Close (Esc)"
+          onClick={close}
+          data-autofocus={narrow ? true : undefined}
+        >
           <Icon name="x" />
         </button>
       </div>
@@ -184,7 +198,14 @@ export function Gallery({ narrow = false }: { narrow?: boolean }) {
                     <Icon name="plus" />
                   </div>
                   Save current style
-                  <div style={{ fontSize: 12, color: "var(--sc-ink-3)", fontWeight: 500, marginTop: 2 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--sc-ink-3)",
+                      fontWeight: 500,
+                      marginTop: 2,
+                    }}
+                  >
                     {styleName(current, custom)}
                     {tweaked ? " + your tweaks" : ""}
                   </div>
@@ -280,7 +301,13 @@ function GalleryCard({
         }}
       >
         <div className="th">
-          <StyleThumb styleKey={it.id} patch={it.patch} aspect={[16, 10]} target={target} priority={1} />
+          <StyleThumb
+            styleKey={it.id}
+            patch={it.patch}
+            aspect={[16, 10]}
+            target={target}
+            priority={1}
+          />
           {on && (
             <span className="badge">
               <Icon name="check" size="xs" /> Current

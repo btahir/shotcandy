@@ -142,11 +142,7 @@ export function arrowPoints(g: Geo, a: Extract<Annotation, { kind: "arrow" }>) {
 }
 
 /** Curve value for a dragged midpoint (anchor units). */
-export function curveFromMid(
-  p1: Point,
-  p2: Point,
-  mid: Point,
-): number {
+export function curveFromMid(p1: Point, p2: Point, mid: Point): number {
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;
   const len = Math.hypot(dx, dy) || 1;

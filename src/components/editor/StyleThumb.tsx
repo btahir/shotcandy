@@ -36,6 +36,7 @@ export const StyleThumb = memo(function StyleThumb({
   const ref = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
 
+  const [aw, ah] = aspect;
   const content = contentId && app.library.has(contentId) ? contentId : GHOST_ID;
   const hasSource = content === GHOST_ID ? !!app.ghost : true;
 
@@ -47,7 +48,7 @@ export const StyleThumb = memo(function StyleThumb({
     scene = applyStylePatch(scene, patch);
     scene = {
       ...scene,
-      canvas: { ...scene.canvas, size: { kind: "aspect", ratioW: aspect[0], ratioH: aspect[1] } },
+      canvas: { ...scene.canvas, size: { kind: "aspect", ratioW: aw, ratioH: ah } },
       card: {
         ...scene.card,
         frame: { ...scene.card.frame, title: title ?? "", url: url || "shotcandy.app" },
@@ -57,7 +58,7 @@ export const StyleThumb = memo(function StyleThumb({
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const long = Math.max(layout.canvas.width, layout.canvas.height);
     const scale = thumbScale(long, target * dpr);
-    const key = `${styleKey}|${hashString(JSON.stringify(patch))}|${content}|${aspect.join(":")}|${scale.toFixed(4)}|${fonts}|${hashString(frameText)}`;
+    const key = `${styleKey}|${hashString(JSON.stringify(patch))}|${content}|${aw}:${ah}|${scale.toFixed(4)}|${fonts}|${hashString(frameText)}`;
     let alive = true;
     const draw = (bmp: ImageBitmap) => {
       const c = ref.current;
@@ -79,12 +80,18 @@ export const StyleThumb = memo(function StyleThumb({
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [app, content, hasSource, styleKey, patch, aspect[0], aspect[1], target, fonts, assetsVersion, frameText]);
+  }, [app, content, hasSource, styleKey, patch, aw, ah, target, fonts, assetsVersion, frameText]);
 
   return (
     <>
       {!ready && <span className="skeleton" aria-hidden="true" />}
-      <canvas ref={ref} width={4} height={3} aria-hidden="true" style={{ opacity: ready ? 1 : 0 }} />
+      <canvas
+        ref={ref}
+        width={4}
+        height={3}
+        aria-hidden="true"
+        style={{ opacity: ready ? 1 : 0 }}
+      />
     </>
   );
 });

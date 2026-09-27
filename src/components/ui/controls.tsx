@@ -217,7 +217,6 @@ export function Popover({
     }
   }, [open, mounted]);
 
-
   useLayoutEffect(() => {
     if (!mounted) return;
     const place = () => {

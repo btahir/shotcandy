@@ -248,7 +248,9 @@ const S: Record<string, Def> = {
     ),
   },
   folder: {
-    d: <path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z" />,
+    d: (
+      <path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z" />
+    ),
   },
   save: {
     d: (
@@ -404,7 +406,15 @@ const S: Record<string, Def> = {
     d: (
       <>
         <ellipse cx="11" cy="13.6" rx="9" ry="2" fill="currentColor" opacity=".25" />
-        <rect x="3" y="1.5" width="16" height="11" rx="2.5" stroke="currentColor" strokeWidth="1.6" />
+        <rect
+          x="3"
+          y="1.5"
+          width="16"
+          height="11"
+          rx="2.5"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        />
       </>
     ),
   },
@@ -414,7 +424,15 @@ const S: Record<string, Def> = {
     d: (
       <>
         <ellipse cx="11" cy="14.5" rx="8" ry="1.4" fill="currentColor" opacity=".45" />
-        <rect x="3" y=".8" width="16" height="10.5" rx="2.5" stroke="currentColor" strokeWidth="1.6" />
+        <rect
+          x="3"
+          y=".8"
+          width="16"
+          height="10.5"
+          rx="2.5"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        />
       </>
     ),
   },
@@ -424,7 +442,15 @@ const S: Record<string, Def> = {
     d: (
       <>
         <ellipse cx="11" cy="13.8" rx="10" ry="2.2" fill="currentColor" opacity=".6" />
-        <rect x="3" y="1" width="16" height="10.5" rx="2.5" stroke="currentColor" strokeWidth="1.6" />
+        <rect
+          x="3"
+          y="1"
+          width="16"
+          height="10.5"
+          rx="2.5"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        />
       </>
     ),
   },
@@ -434,7 +460,15 @@ const S: Record<string, Def> = {
     d: (
       <>
         <rect x="5.5" y="4.5" width="15" height="10.5" rx="2.5" fill="currentColor" opacity=".55" />
-        <rect x="2" y="1.5" width="15" height="10.5" rx="2.5" stroke="currentColor" strokeWidth="1.6" />
+        <rect
+          x="2"
+          y="1.5"
+          width="15"
+          height="10.5"
+          rx="2.5"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        />
       </>
     ),
   },

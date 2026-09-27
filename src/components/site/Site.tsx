@@ -47,7 +47,11 @@ export function SiteFooter() {
     <footer className="footer">
       <div className="wrap cols">
         <div style={{ flex: 1.4 }}>
-          <Link className="brand" href="/" style={{ marginBottom: 12, display: "flex", width: "fit-content" }}>
+          <Link
+            className="brand"
+            href="/"
+            style={{ marginBottom: 12, display: "flex", width: "fit-content" }}
+          >
             <LogoMark className="mark" />
             <span className="word">shotcandy</span>
           </Link>

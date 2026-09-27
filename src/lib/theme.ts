@@ -10,7 +10,6 @@ export type ThemePref = "system" | "light" | "dark";
 const KEY = "shotcandy:theme";
 const listeners = new Set<() => void>();
 
-
 function read(): ThemePref {
   try {
     const t = localStorage.getItem(KEY);

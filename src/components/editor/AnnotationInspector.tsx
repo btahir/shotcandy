@@ -22,7 +22,11 @@ const TOOL_HINT: Record<string, { name: string; icon: IconName; desc: string }> 
   arrow: { name: "Arrow", icon: "arrow", desc: "Drag on the canvas to draw an arrow" },
   rect: { name: "Highlight", icon: "rect", desc: "Drag on the canvas to draw a box" },
   redact: { name: "Blur", icon: "blur", desc: "Drag over anything private" },
-  select: { name: "Annotations", icon: "cursor", desc: "Pick a tool below, or select an annotation" },
+  select: {
+    name: "Annotations",
+    icon: "cursor",
+    desc: "Pick a tool below, or select an annotation",
+  },
 };
 
 function detail(a: Annotation): string {
@@ -38,7 +42,13 @@ function detail(a: Annotation): string {
   }
 }
 
-function Colours({ value, onPick }: { value: string; onPick: (c: string, final: boolean) => void }) {
+function Colours({
+  value,
+  onPick,
+}: {
+  value: string;
+  onPick: (c: string, final: boolean) => void;
+}) {
   const norm = value.toLowerCase().slice(0, 7);
   const isCustom = !ANN_COLOURS.some((c) => c.toLowerCase() === norm);
   return (
@@ -136,7 +146,10 @@ export function AnnotationInspector() {
               />
             </label>
             <div className="sub">Colour</div>
-            <Colours value={a.color} onPick={(c, f) => up({ color: c }, f ? undefined : `ann:${a.id}:color`)} />
+            <Colours
+              value={a.color}
+              onPick={(c, f) => up({ color: c }, f ? undefined : `ann:${a.id}:color`)}
+            />
             <div style={{ marginTop: 12 }}>
               <Slider
                 label="Size"
@@ -181,7 +194,15 @@ export function AnnotationInspector() {
               <Switch
                 checked={!!a.background}
                 label="Pill behind text"
-                onChange={(v) => up({ background: v ? (a.color.toLowerCase() === "#ffffff" ? "#ff4f7b" : "#ffffff") : null })}
+                onChange={(v) =>
+                  up({
+                    background: v
+                      ? a.color.toLowerCase() === "#ffffff"
+                        ? "#ff4f7b"
+                        : "#ffffff"
+                      : null,
+                  })
+                }
               />
             </div>
           </>
@@ -190,9 +211,18 @@ export function AnnotationInspector() {
         {a?.kind === "arrow" && (
           <>
             <div className="sub">Colour</div>
-            <Colours value={a.color} onPick={(c, f) => up({ color: c }, f ? undefined : `ann:${a.id}:color`)} />
+            <Colours
+              value={a.color}
+              onPick={(c, f) => up({ color: c }, f ? undefined : `ann:${a.id}:color`)}
+            />
             <div style={{ marginTop: 12 }}>
-              <Slider label="Width" value={a.width} min={1} max={24} onChange={(v) => up({ width: v })} />
+              <Slider
+                label="Width"
+                value={a.width}
+                min={1}
+                max={24}
+                onChange={(v) => up({ width: v })}
+              />
               <Slider
                 label="Curve"
                 value={a.curve}
@@ -236,14 +266,29 @@ export function AnnotationInspector() {
             {a.style !== "spotlight" && (
               <>
                 <div className="sub">Colour</div>
-                <Colours value={a.color} onPick={(c, f) => up({ color: c }, f ? undefined : `ann:${a.id}:color`)} />
+                <Colours
+                  value={a.color}
+                  onPick={(c, f) => up({ color: c }, f ? undefined : `ann:${a.id}:color`)}
+                />
               </>
             )}
             <div style={{ marginTop: 12 }}>
               {a.style === "outline" && (
-                <Slider label="Width" value={a.width} min={1} max={24} onChange={(v) => up({ width: v })} />
+                <Slider
+                  label="Width"
+                  value={a.width}
+                  min={1}
+                  max={24}
+                  onChange={(v) => up({ width: v })}
+                />
               )}
-              <Slider label="Corners" value={a.radius} min={0} max={60} onChange={(v) => up({ radius: v })} />
+              <Slider
+                label="Corners"
+                value={a.radius}
+                min={0}
+                max={60}
+                onChange={(v) => up({ radius: v })}
+              />
             </div>
           </>
         )}
@@ -314,7 +359,10 @@ export function AnnotationInspector() {
                     e.preventDefault();
                     e.stopPropagation();
                     if (!dragId || dragId === x.id) return;
-                    app.moveAnnotation(dragId, annotations.findIndex((q) => q.id === x.id));
+                    app.moveAnnotation(
+                      dragId,
+                      annotations.findIndex((q) => q.id === x.id),
+                    );
                     setDragId(null);
                   }}
                   onDragEnd={() => setDragId(null)}
@@ -359,7 +407,11 @@ export function AnnotationInspector() {
 }
 
 /** Switch anchors while keeping the annotation where it is on screen. */
-function convertAnchor(app: ReturnType<typeof useApp>, a: Annotation, anchor: "content" | "canvas") {
+function convertAnchor(
+  app: ReturnType<typeof useApp>,
+  a: Annotation,
+  anchor: "content" | "canvas",
+) {
   if (a.anchor === anchor || a.kind === "redact") return;
   app.reanchor(a.id, anchor);
 }

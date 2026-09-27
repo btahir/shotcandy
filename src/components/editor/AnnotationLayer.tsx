@@ -5,7 +5,14 @@
  * new annotations with the dock tools, and inline text editing. Everything
  * edits the scene model; the canvas renderer draws the result.
  */
-import { type PointerEvent as RPE, type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  type PointerEvent as RPE,
+  type RefObject,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   type Annotation,
   type AnnotationAnchor,
@@ -28,7 +35,8 @@ import {
   toScreen,
 } from "./geometry";
 
-type Handle = "move" | "p1" | "p2" | "mid" | "size" | "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+type Handle =
+  "move" | "p1" | "p2" | "mid" | "size" | "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
 
 interface Drag {
   id: string;
@@ -113,7 +121,11 @@ export function AnnotationLayer({
         const S = anchorSize(geo, a.anchor);
         const dx = (0.18 * S.w) / S.w;
         const dy = (0.12 * S.w) / S.h;
-        app.updateAnnotation(a.id, { x2: a.x1 + dx, y2: a.y1 + dy } as Partial<Annotation>, `create:${a.id}`);
+        app.updateAnnotation(
+          a.id,
+          { x2: a.x1 + dx, y2: a.y1 + dy } as Partial<Annotation>,
+          `create:${a.id}`,
+        );
       } else if (a.kind === "rect" || a.kind === "redact") {
         const w = a.kind === "redact" ? 0.22 : 0.28;
         const h = a.kind === "redact" ? 0.07 : 0.16;
@@ -140,7 +152,8 @@ export function AnnotationLayer({
     if (!inside && (tool === "text" || tool === "arrow")) anchor = "canvas";
     const n = fromScreen(geo, anchor, p.x, p.y);
     if (!n) return;
-    const clampC = (v: number) => (anchor === "content" && tool !== "text" && tool !== "arrow" ? Math.min(1, Math.max(0, v)) : v);
+    const clampC = (v: number) =>
+      anchor === "content" && tool !== "text" && tool !== "arrow" ? Math.min(1, Math.max(0, v)) : v;
     const x = clampC(n.x);
     const y = clampC(n.y);
     let id: string;
@@ -153,13 +166,21 @@ export function AnnotationLayer({
     }
     const key = `create:${Date.now()}`;
     if (tool === "arrow")
-      id = app.addAnnotation("arrow", { anchor, x1: x, y1: y, x2: x, y2: y } as Partial<Annotation>, {
-        coalesce: key,
-      });
+      id = app.addAnnotation(
+        "arrow",
+        { anchor, x1: x, y1: y, x2: x, y2: y } as Partial<Annotation>,
+        {
+          coalesce: key,
+        },
+      );
     else
-      id = app.addAnnotation(tool === "redact" ? "redact" : "rect", { anchor: "content", x, y, w: 0, h: 0 } as Partial<Annotation>, {
-        coalesce: key,
-      });
+      id = app.addAnnotation(
+        tool === "redact" ? "redact" : "rect",
+        { anchor: "content", x, y, w: 0, h: 0 } as Partial<Annotation>,
+        {
+          coalesce: key,
+        },
+      );
     const orig = app.scene.annotations.find((a) => a.id === id)!;
     e.currentTarget.setPointerCapture(e.pointerId);
     drag.current = {
@@ -211,9 +232,17 @@ export function AnnotationLayer({
         {annotations.map((a) => {
           const sel = a.id === selection;
           if (editing === a.id) return null;
-          if (a.kind === "arrow") return <ArrowShape key={a.id} a={a} geo={geo} sel={sel} tool={tool} begin={begin} hs={hs} />;
-          if (a.kind === "text") return <TextShape key={a.id} a={a} geo={geo} sel={sel} tool={tool} begin={begin} hs={hs} />;
-          return <BoxShape key={a.id} a={a} geo={geo} sel={sel} tool={tool} begin={begin} hs={hs} />;
+          if (a.kind === "arrow")
+            return (
+              <ArrowShape key={a.id} a={a} geo={geo} sel={sel} tool={tool} begin={begin} hs={hs} />
+            );
+          if (a.kind === "text")
+            return (
+              <TextShape key={a.id} a={a} geo={geo} sel={sel} tool={tool} begin={begin} hs={hs} />
+            );
+          return (
+            <BoxShape key={a.id} a={a} geo={geo} sel={sel} tool={tool} begin={begin} hs={hs} />
+          );
         })}
       </svg>
       {editing && (
@@ -238,7 +267,19 @@ type ShapeProps<T> = {
   begin: (e: RPE<Element>, a: Annotation, h: Handle) => void;
 };
 
-function Dot({ p, hs, mid, onDown, label }: { p: Point; hs: number; mid?: boolean; onDown: (e: RPE<Element>) => void; label: string }) {
+function Dot({
+  p,
+  hs,
+  mid,
+  onDown,
+  label,
+}: {
+  p: Point;
+  hs: number;
+  mid?: boolean;
+  onDown: (e: RPE<Element>) => void;
+  label: string;
+}) {
   const r = mid ? 6 : hs / 2;
   return (
     <circle
@@ -314,7 +355,10 @@ function BoxShape({ a, geo, sel, tool, begin }: ShapeProps<RectAnnotation | Reda
   const S = anchorSize(geo, a.anchor);
   const r = { left: a.x * S.w, top: a.y * S.h, width: a.w * S.w, height: a.h * S.h };
   const q = quad(geo, a.anchor, r);
-  const mid = (i: number, j: number) => ({ x: (q[i]!.x + q[j]!.x) / 2, y: (q[i]!.y + q[j]!.y) / 2 });
+  const mid = (i: number, j: number) => ({
+    x: (q[i]!.x + q[j]!.x) / 2,
+    y: (q[i]!.y + q[j]!.y) / 2,
+  });
   const handles: [Handle, Point][] = [
     ["nw", q[0]!],
     ["n", mid(0, 1)],
@@ -366,7 +410,13 @@ function BoxShape({ a, geo, sel, tool, begin }: ShapeProps<RectAnnotation | Reda
 }
 
 /** Compute the annotation patch for a drag, in normalized anchor coords. */
-function dragPatch(geo: Geo, d: Drag, p: Point, shift: boolean, alt: boolean): Partial<Annotation> | null {
+function dragPatch(
+  geo: Geo,
+  d: Drag,
+  p: Point,
+  shift: boolean,
+  alt: boolean,
+): Partial<Annotation> | null {
   const a = d.orig;
   const anchor = a.anchor;
   const S = anchorSize(geo, anchor);
@@ -380,7 +430,8 @@ function dragPatch(geo: Geo, d: Drag, p: Point, shift: boolean, alt: boolean): P
       if (Math.abs(du * S.w) > Math.abs(dv * S.h)) dv = 0;
       else du = 0;
     }
-    if (a.kind === "arrow") return { x1: a.x1 + du, y1: a.y1 + dv, x2: a.x2 + du, y2: a.y2 + dv } as Partial<Annotation>;
+    if (a.kind === "arrow")
+      return { x1: a.x1 + du, y1: a.y1 + dv, x2: a.x2 + du, y2: a.y2 + dv } as Partial<Annotation>;
     return { x: a.x + du, y: a.y + dv } as Partial<Annotation>;
   }
   if (a.kind === "arrow") {
@@ -414,7 +465,9 @@ function dragPatch(geo: Geo, d: Drag, p: Point, shift: boolean, alt: boolean): P
       const cy = box.top + box.height / 2;
       const r0 = Math.hypot(st.x * S.w - cx, st.y * S.h - cy) || 1;
       const r1 = Math.hypot(cur.x * S.w - cx, cur.y * S.h - cy);
-      return { size: Math.max(6, Math.min(600, Math.round(a.size * (r1 / r0)))) } as Partial<Annotation>;
+      return {
+        size: Math.max(6, Math.min(600, Math.round(a.size * (r1 / r0)))),
+      } as Partial<Annotation>;
     }
     return null;
   }
@@ -479,7 +532,17 @@ function dragPatch(geo: Geo, d: Drag, p: Point, shift: boolean, alt: boolean): P
 }
 
 /** Inline text editing over the canvas (the canvas skips this annotation's text meanwhile). */
-function TextEditor({ geo, left, top, a }: { geo: Geo; left: number; top: number; a?: TextAnnotation }) {
+function TextEditor({
+  geo,
+  left,
+  top,
+  a,
+}: {
+  geo: Geo;
+  left: number;
+  top: number;
+  a?: TextAnnotation;
+}) {
   const app = useApp();
   const ref = useRef<HTMLTextAreaElement>(null);
   const [value, setValue] = useState(a?.text ?? "");

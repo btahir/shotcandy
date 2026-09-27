@@ -101,7 +101,11 @@ export function ToolLanding({ d }: { d: ToolPageData }) {
               }}
             >
               <h2 className="h2">Made with this tool</h2>
-              <Link className="support-link" href="/?gallery=1" style={{ color: "var(--sc-ink-2)" }}>
+              <Link
+                className="support-link"
+                href="/?gallery=1"
+                style={{ color: "var(--sc-ink-2)" }}
+              >
                 See all 24 styles <Icon name="chevronRight" size="sm" />
               </Link>
             </div>
@@ -109,7 +113,13 @@ export function ToolLanding({ d }: { d: ToolPageData }) {
               {d.examples.map((e) => (
                 <figure key={e.src} style={{ margin: 0 }}>
                   <div className="ex">
-                    <img src={e.src} alt={`${e.name} style example`} width={e.width} height={e.height} loading="lazy" />
+                    <img
+                      src={e.src}
+                      alt={`${e.name} style example`}
+                      width={e.width}
+                      height={e.height}
+                      loading="lazy"
+                    />
                   </div>
                   <figcaption className="ex-cap">
                     <b>{e.name}</b>
@@ -132,7 +142,8 @@ export function ToolLanding({ d }: { d: ToolPageData }) {
                 <div className="tag-list">
                   {d.related.map((r) => (
                     <Link key={r.label} href={r.href}>
-                      {r.label} <Icon name="chevronRight" size="sm" style={{ width: 14, height: 14 }} />
+                      {r.label}{" "}
+                      <Icon name="chevronRight" size="sm" style={{ width: 14, height: 14 }} />
                     </Link>
                   ))}
                 </div>

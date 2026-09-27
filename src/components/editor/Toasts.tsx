@@ -57,9 +57,7 @@ function ToastItem({ t }: { t: Toast }) {
       {t.kind === "wrap" && (
         <div className="wrap-thumb" aria-hidden="true">
           <WrapperEnd className="end-l" />
-          <div className="body">
-            {t.thumb && <img src={t.thumb} alt="" decoding="async" />}
-          </div>
+          <div className="body">{t.thumb && <img src={t.thumb} alt="" decoding="async" />}</div>
           <WrapperEnd className="end-r" />
         </div>
       )}

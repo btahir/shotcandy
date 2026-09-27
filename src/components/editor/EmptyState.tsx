@@ -40,7 +40,10 @@ function SampleButtons({ order }: { order: readonly (typeof SAMPLES)[number][] }
           className="sample"
           aria-label={s.label}
           title={s.label}
-          style={{ backgroundImage: `url(/samples/thumbs/${s.id}.webp)`, backgroundPosition: s.pos }}
+          style={{
+            backgroundImage: `url(/samples/thumbs/${s.id}.webp)`,
+            backgroundPosition: s.pos,
+          }}
           onClick={() => void app.loadSample(s.id)}
         />
       ))}
@@ -66,10 +69,22 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
               <img src="/empty/fan-mint.webp" alt="" width={140} height={96} fetchPriority="high" />
             </div>
             <div className="f f3">
-              <img src="/empty/fan-midnight.webp" alt="" width={140} height={96} fetchPriority="high" />
+              <img
+                src="/empty/fan-midnight.webp"
+                alt=""
+                width={140}
+                height={96}
+                fetchPriority="high"
+              />
             </div>
             <div className="f f2">
-              <img src="/empty/fan-phone.webp" alt="" width={140} height={96} fetchPriority="high" />
+              <img
+                src="/empty/fan-phone.webp"
+                alt=""
+                width={140}
+                height={96}
+                fetchPriority="high"
+              />
             </div>
           </div>
           <h1>Make a screenshot lovely</h1>
@@ -114,10 +129,22 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
             <img src="/empty/fan-mint.webp" alt="" width={170} height={117} fetchPriority="high" />
           </div>
           <div className="f f3">
-            <img src="/empty/fan-midnight.webp" alt="" width={170} height={117} fetchPriority="high" />
+            <img
+              src="/empty/fan-midnight.webp"
+              alt=""
+              width={170}
+              height={117}
+              fetchPriority="high"
+            />
           </div>
           <div className="f f2">
-            <img src="/empty/fan-sherbet.webp" alt="" width={170} height={117} fetchPriority="high" />
+            <img
+              src="/empty/fan-sherbet.webp"
+              alt=""
+              width={170}
+              height={117}
+              fetchPriority="high"
+            />
           </div>
         </div>
         <h1>Paste a screenshot</h1>

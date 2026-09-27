@@ -218,7 +218,9 @@ export function ColourButton({
         type="button"
         className={className}
         style={{
-          ...(className.includes("rainbow") && !className.includes(" on") ? {} : { background: value }),
+          ...(className.includes("rainbow") && !className.includes(" on")
+            ? {}
+            : { background: value }),
           ...(size ? { width: size, height: size } : {}),
         }}
         aria-label={`${label}: ${value}`}
@@ -280,7 +282,8 @@ export const BackgroundTray = memo(function BackgroundTray({ bare = false }: { b
       ...s,
       background: {
         fill: f,
-        grain: grainAmt === undefined ? s.background.grain : { ...s.background.grain, amount: grainAmt },
+        grain:
+          grainAmt === undefined ? s.background.grain : { ...s.background.grain, amount: grainAmt },
       },
     }));
   };
@@ -290,7 +293,8 @@ export const BackgroundTray = memo(function BackgroundTray({ bare = false }: { b
     tab === "gradient"
       ? [
           ...FEATURED.map((id) => getBackgroundPreset(id)!).filter(Boolean),
-          ...(allGradients || GRADIENT_PRESETS.some((g) => !FEATURED.includes(g.id) && sameFill(g.fill, fill))
+          ...(allGradients ||
+          GRADIENT_PRESETS.some((g) => !FEATURED.includes(g.id) && sameFill(g.fill, fill))
             ? GRADIENT_PRESETS.filter((g) => !FEATURED.includes(g.id))
             : []),
         ]
@@ -431,7 +435,10 @@ export const BackgroundTray = memo(function BackgroundTray({ bare = false }: { b
                 label="Custom colour"
                 onChange={(c) =>
                   app.store.update(
-                    (s) => ({ ...s, background: { ...s.background, fill: { kind: "solid", color: c } } }),
+                    (s) => ({
+                      ...s,
+                      background: { ...s.background, fill: { kind: "solid", color: c } },
+                    }),
                     { coalesce: "bg-solid" },
                   )
                 }
@@ -443,7 +450,8 @@ export const BackgroundTray = memo(function BackgroundTray({ bare = false }: { b
         <div className="wall-grid" role="group" aria-label="Wallpapers">
           {WALLPAPER_PRESETS.map((w) => {
             const id = w.fill.kind === "image" ? w.fill.assetId.slice(8) : "";
-            const on = fill.kind === "image" && w.fill.kind === "image" && fill.assetId === w.fill.assetId;
+            const on =
+              fill.kind === "image" && w.fill.kind === "image" && fill.assetId === w.fill.assetId;
             return (
               <button
                 key={w.id}
@@ -473,7 +481,9 @@ export const BackgroundTray = memo(function BackgroundTray({ bare = false }: { b
         </div>
       )}
       {fill.kind === "image" && <ImageDetails fill={fill} />}
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, minHeight: 18 }}>
+      <div
+        style={{ display: "flex", justifyContent: "space-between", marginTop: 10, minHeight: 18 }}
+      >
         {tab === "gradient" && list.length <= FEATURED.length ? (
           <button type="button" className="link quiet" onClick={() => setAllGradients(true)}>
             More gradients
@@ -584,9 +594,22 @@ const PAD_STOPS = [
   { value: 120, label: "L" },
   { value: 160, label: "XL" },
 ];
-const RADIUS_STOPS = [{ value: 0 }, { value: 12, label: "Soft" }, { value: 24, label: "Round" }, { value: 48 }];
+const RADIUS_STOPS = [
+  { value: 0 },
+  { value: 12, label: "Soft" },
+  { value: 24, label: "Round" },
+  { value: 48 },
+];
 const padName = (v: number) =>
-  v === 0 ? "no padding" : v < 60 ? "small padding" : v < 100 ? "medium padding" : v < 140 ? "large padding" : "extra large padding";
+  v === 0
+    ? "no padding"
+    : v < 60
+      ? "small padding"
+      : v < 100
+        ? "medium padding"
+        : v < 140
+          ? "large padding"
+          : "extra large padding";
 
 export const LayoutTray = memo(function LayoutTray({ bare = false }: { bare?: boolean }) {
   const app = useApp();
@@ -684,7 +707,8 @@ export const LayoutTray = memo(function LayoutTray({ bare = false }: { bare?: bo
                     shadow: {
                       ...sc.card.shadow,
                       preset: s.id,
-                      strength: s.id === "none" ? sc.card.shadow.strength : sc.card.shadow.strength || 1,
+                      strength:
+                        s.id === "none" ? sc.card.shadow.strength : sc.card.shadow.strength || 1,
                     },
                   },
                 }))
@@ -786,7 +810,10 @@ export const LayoutTray = memo(function LayoutTray({ bare = false }: { bare?: bo
       </button>
       {tilt && (
         <div id="tilt-panel" style={{ paddingTop: 2 }}>
-          <div className="opts" style={{ gridTemplateColumns: "repeat(4, minmax(0,1fr))", marginBottom: 6 }}>
+          <div
+            className="opts"
+            style={{ gridTemplateColumns: "repeat(4, minmax(0,1fr))", marginBottom: 6 }}
+          >
             {(
               [
                 ["Flat", 0, 0, 0],

@@ -13,6 +13,7 @@ import {
   rotateSize,
 } from "@/engine";
 import { GITHUB_URL, SUPPORT_URL } from "@/config/site";
+import { useModKey } from "@/lib/platform";
 import { setTheme, useThemePref } from "@/lib/theme";
 import { Icon, LogoMark } from "../icons";
 import { Popover, Segmented, menuKeys } from "../ui/controls";
@@ -79,7 +80,7 @@ export function SizeChip({ compact = false }: { compact?: boolean }) {
       <button
         ref={ref}
         type="button"
-        className={`chip${open ? "on" : ""}`}
+        className={`chip${open ? " on" : ""}`}
         aria-haspopup="menu"
         aria-expanded={open}
         data-testid="size-chip"
@@ -119,7 +120,7 @@ function SizeMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
         type="button"
         role="radio"
         aria-checked={current === p.id}
-        className={`menu-item${current === p.id ? "current" : ""}`}
+        className={`menu-item${current === p.id ? " current" : ""}`}
         onClick={() => pick(p)}
       >
         <Glyph w={dims[0]!} h={dims[1]!} />
@@ -285,8 +286,8 @@ export function ExportPanel({
   compact?: boolean;
 }) {
   const app = useApp();
+  const mod = useModKey();
   const settings = useUi((s) => s.exportSettings);
-  const style = useScene((s) => s.scene.meta.stylePresetId);
   const size = useScene((s) => s.scene.canvas.size);
   const fill = useScene((s) => s.scene.background.fill.kind);
   const layout = useCanvasSize();
@@ -472,11 +473,11 @@ export function ExportPanel({
               onDone?.();
             }}
           >
-            <Icon name="download" /> Download <span className="tag">⌘S</span>
+            <Icon name="download" /> Download{" "}
+            <span className="tag">{mod === "⌘" ? "⌘S" : "Ctrl S"}</span>
           </button>
         </div>
       )}
-      <span className="sr-only">Style {style}</span>
     </div>
   );
 }
@@ -619,6 +620,7 @@ function MoreMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
 
 export function Header() {
   const app = useApp();
+  const mod = useModKey();
   const canUndo = useScene((s) => s.canUndo);
   const canRedo = useScene((s) => s.canRedo);
   const hasImage = useUi((s) => s.hasImage);
@@ -681,7 +683,7 @@ export function Header() {
       <span className="sep" aria-hidden="true" />
       <button
         type="button"
-        className={`btn btn-secondary copy-btn${copyState === "done" ? "copied pop" : ""}${copyState === "busy" ? "shimmer-busy" : ""}`}
+        className={`btn btn-secondary copy-btn${copyState === "done" ? " copied pop" : ""}${copyState === "busy" ? " shimmer-busy" : ""}`}
         disabled={!hasImage}
         data-copy-anchor
         data-testid="copy"
@@ -694,7 +696,7 @@ export function Header() {
           </>
         ) : (
           <>
-            <Icon name="copy" /> Copy <span className="kbd">⌘C</span>
+            <Icon name="copy" /> Copy <span className="kbd">{mod === "⌘" ? "⌘C" : "Ctrl C"}</span>
           </>
         )}
       </button>
@@ -702,7 +704,7 @@ export function Header() {
         <button
           ref={mainRef}
           type="button"
-          className={`btn btn-primary${exportBusy ? "pressed" : ""}`}
+          className={`btn btn-primary${exportBusy ? " pressed" : ""}`}
           disabled={!hasImage}
           data-testid="export"
           title={hasImage ? "Download (⌘S)" : "Paste a screenshot first"}
@@ -725,7 +727,7 @@ export function Header() {
         <button
           ref={exportRef}
           type="button"
-          className={`btn btn-primary${popover === "export" ? "pressed" : ""}`}
+          className={`btn btn-primary${popover === "export" ? " pressed" : ""}`}
           aria-label="Export options (⇧⌘S)"
           aria-haspopup="dialog"
           aria-expanded={popover === "export"}

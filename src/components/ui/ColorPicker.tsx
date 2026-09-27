@@ -118,8 +118,10 @@ export function ColorPicker({
       else if (e.key === "ArrowDown") n.v = Math.max(0, n.v - d);
       else return;
     } else if (axis === "h") {
-      if (e.key === "ArrowLeft" || e.key === "ArrowDown") n = { ...n, h: (n.h + 360 - d * 360) % 360 };
-      else if (e.key === "ArrowRight" || e.key === "ArrowUp") n = { ...n, h: (n.h + d * 360) % 360 };
+      if (e.key === "ArrowLeft" || e.key === "ArrowDown")
+        n = { ...n, h: (n.h + 360 - d * 360) % 360 };
+      else if (e.key === "ArrowRight" || e.key === "ArrowUp")
+        n = { ...n, h: (n.h + d * 360) % 360 };
       else return;
     } else {
       if (e.key === "ArrowLeft" || e.key === "ArrowDown") n.a = Math.max(0, n.a - d);
@@ -159,7 +161,9 @@ export function ColorPicker({
         aria-valuemin={0}
         aria-valuemax={360}
         aria-valuenow={Math.round(hsv.h)}
-        onPointerDown={(e) => drag(e.currentTarget, e, (x) => emit({ ...hsv, h: x * 359.9 }, false))}
+        onPointerDown={(e) =>
+          drag(e.currentTarget, e, (x) => emit({ ...hsv, h: x * 359.9 }, false))
+        }
         onKeyDown={(e) => keyNudge(e, "h")}
       >
         <span className="dot" style={{ left: `${(hsv.h / 360) * 100}%`, background: hueHex }} />

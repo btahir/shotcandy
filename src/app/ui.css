@@ -1326,7 +1326,9 @@
     min-width: 0;
   }
   .input:focus-within {
-    box-shadow: var(--sc-shadow-well), 0 0 0 2px var(--sc-accent-ring);
+    box-shadow:
+      var(--sc-shadow-well),
+      0 0 0 2px var(--sc-accent-ring);
   }
   .input input,
   .input textarea {
@@ -1622,7 +1624,7 @@
     pointer-events: auto;
     animation: sc-toast-in 260ms var(--sc-ease-pop);
     min-height: 48px;
-    max-width: 100%;
+    max-width: min(100%, 580px);
   }
   .toast.plain {
     padding-left: 14px;
@@ -1991,6 +1993,60 @@
     padding: 40px 0;
     text-align: center;
     color: var(--sc-ink-3);
+  }
+
+  @media (max-width: 767px) {
+    .jar {
+      inset: 16px 0 0;
+      border-radius: 24px 24px 0 0;
+    }
+    .jar-head {
+      padding: 18px 16px 12px !important;
+    }
+    .size-menu {
+      max-height: 72dvh;
+      overflow-y: auto;
+    }
+    .size-menu .cols {
+      grid-template-columns: 1fr;
+    }
+    .size-menu .custom .input {
+      width: 76px;
+    }
+    .jar-close {
+      position: absolute;
+      right: 10px;
+      top: 12px;
+    }
+    .jar-head h2 {
+      font-size: 26px;
+      line-height: 30px;
+    }
+    .jar-head p {
+      font-size: 13px;
+    }
+    .filters {
+      padding: 0 16px 12px;
+    }
+    .jar-body {
+      padding: 16px 14px 24px;
+    }
+    .jar-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 10px;
+    }
+    .jar-card .lbl span {
+      display: none;
+    }
+    .kb-grid {
+      grid-template-columns: 1fr;
+    }
+    .dialog-head {
+      padding: 18px 12px 10px 18px;
+    }
+    .dialog-body {
+      padding: 8px 14px 20px;
+    }
   }
 
   /* Dialog (shortcuts, recents) */
@@ -2717,6 +2773,9 @@
   .m .toast-layer {
     bottom: 12px;
   }
+  .m-draw .foot-note {
+    display: none;
+  }
   .m-sheet .draw-tools {
     display: flex;
     gap: 6px;
@@ -2751,30 +2810,30 @@
 /* Focus ring wins over every selected/on state (specificity-proof). */
 @layer components {
   :is(
-      .btn,
-      .icon-btn,
-      .chip,
-      .tile,
-      .opt,
-      .sw,
-      .wall,
-      .seg button,
-      .menu-item,
-      .switch,
-      .tool,
-      .zval,
-      .link,
-      .sample,
-      .brand,
-      .card-btn,
-      .save-tile,
-      .disclosure,
-      .colour-dot,
-      .foot-note a,
-      .m-tabs button,
-      .grab,
-      .focusable
-    ):focus-visible {
+    .btn,
+    .icon-btn,
+    .chip,
+    .tile,
+    .opt,
+    .sw,
+    .wall,
+    .seg button,
+    .menu-item,
+    .switch,
+    .tool,
+    .zval,
+    .link,
+    .sample,
+    .brand,
+    .card-btn,
+    .save-tile,
+    .disclosure,
+    .colour-dot,
+    .foot-note a,
+    .m-tabs button,
+    .grab,
+    .focusable
+  ):focus-visible {
     outline: none;
     box-shadow: var(--sc-focus-ring) !important;
   }

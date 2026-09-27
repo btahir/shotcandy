@@ -15,7 +15,12 @@ export const metadata: Metadata = {
     url: "/screenshot-beautifier/",
     images: [{ url: "/og/screenshot-beautifier.png", width: 1200, height: 630 }],
   },
-  twitter: { card: "summary_large_image", title: TITLE, description: DESC, images: ["/og/screenshot-beautifier.png"] },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESC,
+    images: ["/og/screenshot-beautifier.png"],
+  },
 };
 
 const d: ToolPageData = {
@@ -38,19 +43,55 @@ const d: ToolPageData = {
   },
   steps: [
     ["Paste", "Copy a screenshot and press ⌘V (Ctrl+V), drop a file, or pick one."],
-    ["Pick a style", "Every one of the 24 styles previews on your own screenshot. Tweak background, padding, corners and shadow."],
-    ["Export", "Copy to clipboard or download PNG, JPEG or WebP up to 4×, sized for X, LinkedIn, Instagram or the App Store."],
+    [
+      "Pick a style",
+      "Every one of the 24 styles previews on your own screenshot. Tweak background, padding, corners and shadow.",
+    ],
+    [
+      "Export",
+      "Copy to clipboard or download PNG, JPEG or WebP up to 4×, sized for X, LinkedIn, Instagram or the App Store.",
+    ],
   ],
   examples: [
-    { src: "/showcase/beautifier-1.webp", name: "From Your Shot", note: "colours from your image", width: 720, height: 540 },
-    { src: "/showcase/beautifier-2.webp", name: "Cotton Candy", note: "pastel gradient", width: 720, height: 540 },
-    { src: "/showcase/beautifier-3.webp", name: "Sorbet Phone", note: "phone frame", width: 720, height: 540 },
+    {
+      src: "/showcase/beautifier-1.webp",
+      name: "From Your Shot",
+      note: "colours from your image",
+      width: 720,
+      height: 540,
+    },
+    {
+      src: "/showcase/beautifier-2.webp",
+      name: "Cotton Candy",
+      note: "pastel gradient",
+      width: 720,
+      height: 540,
+    },
+    {
+      src: "/showcase/beautifier-3.webp",
+      name: "Sorbet Phone",
+      note: "phone frame",
+      width: 720,
+      height: 540,
+    },
   ],
   faq: [
-    ["What does a screenshot beautifier do?", "It places your screenshot on a designed background with padding, rounded corners and a shadow, optionally inside a window or device frame, so it looks polished in posts, docs and slides."],
-    ["Is it really free?", "Yes. Every feature is free and there is no watermark. Shotcandy is open source under the MIT license."],
-    ["Are my screenshots uploaded anywhere?", "No. Everything happens in your browser tab. There is no server and no account."],
-    ["Which sizes can I export?", "Auto (your screenshot's own resolution), common ratios, Open Graph, X, LinkedIn, Instagram posts and stories, and App Store screenshot sizes, at 1× to 4×."],
+    [
+      "What does a screenshot beautifier do?",
+      "It places your screenshot on a designed background with padding, rounded corners and a shadow, optionally inside a window or device frame, so it looks polished in posts, docs and slides.",
+    ],
+    [
+      "Is it really free?",
+      "Yes. Every feature is free and there is no watermark. Shotcandy is open source under the MIT license.",
+    ],
+    [
+      "Are my screenshots uploaded anywhere?",
+      "No. Everything happens in your browser tab. There is no server and no account.",
+    ],
+    [
+      "Which sizes can I export?",
+      "Auto (your screenshot's own resolution), common ratios, Open Graph, X, LinkedIn, Instagram posts and stories, and App Store screenshot sizes, at 1× to 4×.",
+    ],
   ],
   related: [
     { label: "macOS window frame", href: "/macos-window-frame/" },
