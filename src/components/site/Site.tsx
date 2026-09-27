@@ -28,7 +28,13 @@ export function SiteNav({ active }: { active?: "about" | "tools" | "editor" }) {
         </a>
       </nav>
       <div className="spacer" />
-      <a className="support-link" href={SUPPORT_URL} target="_blank" rel="noreferrer">
+      <a
+        className="support-link"
+        href={SUPPORT_URL}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Support this project"
+      >
         <Icon name="heart" /> <span className="support-text">Support</span>
       </a>
       <Link
