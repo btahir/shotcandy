@@ -24,7 +24,7 @@
   "backgrounds": [
     {
       "id": "auto-mesh",
-      "name": "From your shot \u00b7 Mesh",
+      "name": "From your shot · Mesh",
       "group": "auto",
       "tone": "adaptive",
       "fill": {
@@ -40,7 +40,7 @@
     },
     {
       "id": "auto-linear",
-      "name": "From your shot \u00b7 Gradient",
+      "name": "From your shot · Gradient",
       "group": "auto",
       "tone": "adaptive",
       "fill": {
@@ -56,7 +56,7 @@
     },
     {
       "id": "auto-soft",
-      "name": "From your shot \u00b7 Soft",
+      "name": "From your shot · Soft",
       "group": "auto",
       "tone": "adaptive",
       "fill": {
@@ -72,7 +72,7 @@
     },
     {
       "id": "auto-solid",
-      "name": "From your shot \u00b7 Solid",
+      "name": "From your shot · Solid",
       "group": "auto",
       "tone": "adaptive",
       "fill": {
@@ -88,7 +88,7 @@
     },
     {
       "id": "auto-radial",
-      "name": "From your shot \u00b7 Glow",
+      "name": "From your shot · Glow",
       "group": "auto",
       "tone": "adaptive",
       "fill": {
@@ -1397,14 +1397,14 @@
             "radius": 0.5
           },
           {
-            "x": 1.0,
+            "x": 1,
             "y": 0.25,
             "color": "#FFB4D0",
             "radius": 0.5
           },
           {
             "x": 0.9,
-            "y": 1.0,
+            "y": 1,
             "color": "#C9B8FF",
             "radius": 0.6
           },
@@ -1438,20 +1438,20 @@
         "base": "#7FD8D0",
         "points": [
           {
-            "x": 0.0,
-            "y": 0.0,
+            "x": 0,
+            "y": 0,
             "color": "#4F9BFF",
             "radius": 0.6
           },
           {
-            "x": 1.0,
+            "x": 1,
             "y": 0.1,
             "color": "#7CF0C4",
             "radius": 0.55
           },
           {
             "x": 0.85,
-            "y": 1.0,
+            "y": 1,
             "color": "#3E6BE8",
             "radius": 0.6
           },
@@ -1503,7 +1503,7 @@
             "radius": 0.6
           },
           {
-            "x": 0.0,
+            "x": 0,
             "y": 0.9,
             "color": "#141C3A",
             "radius": 0.5
@@ -1545,7 +1545,7 @@
           },
           {
             "x": 0.8,
-            "y": 1.0,
+            "y": 1,
             "color": "#5A1A2E",
             "radius": 0.6
           },
@@ -1573,26 +1573,26 @@
         "base": "#FFE6D6",
         "points": [
           {
-            "x": 0.0,
-            "y": 0.0,
+            "x": 0,
+            "y": 0,
             "color": "#FFC2A0",
             "radius": 0.55
           },
           {
-            "x": 1.0,
-            "y": 0.0,
+            "x": 1,
+            "y": 0,
             "color": "#FFD8E4",
             "radius": 0.5
           },
           {
-            "x": 1.0,
-            "y": 1.0,
+            "x": 1,
+            "y": 1,
             "color": "#FFB38A",
             "radius": 0.55
           },
           {
-            "x": 0.0,
-            "y": 1.0,
+            "x": 0,
+            "y": 1,
             "color": "#FFE9B8",
             "radius": 0.5
           },
