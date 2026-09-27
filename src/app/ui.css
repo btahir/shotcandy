@@ -386,6 +386,10 @@
     height: 100dvh;
     overflow: hidden;
     background: var(--sc-paper);
+    /* Contain absolutely positioned descendants (sr-only labels deep in the
+       scrolled inspector) so they can't make the document scroll and push
+       the header off screen. */
+    position: relative;
   }
   @media (min-width: 768px) and (max-width: 1279px) {
     :root {
@@ -666,6 +670,7 @@
     scrollbar-width: thin;
     scrollbar-color: transparent transparent;
     min-height: 0;
+    position: relative;
   }
   .inspector:hover,
   .inspector:focus-within {
@@ -2341,10 +2346,10 @@
 
   /* Landing moment */
   .comp.landing canvas.preview {
-    mask-image: radial-gradient(circle closest-side, #000 62%, transparent 100%);
+    mask-image: radial-gradient(ellipse closest-side, #000 62%, transparent 100%);
     mask-position: 50% 50%;
     mask-repeat: no-repeat;
-    animation: sc-bloom 360ms var(--sc-ease-out) both;
+    animation: sc-bloom 380ms cubic-bezier(0.3, 0.7, 0.3, 1) both;
   }
   .comp.landing {
     animation: sc-drop 420ms linear both;
@@ -2991,15 +2996,16 @@
     transform: scale(0.6);
   }
 }
-/* The bloom: a round, feathered mask growing from the centre (--bloom is set
-   on .comp to 1.6x its diagonal, so the solid core passes the corners). The
-   soft edge keeps it from reading as a clipped octagon mid-reveal. */
+/* The bloom: a feathered ellipse in the canvas's own proportions, growing
+   from the centre. It reaches every edge at the same moment (no straight
+   edge clips a circle, so nothing reads as chamfered), and its solid core
+   passes the corners at the end (2.4x the box, core at 62 %). */
 @keyframes sc-bloom {
   from {
-    mask-size: 24px 24px;
+    mask-size: 8% 8%;
   }
   to {
-    mask-size: var(--bloom, 300%) var(--bloom, 300%);
+    mask-size: 240% 240%;
   }
 }
 /* Pre-sampled "drop" spring (stiffness 380, damping 22): 0.94 -> 1.015 -> 1 */
