@@ -3,12 +3,15 @@
  * Screenshots every screen and state of the product in light and dark, at
  * desktop and mobile sizes, for design review and for docs/screenshots.
  *
- *   pnpm build && node scripts/screenshots.mjs [outDir=docs/screenshots] [baseURL] [--dpr=2] [--only=name,...]
+ *   pnpm build && node scripts/screenshots.mjs [outDir=docs/screenshots] [baseURL] [--dpr=2] [--only=name,...] [--webp]
+ *
+ * --webp converts each PNG to WebP (quality 90) with cwebp, which keeps the
+ * committed curated set small.
  *
  * Starts its own static server on a free port unless baseURL is given.
  */
-import { spawn } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { execFileSync, spawn } from "node:child_process";
+import { mkdirSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { chromium } from "@playwright/test";
 
@@ -249,7 +252,12 @@ async function shoot(name, scheme, viewport, fn, path = "/", full = false) {
   await fn(page);
   const file = `${outDir}/${name}-${scheme}.png`;
   await page.screenshot({ path: file, fullPage: full });
-  console.log(file);
+  if (flags.webp !== undefined) {
+    const webp = file.replace(/\.png$/, ".webp");
+    execFileSync("cwebp", ["-quiet", "-q", "90", "-m", "6", file, "-o", webp]);
+    rmSync(file);
+    console.log(webp);
+  } else console.log(file);
   await ctx.close();
 }
 
