@@ -169,6 +169,24 @@ const desktop = [
     },
   ],
   [
+    "editor-caption",
+    async (page) => {
+      await sample("sample-dashboard-light")(page);
+      await page.evaluate(() => {
+        const app = window.__shotcandy.app;
+        app.applyStyle("aurora");
+        app.setSize({ kind: "fixed", width: 1080, height: 1920, presetId: "instagram-story" });
+        app.setCaption({
+          headline: "Your week at a glance",
+          subhead: "Every metric that matters, on one calm screen",
+        });
+        const box = document.querySelector(".inspector");
+        box.scrollTop = document.querySelector("[data-testid=caption-controls]").offsetTop - 220;
+      });
+      await page.waitForTimeout(1200);
+    },
+  ],
+  [
     "editor-shuffle",
     async (page) => {
       await sample("sample-kanban-light")(page);
@@ -291,7 +309,7 @@ const desktop = [
       await page.getByRole("tab", { name: "Video" }).click();
       // The size comes from a real sample encode: wait for it.
       await page.waitForFunction(
-        () => document.querySelector("[data-testid=motion-size]")?.textContent?.includes("≈"),
+        () => document.querySelector("[data-testid=motion-size]")?.dataset.refined === "true",
         null,
         { timeout: 30000 },
       );
