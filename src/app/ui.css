@@ -1472,7 +1472,8 @@
   /* ---------- Popover / menus ---------- */
   .popover {
     position: absolute;
-    z-index: var(--sc-z-popover);
+    /* Above modal sheets too (popovers open from inside the Candy Jar). */
+    z-index: calc(var(--sc-z-modal) + 5);
     background: var(--sc-surface);
     border-radius: var(--sc-radius-xl);
     box-shadow:
@@ -2732,6 +2733,38 @@
     .handle {
       stroke-width: 3;
     }
+  }
+}
+
+/* Focus ring wins over every selected/on state (specificity-proof). */
+@layer components {
+  :is(
+      .btn,
+      .icon-btn,
+      .chip,
+      .tile,
+      .opt,
+      .sw,
+      .wall,
+      .seg button,
+      .menu-item,
+      .switch,
+      .tool,
+      .zval,
+      .link,
+      .sample,
+      .brand,
+      .card-btn,
+      .save-tile,
+      .disclosure,
+      .colour-dot,
+      .foot-note a,
+      .m-tabs button,
+      .grab,
+      .focusable
+    ):focus-visible {
+    outline: none;
+    box-shadow: var(--sc-focus-ring) !important;
   }
 }
 

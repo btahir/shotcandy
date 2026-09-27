@@ -22,37 +22,37 @@ export default defineConfig({
   use: { trace: "retain-on-failure" },
   webServer: [
     {
-      command: "node scripts/serve-static.mjs tests/e2e/.harness 4174",
-      port: 4174,
-      reuseExistingServer: true,
+      command: "node scripts/serve-static.mjs tests/e2e/.harness 4284",
+      port: 4284,
+      reuseExistingServer: false,
     },
-    { command: "node scripts/serve-static.mjs out 4173", port: 4173, reuseExistingServer: true },
+    { command: "node scripts/serve-static.mjs out 4283", port: 4283, reuseExistingServer: false },
   ],
   projects: [
     {
       name: "engine",
       testMatch: /engine\/.*\.spec\.ts/,
-      use: { ...devices["Desktop Chrome"], baseURL: "http://127.0.0.1:4174" },
+      use: { ...devices["Desktop Chrome"], baseURL: "http://127.0.0.1:4284" },
     },
     {
       name: "bench",
       testMatch: /bench\.spec\.ts/,
-      use: { ...devices["Desktop Chrome"], baseURL: "http://127.0.0.1:4174" },
+      use: { ...devices["Desktop Chrome"], baseURL: "http://127.0.0.1:4284" },
     },
     {
       name: "app",
       testMatch: /app\/.*\.spec\.ts/,
-      use: { ...devices["Desktop Chrome"], baseURL: "http://127.0.0.1:4173" },
+      use: { ...devices["Desktop Chrome"], baseURL: "http://127.0.0.1:4283" },
     },
     {
       name: "app-firefox",
       testMatch: /app\/.*\.spec\.ts/,
-      use: { ...devices["Desktop Firefox"], baseURL: "http://127.0.0.1:4173" },
+      use: { ...devices["Desktop Firefox"], baseURL: "http://127.0.0.1:4283" },
     },
     {
       name: "app-webkit",
       testMatch: /app\/.*\.spec\.ts/,
-      use: { ...devices["Desktop Safari"], baseURL: "http://127.0.0.1:4173" },
+      use: { ...devices["Desktop Safari"], baseURL: "http://127.0.0.1:4283" },
     },
   ],
 });

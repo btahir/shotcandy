@@ -79,7 +79,7 @@ export function SizeChip({ compact = false }: { compact?: boolean }) {
       <button
         ref={ref}
         type="button"
-        className={`chip${open ? " on" : ""}`}
+        className={`chip${open ? "on" : ""}`}
         aria-haspopup="menu"
         aria-expanded={open}
         data-testid="size-chip"
@@ -117,9 +117,9 @@ function SizeMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
       <button
         key={p.id}
         type="button"
-        role="menuitemradio"
+        role="radio"
         aria-checked={current === p.id}
-        className={`menu-item${current === p.id ? " current" : ""}`}
+        className={`menu-item${current === p.id ? "current" : ""}`}
         onClick={() => pick(p)}
       >
         <Glyph w={dims[0]!} h={dims[1]!} />
@@ -152,26 +152,40 @@ function SizeMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
       anchor={anchor}
       onClose={close}
       label="Canvas size"
-      role="menu"
+      role="dialog"
       className="size-menu"
     >
       <div onKeyDown={menuKeys}>
         <div className="cols">
           <div>
-            <div className="menu-label">Fit</div>
-            {item(g("free")[0]!, "hugs your image")}
-            <div className="menu-label">Ratio</div>
-            {g("ratio").map((p) => item(p, RATIO_HINT[p.id]))}
+            <div className="menu-label" id="sz-fit">
+              Fit
+            </div>
+            <div role="radiogroup" aria-labelledby="sz-fit">
+              {item(g("free")[0]!, "hugs your image")}
+            </div>
+            <div className="menu-label" id="sz-ratio">
+              Ratio
+            </div>
+            <div role="radiogroup" aria-labelledby="sz-ratio">
+              {g("ratio").map((p) => item(p, RATIO_HINT[p.id]))}
+            </div>
           </div>
           <div>
-            <div className="menu-label">Social</div>
-            {g("social").map((p) => item(p))}
+            <div className="menu-label" id="sz-social">
+              Social
+            </div>
+            <div role="radiogroup" aria-labelledby="sz-social">
+              {g("social").map((p) => item(p))}
+            </div>
           </div>
           <div>
-            <div className="menu-label" style={{ display: "flex", justifyContent: "space-between" }}>
+            <div className="menu-label" id="sz-app">
               App Store
             </div>
-            {g("appstore").map((p) => item(p))}
+            <div role="radiogroup" aria-labelledby="sz-app">
+              {g("appstore").map((p) => item(p))}
+            </div>
             <div className="menu-label">Orientation</div>
             <div style={{ padding: "2px 6px" }}>
               <Segmented
@@ -263,7 +277,13 @@ export function useExportEstimate(active: boolean) {
   return bpp;
 }
 
-export function ExportPanel({ onDone, compact = false }: { onDone?: () => void; compact?: boolean }) {
+export function ExportPanel({
+  onDone,
+  compact = false,
+}: {
+  onDone?: () => void;
+  compact?: boolean;
+}) {
   const app = useApp();
   const settings = useUi((s) => s.exportSettings);
   const style = useScene((s) => s.scene.meta.stylePresetId);
@@ -413,7 +433,11 @@ export function ExportPanel({ onDone, compact = false }: { onDone?: () => void; 
               ))}
             </div>
           </Popover>
-          <div className="mono muted" style={{ margin: "6px 2px 16px" }} data-testid="filename-preview">
+          <div
+            className="mono muted"
+            style={{ margin: "6px 2px 16px" }}
+            data-testid="filename-preview"
+          >
             → {preview}
           </div>
         </>
@@ -477,71 +501,74 @@ function MoreMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
       anchor={anchor}
       onClose={close}
       label="More"
-      role="menu"
+      role="dialog"
       align="end"
       className="menu"
       width={280}
     >
       <div onKeyDown={menuKeys}>
-        <button
-          type="button"
-          role="menuitem"
-          className="menu-item"
-          onClick={run(() => openFilePicker((f) => void app.loadBlob(f, { source: "file" })))}
-        >
-          <Icon name="image" size="sm" /> Open image… <span className="meta mono">⌘O</span>
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          className="menu-item"
-          onClick={run(() => void app.pasteFromClipboard())}
-        >
-          <Icon name="clipboard" size="sm" /> Paste from clipboard{" "}
-          <span className="meta mono">⌘V</span>
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          className="menu-item"
-          disabled={recents === 0}
-          onClick={run(() => app.ui.set({ modal: "recents" }))}
-        >
-          <Icon name="clock" size="sm" /> Recent designs
-          <span className="meta mono">{recents || ""}</span>
-        </button>
-        <div className="menu-sep" />
-        <button
-          type="button"
-          role="menuitem"
-          className="menu-item"
-          disabled={!hasImage}
-          onClick={run(() => void app.saveProject())}
-        >
-          <Icon name="save" size="sm" /> Save project file
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          className="menu-item"
-          onClick={run(() =>
-            openFilePicker(
-              (f) => void app.openProject(f),
-              `.${PROJECT_EXTENSION},application/json,application/vnd.shotcandy.project+json`,
-            ),
-          )}
-        >
-          <Icon name="folder" size="sm" /> Open project file…
-        </button>
-        <div className="menu-sep" />
-        <button
-          type="button"
-          role="menuitem"
-          className="menu-item"
-          onClick={run(() => app.ui.set({ modal: "shortcuts" }))}
-        >
-          <Icon name="keyboard" size="sm" /> Keyboard shortcuts <span className="meta mono">?</span>
-        </button>
+        <div role="menu" aria-label="File">
+          <button
+            type="button"
+            role="menuitem"
+            className="menu-item"
+            onClick={run(() => openFilePicker((f) => void app.loadBlob(f, { source: "file" })))}
+          >
+            <Icon name="image" size="sm" /> Open image… <span className="meta mono">⌘O</span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="menu-item"
+            onClick={run(() => void app.pasteFromClipboard())}
+          >
+            <Icon name="clipboard" size="sm" /> Paste from clipboard{" "}
+            <span className="meta mono">⌘V</span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="menu-item"
+            disabled={recents === 0}
+            onClick={run(() => app.ui.set({ modal: "recents" }))}
+          >
+            <Icon name="clock" size="sm" /> Recent designs
+            <span className="meta mono">{recents || ""}</span>
+          </button>
+          <div className="menu-sep" role="separator" />
+          <button
+            type="button"
+            role="menuitem"
+            className="menu-item"
+            disabled={!hasImage}
+            onClick={run(() => void app.saveProject())}
+          >
+            <Icon name="save" size="sm" /> Save project file
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="menu-item"
+            onClick={run(() =>
+              openFilePicker(
+                (f) => void app.openProject(f),
+                `.${PROJECT_EXTENSION},application/json,application/vnd.shotcandy.project+json`,
+              ),
+            )}
+          >
+            <Icon name="folder" size="sm" /> Open project file…
+          </button>
+          <div className="menu-sep" role="separator" />
+          <button
+            type="button"
+            role="menuitem"
+            className="menu-item"
+            onClick={run(() => app.ui.set({ modal: "shortcuts" }))}
+          >
+            <Icon name="keyboard" size="sm" /> Keyboard shortcuts{" "}
+            <span className="meta mono">?</span>
+          </button>
+        </div>
         <div className="menu-label">Theme</div>
         <div style={{ padding: "0 6px 6px" }}>
           <Segmented
@@ -555,24 +582,32 @@ function MoreMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
             ]}
           />
         </div>
-        <div className="menu-sep" />
-        <Link role="menuitem" className="menu-item" href="/about/" onClick={close}>
-          <LogoMark className="i-sm" /> About Shotcandy
-        </Link>
-        <a role="menuitem" className="menu-item" href={GITHUB_URL} target="_blank" rel="noreferrer">
-          <Icon name="github" size="sm" /> Source on GitHub
-        </a>
-        <a
-          role="menuitem"
-          className="menu-item"
-          href={SUPPORT_URL}
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: "var(--sc-accent-text)", fontWeight: 700 }}
-        >
-          <Icon name="heart" size="sm" style={{ color: "var(--sc-accent-text)" }} /> Support this
-          project
-        </a>
+        <div className="menu-sep" role="separator" />
+        <div role="menu" aria-label="Project">
+          <Link role="menuitem" className="menu-item" href="/about/" onClick={close}>
+            <LogoMark className="i-sm" /> About Shotcandy
+          </Link>
+          <a
+            role="menuitem"
+            className="menu-item"
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Icon name="github" size="sm" /> Source on GitHub
+          </a>
+          <a
+            role="menuitem"
+            className="menu-item"
+            href={SUPPORT_URL}
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "var(--sc-accent-text)", fontWeight: 700 }}
+          >
+            <Icon name="heart" size="sm" style={{ color: "var(--sc-accent-text)" }} /> Support this
+            project
+          </a>
+        </div>
       </div>
     </Popover>
   );
@@ -646,7 +681,7 @@ export function Header() {
       <span className="sep" aria-hidden="true" />
       <button
         type="button"
-        className={`btn btn-secondary copy-btn${copyState === "done" ? " copied pop" : ""}${copyState === "busy" ? " shimmer-busy" : ""}`}
+        className={`btn btn-secondary copy-btn${copyState === "done" ? "copied pop" : ""}${copyState === "busy" ? "shimmer-busy" : ""}`}
         disabled={!hasImage}
         data-copy-anchor
         data-testid="copy"
@@ -667,7 +702,7 @@ export function Header() {
         <button
           ref={mainRef}
           type="button"
-          className={`btn btn-primary${exportBusy ? " pressed" : ""}`}
+          className={`btn btn-primary${exportBusy ? "pressed" : ""}`}
           disabled={!hasImage}
           data-testid="export"
           title={hasImage ? "Download (⌘S)" : "Paste a screenshot first"}
@@ -690,7 +725,7 @@ export function Header() {
         <button
           ref={exportRef}
           type="button"
-          className={`btn btn-primary${popover === "export" ? " pressed" : ""}`}
+          className={`btn btn-primary${popover === "export" ? "pressed" : ""}`}
           aria-label="Export options (⇧⌘S)"
           aria-haspopup="dialog"
           aria-expanded={popover === "export"}

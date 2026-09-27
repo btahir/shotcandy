@@ -19,7 +19,11 @@ export function useShortcuts(app: EditorApp) {
       const typing = isTypingTarget(e.target);
       const key = e.key.toLowerCase();
 
-      if (ui.modal) return; // modals own the keyboard
+      if (ui.modal) {
+        // Modals own the keyboard; Esc still closes one that hasn't taken focus yet.
+        if (e.key === "Escape") app.ui.set({ modal: null });
+        return;
+      }
       if (typing) {
         // Inputs keep their native undo/copy/paste.
         if (mod && key === "s" && ui.hasImage) {

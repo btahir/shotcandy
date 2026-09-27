@@ -2,38 +2,21 @@
  * End-to-end checks against the static build (`out/`, served by a plain file
  * server): input (file, paste, drop), export download, clipboard copy,
  * persistence across reloads, project round trip, and no network requests
- * beyond the site itself. Written against the minimal engine shell; the UI
- * builder should keep these flows passing as the real UI replaces the shell.
+ * beyond the site itself. Runs in Chromium, Firefox and WebKit.
  */
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { expect, test, type Page } from "@playwright/test";
-
-const SAMPLE = resolve(__dirname, "../../../brand/samples/sample-dashboard-light.png");
-const SAMPLE_B64 = readFileSync(SAMPLE).toString("base64");
-
-async function open(page: Page) {
-  await page.goto("/");
-  await expect(page.getByTestId("preview")).toBeVisible();
-  await page.waitForFunction(
-    () => !!(window as unknown as { __shotcandy?: { db: unknown } }).__shotcandy?.db,
-  );
-}
-
-async function loadViaInput(page: Page) {
-  await page.getByLabel("Screenshot", { exact: true }).setInputFiles(SAMPLE);
-  await expect(page.getByTestId("status")).toHaveText(/Loaded 2880×1800/);
-}
-
-const previewData = (page: Page) =>
-  page.evaluate(async () => {
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-    return (document.querySelector("[data-testid=preview]") as HTMLCanvasElement).toDataURL();
-  });
-
-function pngSize(buf: Buffer) {
-  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
-}
+import { expect, test } from "@playwright/test";
+import {
+  SAMPLE_B64,
+  chooseSize,
+  loadSample,
+  loadViaChooser,
+  open,
+  openMore,
+  pngSize,
+  previewData,
+  setScale,
+} from "./helpers";
 
 test("loads with no third-party requests and no errors", async ({ page, baseURL }) => {
   const foreign: string[] = [];
@@ -48,8 +31,8 @@ test("loads with no third-party requests and no errors", async ({ page, baseURL 
   });
   page.on("pageerror", (e) => errors.push(e.message));
   await open(page);
-  await loadViaInput(page);
-  await page.getByLabel("Style preset", { exact: true }).selectOption("sherbet");
+  await loadSample(page);
+  await page.getByRole("button", { name: /^Midnight style/ }).click();
   await page.waitForTimeout(300);
   expect(foreign).toEqual([]);
   expect(errors).toEqual([]);
@@ -67,7 +50,7 @@ test("imports by paste", async ({ page }) => {
     Object.defineProperty(e, "clipboardData", { value: dt });
     document.dispatchEvent(e);
   }, SAMPLE_B64);
-  await expect(page.getByTestId("status")).toHaveText(/Loaded 2880×1800/);
+  await expect(page.getByTestId("status")).toHaveText(/Screenshot added \(2880 × 1800\)/);
 });
 
 test("imports by drag and drop", async ({ page }) => {
@@ -80,35 +63,43 @@ test("imports by drag and drop", async ({ page }) => {
       new DragEvent("drop", { dataTransfer: dt, bubbles: true, cancelable: true }),
     );
   }, SAMPLE_B64);
-  await expect(page.getByTestId("status")).toHaveText(/Loaded 2880×1800/);
+  await expect(page.getByTestId("status")).toHaveText(/Screenshot added \(2880 × 1800\)/);
 });
 
 test("rejects unsupported files with a clear message", async ({ page }) => {
   await open(page);
-  await page.getByLabel("Screenshot", { exact: true }).setInputFiles({
+  await loadViaChooser(page, {
     name: "x.heic",
     mimeType: "image/heic",
     buffer: Buffer.from([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63, 0, 0, 0, 0]),
-  });
-  await expect(page.getByTestId("status")).toHaveText(/HEIC/);
+  } as never);
+  await expect(page.getByTestId("toast")).toContainText(/HEIC/);
+  await expect(page.getByTestId("empty-state")).toBeVisible();
 });
 
 test("downloads exports at exact size and scale", async ({ page }) => {
   await open(page);
-  await loadViaInput(page);
-  await page.getByLabel("Size", { exact: true }).selectOption("og");
+  await loadSample(page);
+  await chooseSize(page, "Open Graph");
+  await expect(page.getByTestId("size-tag")).toHaveText("1200 × 630");
   for (const [scale, w, h] of [
     [1, 1200, 630],
     [2, 2400, 1260],
   ] as const) {
-    await page.getByLabel("Scale", { exact: true }).selectOption(String(scale));
+    await setScale(page, scale);
+    await expect(page.getByTestId("filename-preview")).toContainText(
+      `shotcandy-${w}x${h}@${scale}x.png`,
+    );
     const [dl] = await Promise.all([
       page.waitForEvent("download"),
-      page.getByRole("button", { name: "Download" }).click(),
+      page.getByTestId("download").click(),
     ]);
     expect(dl.suggestedFilename()).toBe(`shotcandy-${w}x${h}@${scale}x.png`);
     const buf = readFileSync((await dl.path())!);
     expect(pngSize(buf)).toEqual({ width: w, height: h });
+    await expect(page.getByTestId("toast")).toContainText(
+      `Saved shotcandy-${w}x${h}@${scale}x.png`,
+    );
   }
 });
 
@@ -119,11 +110,13 @@ test("copies a PNG to the clipboard", async ({ page, context, browserName }) => 
   );
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await open(page);
-  await loadViaInput(page);
-  await page.getByLabel("Size", { exact: true }).selectOption("og");
-  await page.getByLabel("Scale", { exact: true }).selectOption("1");
-  await page.getByRole("button", { name: "Copy" }).click();
-  await expect(page.getByTestId("status")).toHaveText(/Copied PNG/);
+  await loadSample(page);
+  await chooseSize(page, "Open Graph");
+  await setScale(page, 1);
+  await page.keyboard.press("Escape");
+  await page.getByTestId("copy").click();
+  await expect(page.getByTestId("toast")).toContainText("Copied to clipboard");
+  await expect(page.getByTestId("copy")).toContainText("Copied");
   const size = await page.evaluate(async () => {
     const [item] = await navigator.clipboard.read();
     const blob = await item!.getType("image/png");
@@ -133,38 +126,64 @@ test("copies a PNG to the clipboard", async ({ page, context, browserName }) => 
   expect(size).toEqual({ width: 1200, height: 630, type: "image/png" });
 });
 
-test("saved designs survive a reload and render identically", async ({ page }) => {
+test("recent designs are autosaved, survive a reload and render identically", async ({ page }) => {
   await open(page);
-  await loadViaInput(page);
-  await page.getByLabel("Style preset", { exact: true }).selectOption("midnight");
+  await loadSample(page);
+  await page.getByRole("button", { name: /^Midnight style/ }).click();
+  await page.waitForFunction(
+    () =>
+      (
+        window as unknown as { __shotcandy: { app: { ui: { get(): { recents: unknown[] } } } } }
+      ).__shotcandy.app.ui.get().recents.length > 0,
+  );
+  await page.waitForTimeout(1200); // let the final debounced autosave land
   const before = await previewData(page);
-  await page.getByRole("button", { name: "Save design" }).click();
-  await expect(page.getByTestId("status")).toHaveText("Design saved");
   await page.reload();
   await open(page);
+  await openMore(page);
+  await page.getByRole("menuitem", { name: /Recent designs/ }).click();
   await page.getByRole("list", { name: "Saved designs" }).getByRole("button").first().click();
-  await page.waitForTimeout(300);
+  await expect(page.getByTestId("preview")).toBeVisible();
+  await page.waitForTimeout(400);
   expect(await previewData(page)).toBe(before);
 });
 
 test("project export then import restores an identical render", async ({ page }) => {
   await open(page);
-  await loadViaInput(page);
-  await page.getByLabel("Style preset", { exact: true }).selectOption("tilted-taffy");
-  await page.getByRole("button", { name: "+ Arrow" }).click();
+  await loadSample(page);
+  await page.evaluate(() =>
+    (
+      window as unknown as { __shotcandy: { app: { applyStyle(id: string): void } } }
+    ).__shotcandy.app.applyStyle("tilted-taffy"),
+  );
+  await page.keyboard.press("a");
+  const box = (await page.getByTestId("preview").boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.3);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5, { steps: 6 });
+  await page.mouse.up();
+  await page.keyboard.press("Escape");
   const before = await previewData(page);
+  await openMore(page);
   const [dl] = await Promise.all([
     page.waitForEvent("download"),
-    page.getByRole("button", { name: "Save .shotcandy" }).click(),
+    page.getByRole("menuitem", { name: "Save project file" }).click(),
   ]);
+  expect(dl.suggestedFilename()).toMatch(/\.shotcandy$/);
   const file = (await dl.path())!;
   await page.reload();
   await open(page);
-  await page.getByLabel("Open .shotcandy", { exact: true }).setInputFiles({
+  await openMore(page);
+  const [chooser] = await Promise.all([
+    page.waitForEvent("filechooser"),
+    page.getByRole("menuitem", { name: /Open project file/ }).click(),
+  ]);
+  await chooser.setFiles({
     name: "p.shotcandy",
     mimeType: "application/json",
     buffer: readFileSync(file),
   });
-  await expect(page.getByTestId("status")).toHaveText("Project loaded");
+  await expect(page.getByTestId("toast")).toContainText("Project opened");
+  await page.waitForTimeout(400);
   expect(await previewData(page)).toBe(before);
 });
