@@ -144,6 +144,83 @@
           "opacity": 0.3
         }
       ]
+    },
+    {
+      "id": "paper",
+      "name": "Paper",
+      "description": "Soft and close, like paper on a desk.",
+      "layers": [
+        {
+          "x": 0,
+          "y": 1,
+          "blur": 2,
+          "spread": 0,
+          "opacity": 0.1
+        },
+        {
+          "x": 0,
+          "y": 6,
+          "blur": 14,
+          "spread": -1,
+          "opacity": 0.12
+        },
+        {
+          "x": 0,
+          "y": 22,
+          "blur": 44,
+          "spread": -8,
+          "opacity": 0.12
+        }
+      ]
+    },
+    {
+      "id": "lifted",
+      "name": "Lifted",
+      "description": "A long, soft shadow for tilted and floating cards.",
+      "layers": [
+        {
+          "x": 0,
+          "y": 3,
+          "blur": 6,
+          "spread": 0,
+          "opacity": 0.14
+        },
+        {
+          "x": 0,
+          "y": 24,
+          "blur": 50,
+          "spread": -8,
+          "opacity": 0.22
+        },
+        {
+          "x": 0,
+          "y": 70,
+          "blur": 110,
+          "spread": -24,
+          "opacity": 0.3
+        }
+      ]
+    },
+    {
+      "id": "ambient",
+      "name": "Ambient",
+      "description": "Even, wide darkness for dark backgrounds.",
+      "layers": [
+        {
+          "x": 0,
+          "y": 6,
+          "blur": 18,
+          "spread": 0,
+          "opacity": 0.3
+        },
+        {
+          "x": 0,
+          "y": 34,
+          "blur": 90,
+          "spread": -6,
+          "opacity": 0.45
+        }
+      ]
     }
   ]
 }

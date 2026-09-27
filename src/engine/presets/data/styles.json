@@ -15,7 +15,7 @@
     },
     {
       "id": "paper",
-      "label": "Paper"
+      "label": "Paper & print"
     },
     {
       "id": "deep",
@@ -32,10 +32,138 @@
   ],
   "presets": [
     {
+      "id": "from-your-shot",
+      "name": "From your shot",
+      "family": "auto",
+      "description": "A mesh made from your screenshot's own colours.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 92
+        },
+        "background": {
+          "fill": "@auto-mesh"
+        },
+        "card": {
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "float",
+            "strength": 1.0,
+            "color": "#2A1408"
+          },
+          "border": {
+            "width": 0,
+            "color": "#ffffff66"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "your-shot-soft",
+      "name": "Soft mat",
+      "family": "auto",
+      "description": "Your colours, with the screenshot's edge extended into a soft mat.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 84
+        },
+        "background": {
+          "fill": "@auto-soft"
+        },
+        "card": {
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 18,
+          "shadow": {
+            "preset": "soft",
+            "strength": 1.0,
+            "color": "#2A1408"
+          },
+          "border": {
+            "width": 0,
+            "color": "#ffffff66"
+          },
+          "inset": {
+            "width": 16,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "your-shot-poster",
+      "name": "Poster",
+      "family": "auto",
+      "description": "A flat colour from your screenshot, wide margins and a little grain, like a print.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 140
+        },
+        "background": {
+          "fill": "@auto-solid",
+          "grain": {
+            "amount": 0.07,
+            "size": 1,
+            "seed": 13
+          }
+        },
+        "card": {
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 10,
+          "shadow": {
+            "preset": "paper",
+            "strength": 1.0,
+            "color": "#2A1408"
+          },
+          "border": {
+            "width": 1,
+            "color": "#0000001A"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
       "id": "sherbet",
       "name": "Sherbet",
       "family": "fruity",
-      "description": "Peachy-pink mesh, macOS window, floating shadow. The default.",
+      "description": "Peachy-pink mesh, a window that matches your app, floating shadow. The default.",
       "suits": "any",
       "patch": {
         "canvas": {
@@ -45,63 +173,72 @@
           "fill": "@sherbet"
         },
         "card": {
+          "frame": {
+            "id": "macos",
+            "theme": "auto"
+          },
           "radius": 18,
           "shadow": {
             "preset": "float",
-            "strength": 1,
+            "strength": 1.0,
             "color": "#2A1408"
           },
-          "frame": {
-            "id": "macos",
-            "theme": "light"
-          },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
     },
     {
       "id": "mint-julep",
-      "name": "Mint Julep",
+      "name": "Mint Peek",
       "family": "fruity",
-      "description": "Fresh mint gradient, no frame, soft shadow.",
-      "suits": "any",
+      "description": "Fresh mint, screenshot peeking in from the corner.",
+      "suits": "landscape",
       "patch": {
         "canvas": {
-          "padding": 80
+          "padding": 80,
+          "anchor": "top-left",
+          "bleed": 0.3
         },
         "background": {
           "fill": "@mint-julep"
         },
         "card": {
-          "radius": 14,
-          "shadow": {
-            "preset": "soft",
-            "strength": 1,
-            "color": "#2A1408"
-          },
           "frame": {
-            "id": "none"
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "lifted",
+            "strength": 0.8,
+            "color": "#0B3B2A"
           },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
@@ -110,74 +247,123 @@
       "id": "lemonade",
       "name": "Lemonade",
       "family": "fruity",
-      "description": "Butter-yellow gradient in a light browser frame.",
+      "description": "Butter-yellow, a browser window rising from the bottom edge.",
       "suits": "any",
       "patch": {
         "canvas": {
-          "padding": 80
+          "padding": 80,
+          "anchor": "top",
+          "bleed": 0.22
         },
         "background": {
           "fill": "@lemonade"
         },
         "card": {
-          "radius": 12,
-          "shadow": {
-            "preset": "float",
-            "strength": 1,
-            "color": "#6B4A00"
-          },
           "frame": {
             "id": "browser",
-            "theme": "light"
+            "theme": "auto"
+          },
+          "radius": 14,
+          "shadow": {
+            "preset": "float",
+            "strength": 1.0,
+            "color": "#6B4A00"
           },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
     },
     {
       "id": "tangerine",
-      "name": "Tangerine Dream",
+      "name": "Tangerine Tilt",
       "family": "fruity",
-      "description": "Hot citrus gradient, macOS window, deep shadow.",
+      "description": "Hot citrus with a hero perspective tilt.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 100
+        },
+        "background": {
+          "fill": "@tangerine-dream"
+        },
+        "card": {
+          "frame": {
+            "id": "macos",
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "lifted",
+            "strength": 1.0,
+            "color": "#7A1E00"
+          },
+          "border": {
+            "width": 0,
+            "color": "#ffffff66"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 6,
+            "rotateY": 17,
+            "rotateZ": 0,
+            "perspective": 2.6
+          }
+        }
+      }
+    },
+    {
+      "id": "cherry-split",
+      "name": "Cherry Split",
+      "family": "fruity",
+      "description": "Two-tone diagonal, cherry and cream.",
       "suits": "any",
       "patch": {
         "canvas": {
           "padding": 96
         },
         "background": {
-          "fill": "@tangerine-dream"
+          "fill": "@split-cherry"
         },
         "card": {
-          "radius": 16,
+          "frame": {
+            "id": "browser",
+            "theme": "auto"
+          },
+          "radius": 14,
           "shadow": {
             "preset": "deep",
-            "strength": 0.9,
-            "color": "#7A1E00"
-          },
-          "frame": {
-            "id": "macos",
-            "theme": "light"
+            "strength": 0.75,
+            "color": "#5A0F22"
           },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
@@ -186,83 +372,97 @@
       "id": "cotton-candy",
       "name": "Cotton Candy",
       "family": "pastel",
-      "description": "Pink-to-sky pastel with a white inset plate.",
+      "description": "Pink-to-sky pastel on a white mat.",
       "suits": "any",
       "patch": {
         "canvas": {
-          "padding": 96
+          "padding": 100
         },
         "background": {
           "fill": "@cotton-candy"
         },
         "card": {
-          "radius": 20,
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 26,
           "shadow": {
             "preset": "soft",
-            "strength": 1,
+            "strength": 1.0,
             "color": "#2A1408"
           },
-          "frame": {
-            "id": "none"
-          },
           "border": {
-            "width": 0
+            "width": 1,
+            "color": "#FFFFFFB3"
           },
           "inset": {
-            "width": 14,
+            "width": 22,
             "color": "#FFFFFF"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
     },
     {
       "id": "sea-glass",
-      "name": "Sea Glass",
+      "name": "Sea Glass Stack",
       "family": "pastel",
-      "description": "Cool pastel mesh, hairline border, hug shadow.",
+      "description": "Cool pastel mesh with two cards stacked behind.",
       "suits": "any",
       "patch": {
         "canvas": {
-          "padding": 84
+          "padding": 100
         },
         "background": {
           "fill": "@sea-glass"
         },
         "card": {
-          "radius": 16,
-          "shadow": {
-            "preset": "hug",
-            "strength": 1,
-            "color": "#1B3A4A"
-          },
           "frame": {
-            "id": "none"
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 18,
+          "shadow": {
+            "preset": "soft",
+            "strength": 1.0,
+            "color": "#12303A"
           },
           "border": {
-            "width": 2,
-            "color": "#FFFFFF99"
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
+          },
+          "stack": {
+            "count": 2,
+            "x": 0,
+            "y": -44,
+            "rotate": 0,
+            "shrink": 0.06,
+            "color": "#FFFFFF"
           }
         }
       }
     },
     {
       "id": "bubblegum",
-      "name": "Bubblegum",
+      "name": "Bubblegum Gloss",
       "family": "pastel",
-      "description": "Pink and periwinkle mesh in a light browser frame.",
+      "description": "Floating over a glossy reflection.",
       "suits": "any",
       "patch": {
         "canvas": {
@@ -272,26 +472,75 @@
           "fill": "@bubblegum"
         },
         "card": {
+          "frame": {
+            "id": "browser",
+            "theme": "auto"
+          },
           "radius": 14,
           "shadow": {
             "preset": "soft",
-            "strength": 1,
-            "color": "#2A1408"
-          },
-          "frame": {
-            "id": "browser",
-            "theme": "light"
+            "strength": 1.0,
+            "color": "#4A1030"
           },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
+          },
+          "reflection": {
+            "opacity": 0.26,
+            "height": 0.42,
+            "gap": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "candy-silk",
+      "name": "Candy Silk",
+      "family": "pastel",
+      "description": "A silky six-point mesh, the screenshot laid back like a page on a desk.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 90
+        },
+        "background": {
+          "fill": "@candy-silk"
+        },
+        "card": {
+          "frame": {
+            "id": "macos",
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "lifted",
+            "strength": 0.85,
+            "color": "#5A1F3A"
+          },
+          "border": {
+            "width": 0,
+            "color": "#ffffff66"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 24,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 2.4
           }
         }
       }
@@ -300,73 +549,95 @@
       "id": "paper",
       "name": "Paper",
       "family": "paper",
-      "description": "Warm cream solid, hairline border, contact shadow. Quiet and editorial.",
+      "description": "Warm paper with real fibres, a close soft shadow and a hairline edge.",
       "suits": "any",
       "patch": {
         "canvas": {
-          "padding": 64
+          "padding": 76
         },
         "background": {
-          "fill": "@cream"
+          "fill": "@cream",
+          "texture": {
+            "kind": "paper",
+            "amount": 0.55,
+            "seed": 11
+          },
+          "vignette": {
+            "amount": 0.12,
+            "spotlight": 0.25,
+            "color": "#6B4A2A"
+          }
         },
         "card": {
-          "radius": 12,
-          "shadow": {
-            "preset": "hug",
-            "strength": 1,
-            "color": "#2A1408"
-          },
           "frame": {
-            "id": "none"
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 10,
+          "shadow": {
+            "preset": "paper",
+            "strength": 1.0,
+            "color": "#3A2410"
           },
           "border": {
-            "width": 1.5,
-            "color": "#2A1F1A1A"
+            "width": 1,
+            "color": "#2A140824"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
     },
     {
       "id": "snow",
-      "name": "Snow",
+      "name": "Gallery",
       "family": "paper",
-      "description": "Pure white canvas, soft shadow; for docs and blog posts.",
+      "description": "Museum-white: generous margins, hairline edge, quiet shadow.",
       "suits": "any",
       "patch": {
         "canvas": {
-          "padding": 72
+          "padding": 150
         },
         "background": {
-          "fill": "@snow"
+          "fill": "@snow",
+          "texture": {
+            "kind": "paper",
+            "amount": 0.22,
+            "seed": 3
+          }
         },
         "card": {
-          "radius": 12,
-          "shadow": {
-            "preset": "soft",
-            "strength": 1,
-            "color": "#1B1F2A"
-          },
           "frame": {
-            "id": "none"
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 6,
+          "shadow": {
+            "preset": "hug",
+            "strength": 1.0,
+            "color": "#2A1408"
           },
           "border": {
-            "width": 0
+            "width": 1,
+            "color": "#0000001A"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
@@ -375,83 +646,107 @@
       "id": "retro-pop",
       "name": "Retro Pop",
       "family": "paper",
-      "description": "Lemon solid, thick ink border and a hard offset shadow.",
+      "description": "Lemon halftone, ink outline and a hard offset shadow.",
       "suits": "any",
       "patch": {
         "canvas": {
-          "padding": 80
+          "padding": 84
         },
         "background": {
-          "fill": "@lemon"
+          "fill": "@lemon",
+          "texture": {
+            "kind": "halftone",
+            "amount": 0.45,
+            "seed": 5
+          }
         },
         "card": {
-          "radius": 10,
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 12,
           "shadow": {
             "preset": "solid",
-            "strength": 1,
+            "strength": 1.0,
             "color": "#2A1F1A"
           },
-          "frame": {
-            "id": "none"
-          },
           "border": {
-            "width": 4,
+            "width": 3,
             "color": "#2A1F1A"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
     },
     {
-      "id": "grape-soda",
-      "name": "Grape Soda",
-      "family": "deep",
-      "description": "Deep violet gradient with a dark macOS window.",
+      "id": "polaroid",
+      "name": "Photo Pile",
+      "family": "paper",
+      "description": "A slightly turned print on a pile of blank ones.",
       "suits": "any",
       "patch": {
         "canvas": {
-          "padding": 100
+          "padding": 96
         },
         "background": {
-          "fill": "@grape-soda"
+          "fill": "@parchment",
+          "texture": {
+            "kind": "paper",
+            "amount": 0.5,
+            "seed": 21
+          }
         },
         "card": {
-          "radius": 16,
-          "shadow": {
-            "preset": "deep",
-            "strength": 1,
-            "color": "#0A0514"
-          },
           "frame": {
-            "id": "macos",
-            "theme": "dark"
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 6,
+          "shadow": {
+            "preset": "paper",
+            "strength": 1.0,
+            "color": "#3A2410"
           },
           "border": {
-            "width": 0
+            "width": 1,
+            "color": "#2A140814"
           },
           "inset": {
-            "width": 0
+            "width": 14,
+            "color": "#FFFFFF"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": -3,
+            "perspective": 3
+          },
+          "stack": {
+            "count": 2,
+            "x": 10,
+            "y": 6,
+            "rotate": 3.5,
+            "shrink": 0.0,
+            "color": "#FFFFFF"
           }
         }
       }
     },
     {
       "id": "midnight",
-      "name": "Midnight",
+      "name": "Midnight Spotlight",
       "family": "deep",
-      "description": "Dark halo with a pink glow around the card and fine grain.",
+      "description": "Deep plum with a spotlight behind the window.",
       "suits": "any",
       "patch": {
         "canvas": {
@@ -459,110 +754,251 @@
         },
         "background": {
           "fill": "@midnight-halo",
-          "grain": {
-            "amount": 0.06
+          "vignette": {
+            "amount": 0.5,
+            "spotlight": 0.6,
+            "color": "#05030A"
           }
         },
         "card": {
-          "radius": 18,
-          "shadow": {
-            "preset": "glow",
-            "strength": 0.8,
-            "color": "#FF6A8F"
-          },
           "frame": {
             "id": "macos",
-            "theme": "dark"
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "glow",
+            "strength": 1.0,
+            "color": "#8B6CFF"
           },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "grape-soda",
+      "name": "Grape Isometric",
+      "family": "deep",
+      "description": "Violet gradient, the screenshot laid out isometric.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 70
+        },
+        "background": {
+          "fill": "@grape-soda"
+        },
+        "card": {
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "lifted",
+            "strength": 1.0,
+            "color": "#0C0620"
+          },
+          "border": {
+            "width": 0,
+            "color": "#ffffff66"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 54,
+            "rotateY": 0,
+            "rotateZ": -42,
+            "perspective": 10
           }
         }
       }
     },
     {
       "id": "licorice",
-      "name": "Licorice",
+      "name": "Licorice Bleed",
       "family": "deep",
-      "description": "Near-black, light hairline, dark browser frame.",
-      "suits": "any",
+      "description": "Near-black, a browser running off the right edge.",
+      "suits": "landscape",
       "patch": {
         "canvas": {
-          "padding": 80
+          "padding": 84,
+          "anchor": "left",
+          "bleed": 0.28
         },
         "background": {
-          "fill": "@licorice"
+          "fill": "@licorice-gradient"
         },
         "card": {
-          "radius": 14,
-          "shadow": {
-            "preset": "deep",
-            "strength": 1,
-            "color": "#000000"
-          },
           "frame": {
             "id": "browser",
-            "theme": "dark"
+            "theme": "auto"
+          },
+          "radius": 14,
+          "shadow": {
+            "preset": "ambient",
+            "strength": 1.0,
+            "color": "#000000"
           },
           "border": {
-            "width": 1.5,
-            "color": "#FFFFFF1F"
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
     },
     {
       "id": "aurora-pop",
-      "name": "Aurora Pop",
+      "name": "Aurora Stack",
       "family": "deep",
-      "description": "Violet, pink and mint aurora mesh with grain.",
+      "description": "Dark aurora mesh with stacked cards.",
       "suits": "any",
       "patch": {
         "canvas": {
           "padding": 100
         },
         "background": {
-          "fill": "@aurora-pop",
-          "grain": {
-            "amount": 0.05
-          }
+          "fill": "@aurora-pop"
         },
         "card": {
-          "radius": 18,
-          "shadow": {
-            "preset": "deep",
-            "strength": 1,
-            "color": "#05020C"
-          },
           "frame": {
-            "id": "none"
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "ambient",
+            "strength": 1.0,
+            "color": "#000000"
           },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
+          },
+          "stack": {
+            "count": 2,
+            "x": 0,
+            "y": -46,
+            "rotate": 0,
+            "shrink": 0.06,
+            "color": "auto"
+          }
+        }
+      }
+    },
+    {
+      "id": "blue-hour",
+      "name": "Blue Hour",
+      "family": "deep",
+      "description": "Night-blue mesh, tilted towards you.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 100
+        },
+        "background": {
+          "fill": "@blue-hour"
+        },
+        "card": {
+          "frame": {
+            "id": "macos",
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "ambient",
+            "strength": 1.0,
+            "color": "#000000"
+          },
+          "border": {
+            "width": 0,
+            "color": "#ffffff66"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 7,
+            "rotateY": -17,
+            "rotateZ": 0,
+            "perspective": 2.8
+          }
+        }
+      }
+    },
+    {
+      "id": "ink-split",
+      "name": "Ink Split",
+      "family": "deep",
+      "description": "Ink and candy pink, split on the diagonal.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 96
+        },
+        "background": {
+          "fill": "@split-ink"
+        },
+        "card": {
+          "frame": {
+            "id": "macos",
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "deep",
+            "strength": 1.0,
+            "color": "#000000"
+          },
+          "border": {
+            "width": 0,
+            "color": "#ffffff66"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
@@ -571,7 +1007,7 @@
       "id": "satin",
       "name": "Strawberry Satin",
       "family": "wallpaper",
-      "description": "Silky strawberry wallpaper, macOS window, deep shadow.",
+      "description": "Glossy strawberry satin and a floating window.",
       "suits": "any",
       "patch": {
         "canvas": {
@@ -581,26 +1017,29 @@
           "fill": "@img-strawberry-satin"
         },
         "card": {
+          "frame": {
+            "id": "macos",
+            "theme": "auto"
+          },
           "radius": 16,
           "shadow": {
             "preset": "deep",
-            "strength": 1,
-            "color": "#4A0A1A"
-          },
-          "frame": {
-            "id": "macos",
-            "theme": "light"
+            "strength": 1.0,
+            "color": "#4A0716"
           },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
@@ -609,36 +1048,41 @@
       "id": "dunes",
       "name": "Peach Dunes",
       "family": "wallpaper",
-      "description": "Golden-hour dunes behind a light browser window.",
+      "description": "Soft dunes, a browser rising from the bottom.",
       "suits": "any",
       "patch": {
         "canvas": {
-          "padding": 96
+          "padding": 96,
+          "anchor": "top",
+          "bleed": 0.2
         },
         "background": {
           "fill": "@img-peach-dunes"
         },
         "card": {
+          "frame": {
+            "id": "browser",
+            "theme": "auto"
+          },
           "radius": 14,
           "shadow": {
             "preset": "float",
-            "strength": 1,
+            "strength": 1.0,
             "color": "#5A2A10"
           },
-          "frame": {
-            "id": "browser",
-            "theme": "light"
-          },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
@@ -647,73 +1091,93 @@
       "id": "aurora",
       "name": "Grape Aurora",
       "family": "wallpaper",
-      "description": "Glowing aurora wallpaper with a dark window and violet glow.",
+      "description": "Aurora wallpaper, glowing window on a glossy floor.",
       "suits": "any",
       "patch": {
         "canvas": {
-          "padding": 110
+          "padding": 100
         },
         "background": {
           "fill": "@img-grape-aurora"
         },
         "card": {
-          "radius": 18,
-          "shadow": {
-            "preset": "glow",
-            "strength": 0.7,
-            "color": "#8B6CFF"
-          },
           "frame": {
             "id": "macos",
-            "theme": "dark"
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "glow",
+            "strength": 1.0,
+            "color": "#8B6CFF"
           },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
+          },
+          "reflection": {
+            "opacity": 0.22,
+            "height": 0.4,
+            "gap": 4
           }
         }
       }
     },
     {
       "id": "gummy",
-      "name": "Gummy",
+      "name": "Gummy Stack",
       "family": "wallpaper",
-      "description": "Glossy gummy blobs on cream, generous padding, big corners.",
+      "description": "Gummy blobs and a stack of cards.",
       "suits": "any",
       "patch": {
         "canvas": {
-          "padding": 120
+          "padding": 110
         },
         "background": {
           "fill": "@img-gummy-blobs"
         },
         "card": {
-          "radius": 22,
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 18,
           "shadow": {
             "preset": "soft",
-            "strength": 1,
-            "color": "#5A3A1A"
-          },
-          "frame": {
-            "id": "none"
+            "strength": 1.0,
+            "color": "#3A1030"
           },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
+          },
+          "stack": {
+            "count": 2,
+            "x": 0,
+            "y": -44,
+            "rotate": 0,
+            "shrink": 0.06,
+            "color": "#FFFFFF"
           }
         }
       }
@@ -722,34 +1186,37 @@
       "id": "tilted-taffy",
       "name": "Tilted Taffy",
       "family": "wallpaper",
-      "description": "Warm taffy mesh with a gentle 3D tilt.",
+      "description": "Peach taffy mesh with a perspective tilt.",
       "suits": "any",
       "patch": {
         "canvas": {
-          "padding": 110
+          "padding": 104
         },
         "background": {
           "fill": "@taffy"
         },
         "card": {
-          "radius": 18,
-          "shadow": {
-            "preset": "deep",
-            "strength": 0.9,
-            "color": "#6A2A1A"
-          },
           "frame": {
-            "id": "none"
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "lifted",
+            "strength": 1.0,
+            "color": "#5A2410"
           },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
-            "rotateX": 8,
-            "rotateY": -14,
+            "rotateX": 7,
+            "rotateY": -17,
             "rotateZ": 0,
             "perspective": 3
           }
@@ -757,76 +1224,172 @@
       }
     },
     {
-      "id": "from-your-shot",
-      "name": "From Your Shot",
-      "family": "auto",
-      "description": "Mesh background built from your screenshot's own colours.",
-      "suits": "any",
+      "id": "chrome-peek",
+      "name": "Candy Chrome",
+      "family": "wallpaper",
+      "description": "Liquid candy chrome, window peeking in from the corner.",
+      "suits": "landscape",
       "patch": {
         "canvas": {
-          "padding": 90
+          "padding": 88,
+          "anchor": "top-left",
+          "bleed": 0.26
         },
         "background": {
-          "fill": "@auto-mesh"
+          "fill": "@img-candy-chrome"
         },
         "card": {
+          "frame": {
+            "id": "macos",
+            "theme": "auto"
+          },
           "radius": 16,
           "shadow": {
-            "preset": "float",
-            "strength": 1,
-            "color": "#2A1408"
-          },
-          "frame": {
-            "id": "none"
+            "preset": "lifted",
+            "strength": 1.0,
+            "color": "#2A1030"
           },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
-          },
-          "tilt": {
-            "rotateX": 0,
-            "rotateY": 0,
-            "rotateZ": 0
-          }
-        }
-      }
-    },
-    {
-      "id": "your-shot-soft",
-      "name": "Soft Echo",
-      "family": "auto",
-      "description": "Soft wash of your screenshot's palette with an auto inset plate.",
-      "suits": "any",
-      "patch": {
-        "canvas": {
-          "padding": 80
-        },
-        "background": {
-          "fill": "@auto-soft"
-        },
-        "card": {
-          "radius": 14,
-          "shadow": {
-            "preset": "soft",
-            "strength": 1,
-            "color": "#2A1408"
-          },
-          "frame": {
-            "id": "none"
-          },
-          "border": {
-            "width": 0
-          },
-          "inset": {
-            "width": 10,
+            "width": 0,
             "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "ember",
+      "name": "Ember Night",
+      "family": "wallpaper",
+      "description": "Dark ember wallpaper, the window tilted into the glow.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 104
+        },
+        "background": {
+          "fill": "@img-ember-night"
+        },
+        "card": {
+          "frame": {
+            "id": "macos",
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "glow",
+            "strength": 1.0,
+            "color": "#FF7A3C"
+          },
+          "border": {
+            "width": 0,
+            "color": "#ffffff66"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 6,
+            "rotateY": 17,
+            "rotateZ": 0,
+            "perspective": 2.8
+          }
+        }
+      }
+    },
+    {
+      "id": "fern",
+      "name": "Fern Mist",
+      "family": "wallpaper",
+      "description": "Misty fern wallpaper under a soft spotlight.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 104
+        },
+        "background": {
+          "fill": "@img-fern-mist",
+          "vignette": {
+            "amount": 0.3,
+            "spotlight": 0.4,
+            "color": "#020805"
+          }
+        },
+        "card": {
+          "frame": {
+            "id": "browser",
+            "theme": "auto"
+          },
+          "radius": 14,
+          "shadow": {
+            "preset": "ambient",
+            "strength": 1.0,
+            "color": "#000000"
+          },
+          "border": {
+            "width": 0,
+            "color": "#ffffff66"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "mint-ripple",
+      "name": "Mint Ripple",
+      "family": "wallpaper",
+      "description": "Rippled mint wallpaper and a frosted white mat.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 96
+        },
+        "background": {
+          "fill": "@img-mint-ripple"
+        },
+        "card": {
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 24,
+          "shadow": {
+            "preset": "soft",
+            "strength": 1.0,
+            "color": "#0B3B2A"
+          },
+          "border": {
+            "width": 1,
+            "color": "#FFFFFF80"
+          },
+          "inset": {
+            "width": 18,
+            "color": "#FFFFFFD9"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }
@@ -835,36 +1398,128 @@
       "id": "phone-sorbet",
       "name": "Sorbet Phone",
       "family": "device",
-      "description": "Sorbet mesh with a dark phone frame; best for mobile screenshots.",
+      "description": "Dark phone on a sorbet mesh.",
       "suits": "portrait",
       "patch": {
         "canvas": {
-          "padding": 140
+          "padding": 120
         },
         "background": {
           "fill": "@sorbet"
         },
         "card": {
-          "radius": 0,
-          "shadow": {
-            "preset": "deep",
-            "strength": 1,
-            "color": "#3A0A20"
-          },
           "frame": {
             "id": "phone",
             "theme": "dark"
           },
+          "radius": 14,
+          "shadow": {
+            "preset": "deep",
+            "strength": 1.0,
+            "color": "#4A0716"
+          },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "phone-rise",
+      "name": "Phone Rise",
+      "family": "device",
+      "description": "A phone rising from the bottom edge, App Store style.",
+      "suits": "portrait",
+      "patch": {
+        "canvas": {
+          "padding": 100,
+          "anchor": "top",
+          "bleed": 0.2
+        },
+        "background": {
+          "fill": "@candy-silk"
+        },
+        "card": {
+          "frame": {
+            "id": "phone",
+            "theme": "dark"
+          },
+          "radius": 14,
+          "shadow": {
+            "preset": "lifted",
+            "strength": 1.0,
+            "color": "#4A1030"
+          },
+          "border": {
+            "width": 0,
+            "color": "#ffffff66"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "phone-float",
+      "name": "Floating Phone",
+      "family": "device",
+      "description": "Tilted phone over a lilac sky, with a reflection.",
+      "suits": "portrait",
+      "patch": {
+        "canvas": {
+          "padding": 110
+        },
+        "background": {
+          "fill": "@img-lilac-clouds"
+        },
+        "card": {
+          "frame": {
+            "id": "phone",
+            "theme": "light"
+          },
+          "radius": 14,
+          "shadow": {
+            "preset": "lifted",
+            "strength": 1.0,
+            "color": "#2A1A4A"
+          },
+          "border": {
+            "width": 0,
+            "color": "#ffffff66"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 5,
+            "rotateY": -18,
+            "rotateZ": 0,
+            "perspective": 3
+          },
+          "reflection": {
+            "opacity": 0.2,
+            "height": 0.3,
+            "gap": 6
           }
         }
       }
@@ -873,36 +1528,44 @@
       "id": "tablet-seaglass",
       "name": "Sea Glass Tablet",
       "family": "device",
-      "description": "Sea glass mesh with a light tablet frame.",
+      "description": "Light tablet on a glossy sea-glass floor.",
       "suits": "tablet",
       "patch": {
         "canvas": {
-          "padding": 120
+          "padding": 110
         },
         "background": {
           "fill": "@sea-glass"
         },
         "card": {
-          "radius": 0,
-          "shadow": {
-            "preset": "float",
-            "strength": 1,
-            "color": "#1B3A4A"
-          },
           "frame": {
             "id": "tablet",
             "theme": "light"
           },
+          "radius": 14,
+          "shadow": {
+            "preset": "float",
+            "strength": 1.0,
+            "color": "#12303A"
+          },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
+          },
+          "reflection": {
+            "opacity": 0.2,
+            "height": 0.3,
+            "gap": 6
           }
         }
       }
@@ -911,36 +1574,44 @@
       "id": "laptop-caramel",
       "name": "Caramel Laptop",
       "family": "device",
-      "description": "Caramel gradient with a laptop frame for desktop screenshots.",
+      "description": "Dark laptop in a warm caramel spotlight.",
       "suits": "landscape",
       "patch": {
         "canvas": {
           "padding": 110
         },
         "background": {
-          "fill": "@caramel"
+          "fill": "@caramel",
+          "vignette": {
+            "amount": 0.35,
+            "spotlight": 0.5,
+            "color": "#2A1200"
+          }
         },
         "card": {
-          "radius": 0,
-          "shadow": {
-            "preset": "deep",
-            "strength": 1,
-            "color": "#3A1A00"
-          },
           "frame": {
             "id": "laptop",
             "theme": "dark"
           },
+          "radius": 14,
+          "shadow": {
+            "preset": "deep",
+            "strength": 1.0,
+            "color": "#3A1A00"
+          },
           "border": {
-            "width": 0
+            "width": 0,
+            "color": "#ffffff66"
           },
           "inset": {
-            "width": 0
+            "width": 0,
+            "color": "auto"
           },
           "tilt": {
             "rotateX": 0,
             "rotateY": 0,
-            "rotateZ": 0
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }

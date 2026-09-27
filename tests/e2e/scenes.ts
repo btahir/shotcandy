@@ -188,4 +188,21 @@ export const REFERENCE_SCENES: ReferenceScene[] = [
   ref("30-transparent-rotated", "settings", "retro-pop", fixed(1600, 1000), (s) =>
     setIn(setIn(s, ["background", "fill"], { kind: "none" }), ["card", "tilt", "rotateZ"], 8),
   ),
+  // Output-beauty features: adaptive chrome, long captures, device safe areas, composition.
+  ref("31-dark-app-auto-chrome", "editor", "sherbet", size("auto")),
+  ref("32-long-capture-top-fade", "landing", "sherbet", fixed(1600, 1000), (s) =>
+    setIn(s, ["content"], {
+      kind: "image",
+      assetId: "landing",
+      crop: { x: 0.5, y: 0, width: 0.5, height: 1 },
+      tall: "top",
+    }),
+  ),
+  ref("33-phone-landscape-safe-area", "dashboard", "phone-sorbet", size("16x9")),
+  ref("34-fill-peek-story", "kanban", "sherbet", size("instagram-story"), (s) =>
+    setIn(s, ["canvas", "fit"], "fill"),
+  ),
+  ref("35-desk-tilt-candy-silk", "landing", "candy-silk", size("auto")),
+  ref("36-photo-pile-paper", "tablet", "polaroid", size("4x3")),
+  ref("37-spotlight-vignette-laptop", "dashboard", "laptop-caramel", size("auto")),
 ];

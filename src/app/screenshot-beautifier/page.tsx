@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ToolLanding, type ToolPageData } from "@/components/site/ToolLanding";
+import { STYLE_PRESETS } from "@/engine/presets/styles";
 
 const TITLE = "Screenshot beautifier — free, private, in your browser";
 const DESC =
@@ -45,7 +46,7 @@ const d: ToolPageData = {
     ["Paste", "Copy a screenshot and press ⌘V (Ctrl+V), drop a file, or pick one."],
     [
       "Pick a style",
-      "Every one of the 24 styles previews on your own screenshot. Tweak background, padding, corners and shadow.",
+      `Every one of the ${STYLE_PRESETS.length} styles previews on your own screenshot: tilts, peeks, stacks, prints and devices. Tweak background, padding, corners and shadow.`,
     ],
     [
       "Export",

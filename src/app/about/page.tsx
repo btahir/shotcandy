@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Icon } from "@/components/icons";
 import { SiteFooter, SiteNav } from "@/components/site/Site";
 import { GITHUB_URL, SUPPORT_URL } from "@/config/site";
+import { STYLE_PRESETS } from "@/engine/presets/styles";
 
 const TITLE = "About Shotcandy — sweet screenshots, free forever";
 const DESC =
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
 
 const FEATURES: [string, string][] = [
   ["Paste, drop or pick", "PNG, JPEG and WebP"],
-  ["24 one-click styles", "shown on your own screenshot"],
+  [`${STYLE_PRESETS.length} one-click styles`, "tilts, peeks, stacks and prints, on your own shot"],
   ["Gradients, mesh and wallpapers", "plus colours picked from your image"],
   ["Frames", "macOS window, browser, phone, tablet, laptop"],
   ["Annotations", "text, arrows, highlights, blur"],

@@ -23,6 +23,86 @@
   ],
   "backgrounds": [
     {
+      "id": "auto-mesh",
+      "name": "From your shot \u00b7 Mesh",
+      "group": "auto",
+      "tone": "adaptive",
+      "fill": {
+        "kind": "auto",
+        "style": "mesh",
+        "variant": 0
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "auto-linear",
+      "name": "From your shot \u00b7 Gradient",
+      "group": "auto",
+      "tone": "adaptive",
+      "fill": {
+        "kind": "auto",
+        "style": "linear",
+        "variant": 0
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "auto-soft",
+      "name": "From your shot \u00b7 Soft",
+      "group": "auto",
+      "tone": "adaptive",
+      "fill": {
+        "kind": "auto",
+        "style": "soft",
+        "variant": 0
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "auto-solid",
+      "name": "From your shot \u00b7 Solid",
+      "group": "auto",
+      "tone": "adaptive",
+      "fill": {
+        "kind": "auto",
+        "style": "solid",
+        "variant": 0
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "auto-radial",
+      "name": "From your shot \u00b7 Glow",
+      "group": "auto",
+      "tone": "adaptive",
+      "fill": {
+        "kind": "auto",
+        "style": "radial",
+        "variant": 0
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
       "id": "cream",
       "name": "Cream",
       "group": "solid",
@@ -225,6 +305,21 @@
       "fill": {
         "kind": "solid",
         "color": "#FFD84D"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "parchment",
+      "name": "Parchment",
+      "group": "solid",
+      "tone": "light",
+      "fill": {
+        "kind": "solid",
+        "color": "#F3E9DA"
       },
       "grain": {
         "amount": 0,
@@ -750,6 +845,105 @@
       }
     },
     {
+      "id": "split-cherry",
+      "name": "Cherry Split",
+      "group": "gradient",
+      "tone": "vivid",
+      "fill": {
+        "kind": "linear",
+        "angle": 118,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#FF5E7E"
+          },
+          {
+            "offset": 0.5185000000000001,
+            "color": "#FF5E7E"
+          },
+          {
+            "offset": 0.5215,
+            "color": "#FFE9B0"
+          },
+          {
+            "offset": 1,
+            "color": "#FFE9B0"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "split-ink",
+      "name": "Ink Split",
+      "group": "gradient",
+      "tone": "dark",
+      "fill": {
+        "kind": "linear",
+        "angle": 150,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#1B1520"
+          },
+          {
+            "offset": 0.6185,
+            "color": "#1B1520"
+          },
+          {
+            "offset": 0.6214999999999999,
+            "color": "#FF6A8F"
+          },
+          {
+            "offset": 1,
+            "color": "#FF6A8F"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0.05,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "split-mint",
+      "name": "Mint Split",
+      "group": "gradient",
+      "tone": "light",
+      "fill": {
+        "kind": "linear",
+        "angle": 200,
+        "stops": [
+          {
+            "offset": 0,
+            "color": "#E9FBF3"
+          },
+          {
+            "offset": 0.5785,
+            "color": "#E9FBF3"
+          },
+          {
+            "offset": 0.5814999999999999,
+            "color": "#5FD4A8"
+          },
+          {
+            "offset": 1,
+            "color": "#5FD4A8"
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
       "id": "sherbet",
       "name": "Sherbet",
       "group": "mesh",
@@ -1182,6 +1376,241 @@
       }
     },
     {
+      "id": "candy-silk",
+      "name": "Candy Silk",
+      "group": "mesh",
+      "tone": "light",
+      "fill": {
+        "kind": "mesh",
+        "base": "#FFD9CF",
+        "points": [
+          {
+            "x": 0.05,
+            "y": 0.1,
+            "color": "#FF9DB8",
+            "radius": 0.5
+          },
+          {
+            "x": 0.55,
+            "y": -0.05,
+            "color": "#FFE3B3",
+            "radius": 0.5
+          },
+          {
+            "x": 1.0,
+            "y": 0.25,
+            "color": "#FFB4D0",
+            "radius": 0.5
+          },
+          {
+            "x": 0.9,
+            "y": 1.0,
+            "color": "#C9B8FF",
+            "radius": 0.6
+          },
+          {
+            "x": 0.2,
+            "y": 0.95,
+            "color": "#FFC49A",
+            "radius": 0.55
+          },
+          {
+            "x": 0.5,
+            "y": 0.55,
+            "color": "#FFF1E6",
+            "radius": 0.35
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "lagoon",
+      "name": "Lagoon",
+      "group": "mesh",
+      "tone": "vivid",
+      "fill": {
+        "kind": "mesh",
+        "base": "#7FD8D0",
+        "points": [
+          {
+            "x": 0.0,
+            "y": 0.0,
+            "color": "#4F9BFF",
+            "radius": 0.6
+          },
+          {
+            "x": 1.0,
+            "y": 0.1,
+            "color": "#7CF0C4",
+            "radius": 0.55
+          },
+          {
+            "x": 0.85,
+            "y": 1.0,
+            "color": "#3E6BE8",
+            "radius": 0.6
+          },
+          {
+            "x": 0.1,
+            "y": 0.95,
+            "color": "#A6F5E0",
+            "radius": 0.5
+          },
+          {
+            "x": 0.5,
+            "y": 0.45,
+            "color": "#D6FFF4",
+            "radius": 0.3
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0.04,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "blue-hour",
+      "name": "Blue Hour",
+      "group": "mesh",
+      "tone": "dark",
+      "fill": {
+        "kind": "mesh",
+        "base": "#0F1424",
+        "points": [
+          {
+            "x": 0.1,
+            "y": 0.05,
+            "color": "#2B3A8C",
+            "radius": 0.55
+          },
+          {
+            "x": 0.95,
+            "y": 0.2,
+            "color": "#6B3FD6",
+            "radius": 0.5
+          },
+          {
+            "x": 0.7,
+            "y": 1.05,
+            "color": "#1E6E8C",
+            "radius": 0.6
+          },
+          {
+            "x": 0.0,
+            "y": 0.9,
+            "color": "#141C3A",
+            "radius": 0.5
+          },
+          {
+            "x": 0.55,
+            "y": 0.5,
+            "color": "#24306A",
+            "radius": 0.35
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0.06,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "cherry-cola",
+      "name": "Cherry Cola",
+      "group": "mesh",
+      "tone": "dark",
+      "fill": {
+        "kind": "mesh",
+        "base": "#1C0B10",
+        "points": [
+          {
+            "x": 0.15,
+            "y": 0.1,
+            "color": "#8C1D3A",
+            "radius": 0.55
+          },
+          {
+            "x": 0.9,
+            "y": 0.2,
+            "color": "#D6455E",
+            "radius": 0.45
+          },
+          {
+            "x": 0.8,
+            "y": 1.0,
+            "color": "#5A1A2E",
+            "radius": 0.6
+          },
+          {
+            "x": 0.05,
+            "y": 0.95,
+            "color": "#3A0F1C",
+            "radius": 0.5
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0.06,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "peach-bloom",
+      "name": "Peach Bloom",
+      "group": "mesh",
+      "tone": "light",
+      "fill": {
+        "kind": "mesh",
+        "base": "#FFE6D6",
+        "points": [
+          {
+            "x": 0.0,
+            "y": 0.0,
+            "color": "#FFC2A0",
+            "radius": 0.55
+          },
+          {
+            "x": 1.0,
+            "y": 0.0,
+            "color": "#FFD8E4",
+            "radius": 0.5
+          },
+          {
+            "x": 1.0,
+            "y": 1.0,
+            "color": "#FFB38A",
+            "radius": 0.55
+          },
+          {
+            "x": 0.0,
+            "y": 1.0,
+            "color": "#FFE9B8",
+            "radius": 0.5
+          },
+          {
+            "x": 0.5,
+            "y": 0.5,
+            "color": "#FFF6EE",
+            "radius": 0.35
+          }
+        ]
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
       "id": "img-strawberry-satin",
       "name": "Strawberry Satin",
       "group": "image",
@@ -1414,86 +1843,6 @@
         "tint": 0,
         "focusX": 0.5,
         "focusY": 0.5
-      },
-      "grain": {
-        "amount": 0,
-        "size": 1,
-        "seed": 7
-      }
-    },
-    {
-      "id": "auto-mesh",
-      "name": "From your shot · Mesh",
-      "group": "auto",
-      "tone": "adaptive",
-      "fill": {
-        "kind": "auto",
-        "style": "mesh",
-        "variant": 0
-      },
-      "grain": {
-        "amount": 0,
-        "size": 1,
-        "seed": 7
-      }
-    },
-    {
-      "id": "auto-linear",
-      "name": "From your shot · Gradient",
-      "group": "auto",
-      "tone": "adaptive",
-      "fill": {
-        "kind": "auto",
-        "style": "linear",
-        "variant": 0
-      },
-      "grain": {
-        "amount": 0,
-        "size": 1,
-        "seed": 7
-      }
-    },
-    {
-      "id": "auto-soft",
-      "name": "From your shot · Soft",
-      "group": "auto",
-      "tone": "adaptive",
-      "fill": {
-        "kind": "auto",
-        "style": "soft",
-        "variant": 0
-      },
-      "grain": {
-        "amount": 0,
-        "size": 1,
-        "seed": 7
-      }
-    },
-    {
-      "id": "auto-solid",
-      "name": "From your shot · Solid",
-      "group": "auto",
-      "tone": "adaptive",
-      "fill": {
-        "kind": "auto",
-        "style": "solid",
-        "variant": 0
-      },
-      "grain": {
-        "amount": 0,
-        "size": 1,
-        "seed": 7
-      }
-    },
-    {
-      "id": "auto-radial",
-      "name": "From your shot · Glow",
-      "group": "auto",
-      "tone": "adaptive",
-      "fill": {
-        "kind": "auto",
-        "style": "radial",
-        "variant": 0
       },
       "grain": {
         "amount": 0,
