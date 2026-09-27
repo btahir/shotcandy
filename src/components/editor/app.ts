@@ -42,6 +42,7 @@ import {
   copyImageToClipboard,
   createAnimation,
   createAnnotation,
+  createSetTemplate,
   createProjectFile,
   evaluateScene,
   getMotionPreset,
@@ -82,6 +83,7 @@ import { ThumbService } from "@/lib/thumbs/service";
 import { sprinkle } from "@/lib/sprinkles";
 import { prefersReducedMotion } from "@/lib/platform";
 import { type Mode, initialCodeScene, initialPostScene, modeForScene } from "./modes";
+import { SetController } from "./appstore";
 
 registerBrandFonts();
 
@@ -317,6 +319,8 @@ export class EditorApp {
   readonly animator = new AnimationExporter({ createWorker: createAnimationWorker });
   readonly ui: Store<UiState>;
   readonly playback: Store<PlaybackState> = createStore<PlaybackState>({ playing: false, t: null });
+  /** App Store set slides and options (App Store mode). */
+  readonly sets: SetController;
   private motionAbort: AbortController | null = null;
   private tickRaf = 0;
   /** Each mode's design while another mode is shown. */
@@ -385,6 +389,7 @@ export class EditorApp {
     this.resolver = {
       get: (id: string) => (id === GHOST_ID ? (this.ghost ?? undefined) : this.library.get(id)),
     };
+    this.sets = new SetController(this);
   }
 
   // ------------------------------------------------------------------ events
@@ -538,6 +543,11 @@ export class EditorApp {
       });
       return false;
     }
+    // In App Store mode a pasted or dropped screenshot fills the selected slide.
+    if (this.ui.get().mode === "appstore") {
+      await this.sets.setSlideImage(this.sets.selected, blob);
+      return true;
+    }
     // Pasting a screenshot in Code or Post mode starts a screenshot design.
     const m = this.ui.get().mode;
     if (m === "code" || m === "post") this.setMode("screenshot");
@@ -660,6 +670,51 @@ export class EditorApp {
         prose: true,
       });
     }
+  }
+
+  /** Put an imported image into the library, thumbnails and storage. */
+  adoptImportedAsset(img: ImportedImage): void {
+    this.library.add(img);
+    void this.thumbs?.setAsset(img.id, img.proxy, img.width, img.height, img.palette);
+    this.bumpAssets();
+    if (this.db) {
+      void this.db.assets
+        .put({
+          id: img.id,
+          blob: img.blob,
+          mime: img.mime,
+          width: img.width,
+          height: img.height,
+          role: "content",
+          createdAt: Date.now(),
+        })
+        .catch(() => undefined);
+    }
+  }
+
+  /** Load a previously stored asset into the library (restoring saved designs). */
+  async loadStoredAsset(id: string): Promise<boolean> {
+    if (this.library.has(id)) return true;
+    const rec = await this.db?.assets.get(id).catch(() => undefined);
+    if (!rec) return false;
+    try {
+      const img = await importImage(rec.blob);
+      this.library.add(img);
+      void this.thumbs?.setAsset(img.id, img.proxy, img.width, img.height, img.palette);
+      this.bumpAssets();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  importFailed(e: unknown): void {
+    const m = importMessage(e);
+    this.toast({ kind: "error", title: m.title, detail: m.detail, prose: true, duration: 6000 });
+  }
+
+  downloadFile(blob: Blob, name: string): void {
+    downloadBlob(blob, name);
   }
 
   // ----------------------------------------------------------------- builtin
@@ -886,7 +941,7 @@ export class EditorApp {
       this.designId = next.designId;
     } else {
       scene = this.freshScene(mode);
-      has = mode === "code" || mode === "post";
+      has = mode !== "screenshot";
       this.designId = has ? newId("d") : null;
       this.designCreated = Date.now();
     }
@@ -907,6 +962,14 @@ export class EditorApp {
       },
     }));
     this.emit("mode", mode);
+    if (mode === "appstore") {
+      this.sets.syncTemplateContent();
+      if (!next)
+        void this.sets.restore().then((tpl) => {
+          if (tpl && this.ui.get().mode === "appstore") this.store.reset(tpl);
+          this.sets.syncTemplateContent();
+        });
+    }
     this.announce(
       `${mode === "appstore" ? "App Store set" : mode[0]!.toUpperCase() + mode.slice(1)} mode`,
     );
@@ -915,6 +978,7 @@ export class EditorApp {
   protected freshScene(mode: Mode): Scene {
     if (mode === "code") return initialCodeScene();
     if (mode === "post") return initialPostScene();
+    if (mode === "appstore") return createSetTemplate();
     return initialScene();
   }
 
@@ -1294,8 +1358,15 @@ export class EditorApp {
     });
   }
 
+  /** The scene Copy and Export use (the selected slide in App Store mode). */
+  exportTarget(): Scene {
+    return this.ui.get().mode === "appstore"
+      ? this.sets.slideScene(this.sets.selected)
+      : this.scene;
+  }
+
   runExport(format: ExportFormat, scale: number, quality?: number): Promise<ExportResult> {
-    const scene = this.scene;
+    const scene = this.exportTarget();
     return this.exporter.export(scene, this.exportAssets(scene), {
       format,
       scale,
@@ -1368,6 +1439,8 @@ export class EditorApp {
 
   /** The Export button: the motion clip when motion export is chosen, else the image. */
   async download(anchor?: Element | null): Promise<void> {
+    if (this.ui.get().mode === "appstore")
+      return this.sets.exportZip(this.ui.get().exportSettings.format === "jpeg" ? "jpeg" : "png");
     if (this.ui.get().exportSettings.kind === "motion" && this.scene.animation)
       return this.exportMotion(anchor);
     return this.downloadImage(anchor);
@@ -1584,6 +1657,10 @@ export class EditorApp {
   }
 
   private onSceneChange() {
+    if (this.ui.get().mode === "appstore") {
+      this.sets.scheduleSave();
+      return;
+    }
     if (!this.ui.get().hasContent || !this.db) return;
     if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
     this.autosaveTimer = setTimeout(() => void this.autosave(), 900);

@@ -78,7 +78,15 @@ export function MobileModeButton() {
         <Icon name={cur.icon} size="sm" />
         <Icon name="chevronDown" size="xs" />
       </button>
-      <Popover open={open} anchor={ref} onClose={close} label="Mode" role="menu" className="menu" width={260}>
+      <Popover
+        open={open}
+        anchor={ref}
+        onClose={close}
+        label="Mode"
+        role="menu"
+        className="menu"
+        width={260}
+      >
         <div onKeyDown={menuKeys}>
           {MODES.map((m) => (
             <button

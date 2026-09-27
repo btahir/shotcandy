@@ -23,6 +23,8 @@ import { useApp, useScene, useUi } from "./context";
 import { openFilePicker } from "./EmptyState";
 import { MotionExportPanel } from "./MotionExport";
 import { ModeSwitch } from "./ModeSwitch";
+import { APPSTORE_SIZES, setCanvasSize } from "@/engine";
+import { useStore } from "@/lib/store";
 
 const RATIO_HINT: Record<string, string> = {
   "16x9": "widescreen",
@@ -281,12 +283,86 @@ export function useExportEstimate(active: boolean) {
   return bpp;
 }
 
+/** App Store mode: what the set exports to. */
+export function SetChip() {
+  const app = useApp();
+  const set = useStore(app.sets.state, (s) => s.set);
+  const p = APPSTORE_SIZES.find((x) => x.id === set.sizePresetId);
+  const size = setCanvasSize(set);
+  return (
+    <span className="chip static" data-testid="set-chip">
+      <Icon name="phones" size="sm" /> {p?.label.replace('"', "″")}
+      <span className="mono">
+        {size.width} × {size.height} · {set.slides.length} slides
+      </span>
+    </span>
+  );
+}
+
+function SetExportPanel({ onDone }: { onDone?: () => void }) {
+  const app = useApp();
+  const settings = useUi((s) => s.exportSettings);
+  const set = useStore(app.sets.state, (s) => s.set);
+  const packing = useStore(app.sets.state, (s) => s.packing);
+  const size = setCanvasSize(set);
+  const fmt = settings.format === "jpeg" ? "jpeg" : "png";
+  return (
+    <div className="export-panel" data-testid="set-export">
+      <div className="export-head">
+        <h2>Export set</h2>
+        <span className="mono muted">
+          {set.slides.length} × {size.width} × {size.height}
+        </span>
+      </div>
+      <div className="sub">Format</div>
+      <Segmented
+        label="Format"
+        value={fmt}
+        onChange={(format) => app.setExportSettings({ format })}
+        options={[
+          { value: "png", label: "PNG (no alpha)" },
+          { value: "jpeg", label: "JPEG" },
+        ]}
+      />
+      <p className="note">
+        Exact App Store Connect sizes, opaque, numbered in order. Upload up to 10 per device size.
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: 8, marginTop: 14 }}>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={(e) => {
+            app.copy(e.currentTarget);
+            onDone?.();
+          }}
+        >
+          <Icon name="copy" /> Copy slide
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          data-testid="export-zip"
+          disabled={!!packing}
+          onClick={() => {
+            void app.sets.exportZip(fmt);
+            onDone?.();
+          }}
+        >
+          <Icon name="zip" /> Export ZIP
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** The Export popover: Image or Video/GIF tabs. */
 export function ExportPopover({ onDone }: { onDone?: () => void }) {
   const app = useApp();
+  const mode = useUi((s) => s.mode);
   const kind = useUi((s) => s.exportSettings.kind);
   const hasMotion = useScene((s) => !!s.scene.animation);
   const tab = kind === "motion" ? "motion" : "image";
+  if (mode === "appstore") return <SetExportPanel onDone={onDone} />;
   return (
     <div>
       <div className="export-head">
@@ -674,6 +750,8 @@ export function Header() {
   const exportBusy = useUi((s) => s.exportBusy);
   const settings = useUi((s) => s.exportSettings);
   const motionJob = useUi((s) => s.motionExport);
+  const mode = useUi((s) => s.mode);
+  const packing = useStore(app.sets.state, (s) => s.packing);
   const hasMotion = useScene((s) => !!s.scene.animation);
   const motionKind = settings.kind === "motion" && hasMotion;
   const m = settings.motion;
@@ -698,9 +776,7 @@ export function Header() {
         <span className="word">shotcandy</span>
       </Link>
       <ModeSwitch />
-      <div className="centre">
-        <SizeChip />
-      </div>
+      <div className="centre">{mode === "appstore" ? <SetChip /> : <SizeChip />}</div>
       <div className="spacer" />
       <button
         type="button"
@@ -776,6 +852,10 @@ export function Header() {
             <span className="tag">
               {motionJob ? (
                 `${motionJob.total ? Math.round((motionJob.done / motionJob.total) * 100) : 0}%`
+              ) : packing ? (
+                `${packing.done}/${packing.total}`
+              ) : mode === "appstore" ? (
+                `ZIP · ${settings.format === "jpeg" ? "JPG" : "PNG"}`
               ) : slow && exportBusy ? (
                 <span className="ring-spinner" aria-label="Exporting" />
               ) : motionKind ? (

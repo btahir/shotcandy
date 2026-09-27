@@ -31,6 +31,7 @@ import { StyleThumb } from "./StyleThumb";
 import { MotionTray } from "./MotionTray";
 import { CodeTray, ThemesTray, WindowTray } from "./CodeInspector";
 import { CardTray, PostStylesTray, PostTray } from "./PostInspector";
+import { HeadlineTray, SetStylesTray, SetTray, SlideTray } from "./AppStoreInspector";
 
 const DEFAULT_ROW = ["sherbet", "mint-julep", "grape-soda", "paper", "midnight", "satin"];
 
@@ -1047,6 +1048,18 @@ function ModeTrays() {
         <MotionTray />
         <WindowTray />
         <BackgroundTray />
+        <LayoutTray />
+      </>
+    );
+  if (mode === "appstore")
+    return (
+      <>
+        <SlideTray />
+        <SetStylesTray />
+        <SetTray />
+        <HeadlineTray />
+        <BackgroundTray />
+        <FrameTray />
         <LayoutTray />
       </>
     );

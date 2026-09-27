@@ -15,6 +15,7 @@ import { MotionTray } from "./MotionTray";
 import { MotionExportPanel } from "./MotionExport";
 import { CodeTray, ThemesTray, WindowTray } from "./CodeInspector";
 import { CardTray, PostStylesTray, PostTray } from "./PostInspector";
+import { HeadlineTray, SetStylesTray, SetTray, SlideTray } from "./AppStoreInspector";
 import { MobileModeButton } from "./ModeSwitch";
 import { StyleThumb } from "./StyleThumb";
 
@@ -38,10 +39,19 @@ const POST_TABS: TabDef[] = [
   { id: "draw", label: "Draw", icon: "arrow" },
 ];
 
+const APPSTORE_TABS: TabDef[] = [
+  { id: "slides", label: "Slide", icon: "phones" },
+  { id: "theme", label: "Style", icon: "sparkle" },
+  { id: "layout", label: "Set", icon: "sliders" },
+  { id: "background", label: "Background", icon: "image" },
+  { id: "frame", label: "Device", icon: "framePhone" },
+];
+
 export function useMobileTabs(): TabDef[] {
   const mode = useUi((s) => s.mode);
   if (mode === "code") return CODE_TABS;
   if (mode === "post") return POST_TABS;
+  if (mode === "appstore") return APPSTORE_TABS;
   return TABS;
 }
 
@@ -268,6 +278,13 @@ function MobileSheet() {
           </>
         )}
         {tab === "post" && <PostTray bare />}
+        {tab === "slides" && <SlideTray bare />}
+        {tab === "theme" && mode === "appstore" && (
+          <>
+            <SetStylesTray bare />
+            <HeadlineTray bare />
+          </>
+        )}
         {tab === "window" && <WindowTray bare />}
         {tab === "styles" && (
           <>
@@ -277,7 +294,8 @@ function MobileSheet() {
         )}
         {tab === "motion" && <MotionTray bare />}
         {tab === "background" && <BackgroundTray bare />}
-        {tab === "layout" && <LayoutTray bare />}
+        {tab === "layout" && mode !== "appstore" && <LayoutTray bare />}
+        {tab === "layout" && mode === "appstore" && <SetTray bare />}
         {tab === "frame" && <FrameTray bare />}
         {tab === "draw" && (
           <>
@@ -344,6 +362,7 @@ function CurrentThumb() {
 
 function MobileExport() {
   const app = useApp();
+  const mode = useUi((s) => s.mode);
   const open = useUi((s) => s.mobileExport);
   const settings = useUi((s) => s.exportSettings);
   const busy = useUi((s) => s.exportBusy);
@@ -453,6 +472,19 @@ function MobileExport() {
             >
               <Icon name="download" /> Save to Photos
             </button>
+            {mode === "appstore" && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-block"
+                style={{ marginTop: 10 }}
+                onClick={() => {
+                  void app.sets.exportZip(settings.format === "jpeg" ? "jpeg" : "png");
+                  close();
+                }}
+              >
+                <Icon name="zip" /> Export all slides (ZIP)
+              </button>
+            )}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
               <button
                 type="button"

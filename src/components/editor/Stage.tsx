@@ -22,6 +22,7 @@ import { Dock, ZoomControl } from "./Dock";
 import { DropVeil, EmptyState } from "./EmptyState";
 import { Toasts } from "./Toasts";
 import { RenderPill, Timeline } from "./Timeline";
+import { Board } from "./Board";
 
 const MAX_PREVIEW_SIDE = 8192;
 const MAX_PREVIEW_AREA = 36_000_000;
@@ -40,6 +41,8 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
   const assetsVersion = useUi((s) => s.assetsVersion);
   const fontsReady = useUi((s) => s.fontsReady);
   const stageFocus = useUi((s) => s.stageFocus);
+  const mode = useUi((s) => s.mode);
+  const board = mode === "appstore";
   const previewing = useStore(app.playback, (s) => s.playing || s.t !== null);
   const motion = scene.animation;
   const motionPreset = motion ? getMotionPreset(motion.preset) : undefined;
@@ -362,8 +365,9 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
           app.copy(e.currentTarget.ownerDocument.querySelector("[data-copy-anchor]"));
       }}
     >
-      {!hasContent && <EmptyState narrow={narrow} />}
-      {hasContent && (
+      {board && <Board narrow={narrow} />}
+      {!board && !hasContent && <EmptyState narrow={narrow} />}
+      {!board && hasContent && (
         <>
           <div
             ref={compRef}
@@ -402,7 +406,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
           {!narrow && <Dock />}
         </>
       )}
-      {!narrow && <ZoomControl disabled={!hasContent} />}
+      {!narrow && !board && <ZoomControl disabled={!hasContent} />}
       <RenderPill />
       <Toasts />
       <DropVeil />

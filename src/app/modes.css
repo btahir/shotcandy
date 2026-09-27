@@ -374,3 +374,219 @@
     color: var(--sc-ink-2);
   }
 }
+
+@layer components {
+  /* ---------- App Store board ---------- */
+  .board {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    padding-bottom: 36px;
+  }
+  .board.narrow {
+    padding-bottom: 8px;
+  }
+  .board-strip {
+    display: flex;
+    align-items: flex-start;
+    margin: 0 auto;
+  }
+  .slide-wrap {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .slide {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--sc-well);
+    box-shadow:
+      0 1px 2px rgba(74, 45, 20, 0.14),
+      0 14px 34px -18px rgba(74, 45, 20, 0.45);
+    transition:
+      transform var(--sc-dur-fast) var(--sc-ease-pop),
+      box-shadow var(--sc-dur-fast);
+    animation: sc-fade-in var(--sc-dur-slow) var(--sc-ease-out) both;
+  }
+  .slide canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .slide:hover {
+    transform: translateY(-3px);
+  }
+  .slide.on {
+    box-shadow:
+      var(--sc-selected-ring),
+      0 14px 34px -18px rgba(74, 45, 20, 0.45);
+  }
+  .slide:focus-visible {
+    outline: none;
+    box-shadow: var(--sc-focus-ring);
+  }
+  .slide.drop {
+    box-shadow:
+      0 0 0 3px var(--sc-accent),
+      0 14px 34px -18px rgba(74, 45, 20, 0.45);
+    transform: scale(1.02);
+  }
+  .slide-empty {
+    position: absolute;
+    left: 50%;
+    bottom: 12%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: var(--sc-ink);
+    color: var(--sc-on-ink);
+    font-size: 12px;
+    font-weight: 650;
+    opacity: 0;
+    transition: opacity var(--sc-dur-fast);
+    pointer-events: none;
+  }
+  .slide:hover .slide-empty,
+  .slide.on .slide-empty,
+  .slide.drop .slide-empty {
+    opacity: 0.92;
+  }
+  .slide-num {
+    font-size: 11.5px;
+    color: var(--sc-ink-3);
+    font-weight: 500;
+  }
+  .slide-add {
+    width: 100%;
+    border-radius: 14px;
+    border: 2px dashed var(--sc-line-strong);
+    color: var(--sc-ink-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 650;
+    transition:
+      border-color var(--sc-dur-fast),
+      color var(--sc-dur-fast),
+      background var(--sc-dur-fast);
+  }
+  .slide-add:hover {
+    border-color: var(--sc-accent);
+    color: var(--sc-accent-text);
+    background: color-mix(in srgb, var(--sc-accent) 6%, transparent);
+  }
+  .slide-add:focus-visible {
+    outline: none;
+    box-shadow: var(--sc-focus-ring);
+  }
+  .chip.static {
+    cursor: default;
+  }
+  .chip.static:hover {
+    box-shadow: var(--sc-shadow-raised);
+  }
+
+  /* ---------- App Store inspector ---------- */
+  .size-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .size-opt {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    align-items: center;
+    text-align: left;
+    padding: 7px 10px;
+    border-radius: 12px;
+    background: var(--sc-well);
+    color: var(--sc-ink-2);
+    transition:
+      background var(--sc-dur-fast),
+      color var(--sc-dur-fast);
+  }
+  .size-opt svg {
+    grid-row: 1 / 3;
+    width: 18px;
+    height: 18px;
+  }
+  .size-opt b {
+    font-size: 12.5px;
+    font-weight: 650;
+    color: var(--sc-ink);
+  }
+  .size-opt .mono {
+    font-size: 10.5px;
+    color: var(--sc-ink-3);
+  }
+  .size-opt:hover {
+    background: var(--sc-well-hover);
+  }
+  .size-opt.on {
+    background: var(--sc-accent-soft);
+    box-shadow: inset 0 0 0 2px var(--sc-accent);
+  }
+  .size-opt.on svg,
+  .size-opt.on b {
+    color: var(--sc-accent-text);
+  }
+  .size-opt:focus-visible {
+    outline: none;
+    box-shadow: var(--sc-focus-ring);
+  }
+  .set-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+    align-items: center;
+  }
+  .colour-pair {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  .slide-shot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .slide-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-top: 10px;
+  }
+  .slide-actions .sep {
+    width: 1px;
+    height: 20px;
+    background: var(--sc-line);
+    margin: 0 6px;
+  }
+  .tray-head h2 .muted {
+    font-weight: 500;
+    color: var(--sc-ink-3);
+  }
+  .presets.set-styles .thumb.tall,
+  .rail .thumb.tall {
+    aspect-ratio: 9 / 17;
+  }
+}
