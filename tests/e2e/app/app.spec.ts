@@ -144,8 +144,8 @@ test("recent designs are autosaved, survive a reload and render identically", as
   await page.getByRole("menuitem", { name: /Recent designs/ }).click();
   await page.getByRole("list", { name: "Saved designs" }).getByRole("button").first().click();
   await expect(page.getByTestId("preview")).toBeVisible();
-  await page.waitForTimeout(400);
-  expect(await previewData(page)).toBe(before);
+  // Fonts and thumbnails settle at their own pace under a loaded test run.
+  await expect.poll(() => previewData(page), { timeout: 8000 }).toBe(before);
 });
 
 test("project export then import restores an identical render", async ({ page }) => {
@@ -184,6 +184,6 @@ test("project export then import restores an identical render", async ({ page })
     buffer: readFileSync(file),
   });
   await expect(page.getByTestId("toast")).toContainText("Project opened");
-  await page.waitForTimeout(400);
-  expect(await previewData(page)).toBe(before);
+  // Fonts and thumbnails settle at their own pace under a loaded test run.
+  await expect.poll(() => previewData(page), { timeout: 8000 }).toBe(before);
 });

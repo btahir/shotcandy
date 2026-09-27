@@ -230,6 +230,8 @@ test("long captures offer Show all; small images say they were upscaled", async 
   await loadGenerated(page, 700, 4200);
   const tall = page.getByTestId("note-tall");
   await expect(tall).toContainText("showing the top");
+  await tall.getByRole("button", { name: "Clean cut" }).click();
+  expect((await scene(page)).content).toMatchObject({ fade: 0 });
   await tall.getByRole("button", { name: "Show all" }).click();
   expect((await scene(page)).content).toMatchObject({ tall: "full" });
   await expect(tall.getByRole("button", { name: "Top only" })).toBeVisible();
@@ -285,10 +287,9 @@ test("the Candy Jar lists device styles last for a landscape screenshot", async 
   await open(page);
   await loadSample(page);
   await page.keyboard.press("g");
-  const names = await page
-    .getByRole("dialog", { name: "Candy Jar" })
-    .locator(".jar-card .lbl span")
-    .allTextContents();
+  const labels = page.getByRole("dialog", { name: "Candy Jar" }).locator(".jar-card .lbl span");
+  await expect(labels.first()).toBeVisible();
+  const names = await labels.allTextContents();
   const firstDevice = names.indexOf("Device");
   expect(firstDevice).toBeGreaterThan(0);
   expect(names.slice(firstDevice).every((n) => n === "Device" || n !== "Fruity")).toBe(true);

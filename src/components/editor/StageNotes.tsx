@@ -97,6 +97,20 @@ export function StageNotes({ narrow = false }: { narrow?: boolean }) {
         >
           {tall.capped ? "Show all" : "Top only"}
         </button>
+        {tall.capped && (
+          <button
+            type="button"
+            className="note-act"
+            title="How the cut-off bottom of the page ends"
+            onClick={() => {
+              const soft = (image.fade ?? 0.18) > 0;
+              app.set(["content", "fade"], soft ? 0 : 0.18);
+              app.announce(soft ? "Clean cut at the bottom" : "Soft fade at the bottom");
+            }}
+          >
+            {(image.fade ?? 0.18) > 0 ? "Clean cut" : "Soft fade"}
+          </button>
+        )}
       </div>,
     );
   }
