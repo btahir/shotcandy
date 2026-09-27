@@ -2574,6 +2574,7 @@
     overflow-x: auto;
     padding: 4px 16px 6px;
     scroll-snap-type: x proximity;
+    scroll-padding: 0 16px;
     scrollbar-width: none;
   }
   .rail .preset {
@@ -2667,7 +2668,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: var(--sc-z-sheet);
+    z-index: calc(var(--sc-z-modal) + 1);
     background: var(--sc-surface);
     border-radius: 26px 26px 0 0;
     padding: 8px 16px calc(24px + env(safe-area-inset-bottom));

@@ -1,0 +1,385 @@
+"use client";
+/** Narrow layout (< 768 px): compact header, stage, bottom sheet with tabs, export sheet. */
+import { useEffect, useRef, useState } from "react";
+import { type ExportFormat, getStylePreset, layoutScene } from "@/engine";
+import { Icon, LogoMark, type IconName } from "../icons";
+import { Segmented } from "../ui/controls";
+import { AnnotationInspector } from "./AnnotationInspector";
+import { type MobileTab, formatBytes, styleName } from "./app";
+import { useApp, useScene, useUi } from "./context";
+import { TOOLS } from "./Dock";
+import { SizeChip, sizeLabel, useExportEstimate } from "./Header";
+import { BackgroundTray, FrameTray, LayoutTray, useStyleRow } from "./Inspector";
+import { Stage } from "./Stage";
+import { StyleThumb } from "./StyleThumb";
+
+const TABS: { id: MobileTab; label: string; icon: IconName }[] = [
+  { id: "styles", label: "Styles", icon: "sparkle" },
+  { id: "background", label: "Background", icon: "image" },
+  { id: "layout", label: "Layout", icon: "sliders" },
+  { id: "frame", label: "Frame", icon: "frameBrowser" },
+  { id: "draw", label: "Draw", icon: "arrow" },
+];
+
+function MobileHeader() {
+  const app = useApp();
+  const hasImage = useUi((s) => s.hasImage);
+  const canUndo = useScene((s) => s.canUndo);
+  return (
+    <header className="m-top">
+      <a href="/about/" aria-label="About Shotcandy" className="brand">
+        <LogoMark className="mark" />
+      </a>
+      <SizeChip compact />
+      <div style={{ flex: 1 }} />
+      {hasImage && (
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label="Undo"
+          disabled={!canUndo}
+          onClick={() => app.store.undo()}
+        >
+          <Icon name="undo" />
+        </button>
+      )}
+      <button
+        type="button"
+        className="btn btn-primary"
+        disabled={!hasImage}
+        data-testid="export"
+        onClick={() => app.ui.set({ mobileExport: true })}
+      >
+        <Icon name="download" /> Export
+      </button>
+    </header>
+  );
+}
+
+function StyleRail() {
+  const app = useApp();
+  const { current } = useStyleRow();
+  const ids = [
+    "sherbet",
+    "mint-julep",
+    "grape-soda",
+    "phone-sorbet",
+    "paper",
+    "midnight",
+    "tangerine",
+    "satin",
+    "aurora-pop",
+    "cotton-candy",
+    "licorice",
+    "from-your-shot",
+  ];
+  const list = current && !ids.includes(current) && getStylePreset(current) ? [current, ...ids] : ids;
+  return (
+    <div className="rail" role="group" aria-label="Styles">
+      {list.map((id) => {
+        const p = getStylePreset(id);
+        if (!p) return null;
+        return (
+          <button
+            key={id}
+            type="button"
+            className={`preset${current === id ? " on" : ""}`}
+            aria-pressed={current === id}
+            onClick={() => app.applyStyle(id)}
+          >
+            <div className="thumb">
+              <StyleThumb styleKey={id} patch={p.patch} aspect={[4, 5]} target={130} priority={10} />
+            </div>
+            <span className="name">{p.name}</span>
+          </button>
+        );
+      })}
+      <button
+        type="button"
+        className="preset"
+        onClick={() => app.ui.set({ modal: "gallery" })}
+        aria-label="All styles"
+      >
+        <div className="thumb" style={{ display: "grid", placeItems: "center", color: "var(--sc-ink-2)" }}>
+          <Icon name="plus" />
+        </div>
+        <span className="name">All styles</span>
+      </button>
+    </div>
+  );
+}
+
+function FrameQuick() {
+  const app = useApp();
+  const id = useScene((s) => s.scene.card.frame.id);
+  return (
+    <div className="mini-row">
+      <Segmented
+        label="Frame"
+        value={["none", "phone", "browser", "macos"].includes(id) ? id : null}
+        onChange={(v) => app.set(["card", "frame", "id"], v)}
+        options={[
+          { value: "none", label: "None" },
+          { value: "phone", label: "Phone" },
+          { value: "browser", label: "Browser" },
+          { value: "macos", label: "macOS" },
+        ]}
+      />
+    </div>
+  );
+}
+
+function DrawTools() {
+  const app = useApp();
+  const tool = useUi((s) => s.tool);
+  return (
+    <div className="draw-tools" role="toolbar" aria-label="Annotation tools">
+      {TOOLS.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          className={`tool${tool === t.id ? " on" : ""}`}
+          aria-label={t.label}
+          aria-pressed={tool === t.id}
+          onClick={() => app.setTool(t.id)}
+        >
+          <Icon name={t.icon} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MobileSheet() {
+  const app = useApp();
+  const tab = useUi((s) => s.mobileTab);
+  const expanded = useUi((s) => s.mobileExpanded);
+  const selection = useScene((s) => s.selection);
+  const ref = useRef<HTMLElement>(null);
+  const drag = useRef<{ y: number; h: number } | null>(null);
+  const [dragH, setDragH] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (selection && tab !== "draw") app.ui.set({ mobileTab: "draw" });
+  }, [selection, tab, app]);
+
+  const peek = tab === "styles" ? undefined : 250;
+  const height = dragH ?? (expanded ? "62dvh" : peek);
+
+  const onDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { y: e.clientY, h: ref.current!.getBoundingClientRect().height };
+  };
+  const onMove = (e: React.PointerEvent) => {
+    if (!drag.current) return;
+    const h = Math.max(160, Math.min(window.innerHeight * 0.8, drag.current.h - (e.clientY - drag.current.y)));
+    setDragH(h);
+  };
+  const onUp = (e: React.PointerEvent) => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d) return;
+    const moved = Math.abs(e.clientY - d.y);
+    if (moved < 6) app.ui.set({ mobileExpanded: !expanded });
+    else app.ui.set({ mobileExpanded: (dragH ?? d.h) > window.innerHeight * 0.45 });
+    setDragH(null);
+  };
+
+  return (
+    <section
+      ref={ref}
+      className={`m-sheet${dragH !== null ? " dragging" : ""}`}
+      style={{ height }}
+      aria-label="Edit"
+    >
+      <div
+        className="grab"
+        role="button"
+        tabIndex={0}
+        aria-label={expanded ? "Collapse panel" : "Expand panel"}
+        aria-expanded={expanded}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            app.ui.set({ mobileExpanded: !expanded });
+          }
+        }}
+      />
+      <div className="m-body" role="tabpanel" aria-label={TABS.find((t) => t.id === tab)?.label}>
+        {tab === "styles" && (
+          <>
+            <StyleRail />
+            <FrameQuick />
+          </>
+        )}
+        {tab === "background" && <BackgroundTray bare />}
+        {tab === "layout" && <LayoutTray bare />}
+        {tab === "frame" && <FrameTray bare />}
+        {tab === "draw" && (
+          <>
+            <DrawTools />
+            <div className="m-draw">
+              <AnnotationInspector />
+            </div>
+          </>
+        )}
+      </div>
+      <nav className="m-tabs" role="tablist" aria-label="Panels">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => app.ui.set({ mobileTab: t.id })}
+          >
+            {t.id === "frame" ? (
+              <Icon name="frameBrowser" style={{ width: 22, height: 18 }} />
+            ) : (
+              <Icon name={t.icon} />
+            )}
+            {t.label}
+          </button>
+        ))}
+      </nav>
+    </section>
+  );
+}
+
+function CurrentThumb() {
+  const app = useApp();
+  const scene = useScene((s) => s.scene);
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const layout = layoutScene(scene, app.resolver);
+    const scale = Math.min(1, 200 / Math.max(layout.canvas.width, layout.canvas.height));
+    const key = `current:${JSON.stringify(scene).length}:${Date.now()}`;
+    let alive = true;
+    app.thumbs?.request(key, scene, scale, 20).then((b) => {
+      const c = ref.current;
+      if (!alive || !c) return;
+      c.width = b.width;
+      c.height = b.height;
+      c.getContext("2d")?.drawImage(b, 0, 0);
+    }, () => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [app, scene]);
+  return <canvas ref={ref} style={{ display: "block", width: "100%", height: "auto" }} aria-hidden="true" />;
+}
+
+function MobileExport() {
+  const app = useApp();
+  const open = useUi((s) => s.mobileExport);
+  const settings = useUi((s) => s.exportSettings);
+  const busy = useUi((s) => s.exportBusy);
+  const scene = useScene((s) => s.scene);
+  const custom = useUi((s) => s.customPresets);
+  const bpp = useExportEstimate(open);
+  const [closing, setClosing] = useState(false);
+  if (!open && !closing) return null;
+  const layout = layoutScene(scene, app.resolver);
+  const W = layout.canvas.width;
+  const H = layout.canvas.height;
+  const oW = W * settings.scale;
+  const oH = H * settings.scale;
+  const close = () => {
+    setClosing(true);
+    setTimeout(() => {
+      setClosing(false);
+      app.ui.set({ mobileExport: false });
+    }, 200);
+  };
+  const file = app.filenameFor({ width: oW, height: oH }, settings);
+  return (
+    <>
+      <div className={`scrim${closing ? " closing" : ""}`} onClick={close} aria-hidden="true" />
+      <section
+        className={`m-export${closing ? " closing" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="m-export-title"
+        onKeyDown={(e) => e.key === "Escape" && close()}
+      >
+        <div className="grab" onClick={close} aria-hidden="true" />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <h2 id="m-export-title">Save your image</h2>
+          <span className="mono muted">
+            {W} × {H}
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 12 }}>
+          <div className="preview-img">
+            <CurrentThumb />
+          </div>
+          <div style={{ fontSize: 13, color: "var(--sc-ink-2)", lineHeight: "19px", minWidth: 0 }}>
+            <b style={{ color: "var(--sc-ink)" }}>{styleName(scene.meta.stylePresetId, custom)}</b>
+            <br />
+            {sizeLabel(scene.canvas.size)}
+            <br />
+            <span className="mono muted" style={{ overflowWrap: "anywhere" }}>
+              {file}
+            </span>
+          </div>
+        </div>
+        <div className="sub">Format</div>
+        <Segmented<ExportFormat>
+          label="Format"
+          value={settings.format}
+          onChange={(format) => app.setExportSettings({ format })}
+          options={[
+            { value: "png", label: "PNG" },
+            { value: "jpeg", label: "JPEG" },
+            { value: "webp", label: "WebP" },
+          ]}
+        />
+        <div className="sub">
+          Size{" "}
+          <span className="mono muted">
+            {oW} × {oH}
+            {bpp ? ` · ≈ ${formatBytes(bpp * oW * oH * 0.85)}` : ""}
+          </span>
+        </div>
+        <Segmented
+          label="Scale"
+          value={String(settings.scale)}
+          onChange={(v) => app.setExportSettings({ scale: Number(v) })}
+          options={[1, 2, 3, 4].map((s) => ({ value: String(s), label: `${s}×` }))}
+        />
+        <button
+          type="button"
+          className={`btn btn-primary btn-block${busy ? " pressed" : ""}`}
+          style={{ height: 52, marginTop: 18, fontSize: 15.5 }}
+          onClick={() => void app.share("save")}
+          data-autofocus
+        >
+          <Icon name="download" /> Save to Photos
+        </button>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
+          <button type="button" className="btn btn-secondary" onClick={(e) => app.copy(e.currentTarget)}>
+            <Icon name="copy" /> Copy
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={() => void app.share("share")}>
+            <Icon name="link" /> Share…
+          </button>
+        </div>
+      </section>
+    </>
+  );
+}
+
+export function MobileEditor() {
+  const hasImage = useUi((s) => s.hasImage);
+  return (
+    <div className="m" data-layout="narrow">
+      <MobileHeader />
+      <Stage narrow />
+      {hasImage && <MobileSheet />}
+      <MobileExport />
+    </div>
+  );
+}

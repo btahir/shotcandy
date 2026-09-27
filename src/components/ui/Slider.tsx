@@ -187,6 +187,7 @@ export function Slider(props: SliderProps) {
 
   return (
     <div
+      style={props.valueLabel ? { gridTemplateColumns: "70px minmax(0, 1fr) auto" } : undefined}
       className={`field${stops?.some((s) => s.label) ? " named" : ""}${disabled ? " disabled" : ""}${dragging ? " dragging" : ""}${props.className ? ` ${props.className}` : ""}`}
     >
       <span className={props.hideLabel ? "sr-only" : "label"} id={`${id}-l`}>
