@@ -280,3 +280,17 @@ test("copy or export with nothing loaded says what to do", async ({ page }) => {
   await page.keyboard.press("ControlOrMeta+c");
   await expect(page.getByTestId("toast")).toContainText("Paste a screenshot first");
 });
+
+test("the Candy Jar lists device styles last for a landscape screenshot", async ({ page }) => {
+  await open(page);
+  await loadSample(page);
+  await page.keyboard.press("g");
+  const names = await page
+    .getByRole("dialog", { name: "Candy Jar" })
+    .locator(".jar-card .lbl span")
+    .allTextContents();
+  const firstDevice = names.indexOf("Device");
+  expect(firstDevice).toBeGreaterThan(0);
+  expect(names.slice(firstDevice).every((n) => n === "Device" || n !== "Fruity")).toBe(true);
+  expect(names.at(-1)).toBe("Device");
+});

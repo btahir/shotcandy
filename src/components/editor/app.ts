@@ -26,6 +26,7 @@ import {
   type Scene,
   type ShotcandyStore,
   type StylePatch,
+  type StylePreset,
   AnimationExporter,
   AssetLibrary,
   DEFAULT_FILENAME_PATTERN,
@@ -85,7 +86,7 @@ import { sprinkle } from "@/lib/sprinkles";
 import { prefersReducedMotion } from "@/lib/platform";
 import { type Mode, initialCodeScene, initialPostScene, modeForScene } from "./modes";
 import { SetController } from "./appstore";
-import { shuffleComposition } from "./shuffle";
+import { orientationOf, shuffleComposition, suitedStyles } from "./shuffle";
 import {
   COPY_MAX_LONG,
   type DestinationId,
@@ -806,13 +807,15 @@ export class EditorApp {
     if (this.ui.get().hasContent) this.ui.set((s) => ({ xfade: s.xfade + 1 }));
   }
 
-  /** Styles in gallery order, portrait shots float device styles up. */
-  orderedStyles() {
-    return STYLE_PRESETS;
+  /** Styles in gallery order: the ones that suit the screenshot's shape first, the rest after. */
+  orderedStyles(): StylePreset[] {
+    const suited = suitedStyles(orientationOf(this.contentSize()));
+    const ids = new Set(suited.map((p) => p.id));
+    return [...suited, ...STYLE_PRESETS.filter((p) => !ids.has(p.id))];
   }
 
   stepStyle(dir: 1 | -1): void {
-    const list = STYLE_PRESETS;
+    const list = this.orderedStyles();
     const cur = list.findIndex((p) => p.id === this.scene.meta.stylePresetId);
     const next = list[(cur + dir + list.length) % list.length]!;
     this.applyStyle(next.id);
@@ -821,13 +824,7 @@ export class EditorApp {
 
   surprise(): void {
     const cur = this.scene.meta.stylePresetId;
-    const img = this.contentSize();
-    const portrait = img ? img.height / img.width >= 1.6 : false;
-    const pool = STYLE_PRESETS.filter(
-      (p) =>
-        p.id !== cur &&
-        (portrait ? p.suits !== "landscape" : p.suits !== "portrait" && p.suits !== "tablet"),
-    );
+    const pool = suitedStyles(orientationOf(this.contentSize())).filter((p) => p.id !== cur);
     const pick = pool[Math.floor(Math.random() * pool.length)]!;
     this.applyStyle(pick.id);
     this.announce(`Style: ${pick.name}`);

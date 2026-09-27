@@ -68,6 +68,30 @@ for (const scheme of ["light", "dark"] as const) {
       await axe(page, "annotation mode");
     });
 
+    test("editor: stage notes, position controls, code mode", async ({ page }) => {
+      await open(page);
+      await page.evaluate(async () => {
+        const c = document.createElement("canvas");
+        c.width = 300;
+        c.height = 1400;
+        const g = c.getContext("2d")!;
+        g.fillStyle = "#f4efe9";
+        g.fillRect(0, 0, 300, 1400);
+        const b = await new Promise<Blob>((r) => c.toBlob((x) => r(x!), "image/png"));
+        await (
+          window as unknown as { __shotcandy: { app: { loadBlob(b: Blob): Promise<boolean> } } }
+        ).__shotcandy.app.loadBlob(b);
+      });
+      await page.waitForTimeout(600);
+      await expect(page.getByTestId("note-tall")).toBeVisible();
+      await axe(page, "stage notes");
+      await page.getByTestId("position").scrollIntoViewIfNeeded();
+      await axe(page, "position");
+      await page.getByRole("tab", { name: "Code" }).click();
+      await page.waitForTimeout(800);
+      await axe(page, "code mode");
+    });
+
     for (const path of [
       "/about/",
       "/screenshot-beautifier/",

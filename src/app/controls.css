@@ -190,13 +190,14 @@
     border-radius: 8px;
     padding: 2px 8px 2px 6px;
   }
+  /* Text mixed a quarter of the way to ink: AA on the soft fills in both themes. */
   .fit-badge.fits {
-    color: var(--sc-success);
+    color: color-mix(in srgb, var(--sc-success) 72%, var(--sc-ink));
     background: var(--sc-success-soft);
   }
   .fit-badge.switch,
   .fit-badge.over {
-    color: var(--sc-warning);
+    color: color-mix(in srgb, var(--sc-warning) 72%, var(--sc-ink));
     background: var(--sc-warning-soft);
   }
   .quality-line {

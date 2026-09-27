@@ -1,7 +1,7 @@
 "use client";
 /** The Candy Jar: every style rendered on the user's own screenshot, plus saved styles. */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { type PresetRecord, type StylePatch, STYLE_FAMILIES, STYLE_PRESETS } from "@/engine";
+import { type PresetRecord, type StylePatch, STYLE_FAMILIES } from "@/engine";
 import { Icon } from "../icons";
 import { Modal } from "../ui/Modal";
 import { Popover, menuKeys } from "../ui/controls";
@@ -33,16 +33,22 @@ export function Gallery({ narrow = false }: { narrow?: boolean }) {
   const close = () => app.ui.set({ modal: null });
 
   const fam = (id: string) => STYLE_FAMILIES.find((f) => f.id === id)?.label ?? id;
+  // Styles that suit the screenshot's shape come first (device styles last for landscape shots).
+  const assets = useUi((u) => u.assetsVersion);
+  const contentId = useScene((sc) =>
+    sc.scene.content.kind === "image" ? sc.scene.content.assetId : null,
+  );
   const builtins: Item[] = useMemo(
     () =>
-      STYLE_PRESETS.map((p) => ({
+      app.orderedStyles().map((p) => ({
         id: p.id,
         name: p.name,
         family: p.family,
         familyLabel: fam(p.family),
         patch: p.patch,
       })),
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [app, assets, contentId],
   );
   const yours: Item[] = custom.map((p) => ({
     id: p.id,
