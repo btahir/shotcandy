@@ -119,6 +119,85 @@ const desktop = [
     },
   ],
   [
+    "editor-destinations",
+    async (page) => {
+      await sample("sample-dashboard-light")(page);
+      await page.click("[data-testid=export-options]");
+      await page.getByRole("radio", { name: "X", exact: true }).click();
+      await page.waitForTimeout(1500);
+    },
+  ],
+  [
+    "editor-gradient",
+    async (page) => {
+      await sample("sample-dashboard-light")(page);
+      await page.getByRole("tab", { name: "Gradient" }).click();
+      await page.getByRole("button", { name: "Grape Soda", exact: true }).click();
+      await page.getByRole("button", { name: /Edit gradient/ }).click();
+      await page.evaluate(() => {
+        const g = document.querySelector("[data-testid=gradient-editor]");
+        const box = document.querySelector(".inspector");
+        box.scrollTop = g.offsetTop - 220;
+      });
+      await page.waitForTimeout(700);
+    },
+  ],
+  [
+    "editor-position",
+    async (page) => {
+      await sample("sample-dashboard-light")(page);
+      await page.evaluate(() => {
+        const app = window.__shotcandy.app;
+        app.setSize({ kind: "fixed", width: 1080, height: 1350, presetId: "instagram-portrait" });
+        app.set(["canvas", "anchor"], "top-left");
+        app.set(["canvas", "bleed"], 0.3);
+        app.set(["card", "frame", "theme"], "auto");
+        const box = document.querySelector(".inspector");
+        box.scrollTop = document.querySelector("[data-testid=position]").offsetTop - 260;
+      });
+      await page.waitForTimeout(900);
+    },
+  ],
+  [
+    "editor-shuffle",
+    async (page) => {
+      await sample("sample-kanban-light")(page);
+      await page.evaluate(() => {
+        const app = window.__shotcandy.app;
+        // A fixed seed so the curated screenshot is stable.
+        app.shuffleSeed = 41;
+        Math.random = () => 0.4;
+      });
+      await page.keyboard.press("s");
+      await page.waitForTimeout(900);
+    },
+  ],
+  [
+    "editor-long-page",
+    async (page) => {
+      await sample("sample-mobile-habits")(page);
+      await page.evaluate(async () => {
+        const c = document.createElement("canvas");
+        c.width = 900;
+        c.height = 4600;
+        const g = c.getContext("2d");
+        const bands = ["#fffaf3", "#fff1e6", "#fde8ef", "#eef6ff"];
+        for (let y = 0, i = 0; y < 4600; y += 460, i++) {
+          g.fillStyle = bands[i % 4];
+          g.fillRect(0, y, 900, 460);
+          g.fillStyle = "#2a1f1a";
+          g.font = "700 44px sans-serif";
+          g.fillText(`Chapter ${i + 1}`, 60, y + 110);
+          g.fillStyle = "#b5a495";
+          for (let l = 0; l < 5; l++) g.fillRect(60, y + 160 + l * 44, 700 - l * 60, 16);
+        }
+        const b = await new Promise((r) => c.toBlob(r, "image/png"));
+        await window.__shotcandy.app.loadBlob(b);
+      });
+      await page.waitForTimeout(1300);
+    },
+  ],
+  [
     "editor-annotate",
     async (page) => {
       await sample("sample-dashboard-light")(page);

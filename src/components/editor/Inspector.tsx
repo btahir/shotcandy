@@ -468,7 +468,12 @@ export const BackgroundTray = memo(function BackgroundTray({ bare = false }: { b
             <Swatch
               key={b.id}
               fill={b.fill}
-              label={b.label}
+              label={
+                // Two backgrounds share a name (Sherbet mesh and gradient): say which (P2-30).
+                list.filter((o) => o.label === b.label).length > 1
+                  ? `${b.label} ${b.fill.kind === "mesh" ? "mesh" : "gradient"}`
+                  : b.label
+              }
               on={sameFill(b.fill, fill)}
               grain={b.grain.amount}
               onClick={() => pickPreset(b)}
