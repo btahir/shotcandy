@@ -11,7 +11,8 @@ import { gaussianBlurRGBA, pixelateRGBA } from "../math/blur";
 import { toCss } from "../math/color";
 import type { Rect, Size } from "../math/geometry";
 import { stableStringify } from "../math/random";
-import type { Content, RedactAnnotation, Scene } from "../scene/types";
+import { effectiveCrop } from "../layout/layout";
+import type { Content, CropRect, RedactAnnotation, Scene } from "../scene/types";
 import type { RenderCache } from "./cache";
 import { type CanvasLike, type Ctx2D, type ImageLike, type RenderEnvironment, get2d } from "./env";
 import { fillRoundedRect } from "./draw";
@@ -149,21 +150,23 @@ export function processedImage(
   dw: number,
   dh: number,
   unitPx: number,
+  cropOverride?: CropRect,
+  crisp = false,
 ): CanvasLike | null {
   if (!content.assetId) return null;
   const src = assets.get(content.assetId);
   if (!src) return null;
-  const crop = content.crop ?? { x: 0, y: 0, width: 1, height: 1 };
+  const crop = cropOverride ?? content.crop ?? { x: 0, y: 0, width: 1, height: 1 };
   const W = Math.max(1, Math.round(dw));
   const H = Math.max(1, Math.round(dh));
   const img = pickImage(src, W / crop.width);
   if (!img) return null;
-  const key = `content:${src.id}:${img.width}:${W}x${H}:${stableStringify(crop)}:${redactionsKey(redactions)}:${unitPx.toFixed(4)}`;
+  const key = `content:${src.id}:${img.width}:${W}x${H}:${stableStringify(crop)}:${redactionsKey(redactions)}:${unitPx.toFixed(4)}:${crisp ? 1 : 0}`;
   return cache.get(key, () => {
     const m = mipSource(env, cache, src.id, img, crop, W);
     const out = env.createCanvas(W, H);
     const g = get2d(out, { willReadFrequently: redactions.length > 0 });
-    g.imageSmoothingEnabled = true;
+    g.imageSmoothingEnabled = !crisp;
     g.imageSmoothingQuality = "high";
     g.drawImage(m.image, m.x, m.y, m.w, m.h, 0, 0, W, H);
     for (const r of redactions) applyRedaction(g, r, W, H, unitPx);
@@ -210,12 +213,24 @@ export const imageContent: ContentRenderer<Extract<Content, { kind: "image" }>> 
     );
     const dw = dc.rect.width * dc.pixelRatio;
     const dh = dc.rect.height * dc.pixelRatio;
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
     const src = content.assetId ? dc.assets.get(content.assetId) : undefined;
+    const crop = src
+      ? effectiveCrop(content, { width: src.width, height: src.height }, dc.scene.card.frame.id)
+          .crop
+      : (content.crop ?? { x: 0, y: 0, width: 1, height: 1 });
+    // Small sources magnified 2x or more stay crisp (nearest neighbour) unless asked otherwise.
+    const magnification = src ? dw / Math.max(1, crop.width * src.width) : 1;
+    const crisp =
+      content.sampling === "pixel"
+        ? magnification > 1.01
+        : content.sampling !== "smooth" &&
+          !!src &&
+          Math.max(src.width, src.height) < 1000 &&
+          magnification >= 1.95;
+    ctx.imageSmoothingEnabled = !crisp;
+    ctx.imageSmoothingQuality = "high";
     if (src && redactions.length === 0) {
       // Fast path: draw straight from the nearest mip level.
-      const crop = content.crop ?? { x: 0, y: 0, width: 1, height: 1 };
       const img = pickImage(src, dw / crop.width);
       if (img) {
         const m = mipSource(dc.env, dc.cache, src.id, img, crop, Math.max(1, Math.round(dw)));
@@ -242,6 +257,8 @@ export const imageContent: ContentRenderer<Extract<Content, { kind: "image" }>> 
       dw,
       dh,
       dc.pixelRatio,
+      crop,
+      crisp,
     );
     if (!canvas) {
       drawPlaceholder(ctx, dc.rect, "#f4f4f5");

@@ -138,7 +138,7 @@ describe("normalizeScene", () => {
     expect(twice.scene).toEqual(once);
     expect(twice.issues).toEqual([]);
     expect(once.card.frame.lights).toBe("mono");
-    expect(once.card.frame.theme).toBe("light");
+    expect(once.card.frame.theme).toBe("auto");
   });
 
   it("validates crops within the image", () => {
@@ -252,6 +252,34 @@ describe("patch helpers", () => {
     const replayed = applyStylePatch(createScene(), patch);
     expect(replayed.card).toEqual(styled.card);
     expect(replayed.background).toEqual(styled.background);
+  });
+
+  it("round-trips composition layers and clears them with null", () => {
+    const styled = applyStylePatch(createScene(), {
+      canvas: { anchor: "top-left", bleed: 0.3 },
+      background: {
+        texture: { kind: "paper", amount: 0.5, seed: 3 },
+        vignette: { amount: 0.4, spotlight: 0.5, color: "#000000" },
+      },
+      card: {
+        stack: { count: 2, x: 0, y: -40, rotate: 0, shrink: 0.05, color: "auto" },
+        reflection: { opacity: 0.3, height: 0.4, gap: 4 },
+      },
+    });
+    const replayed = applyStylePatch(createScene(), extractStylePatch(styled));
+    expect(replayed.card.stack).toEqual(styled.card.stack);
+    expect(replayed.background.texture).toEqual(styled.background.texture);
+    expect(replayed.canvas).toMatchObject({ anchor: "top-left", bleed: 0.3 });
+    const cleared = applyStylePatch(styled, {
+      background: { texture: null, vignette: null },
+      card: { stack: null, reflection: null },
+    });
+    expect("stack" in cleared.card).toBe(false);
+    expect("texture" in cleared.background).toBe(false);
+    // Normalization keeps the new fields and drops junk.
+    const n = normalizeScene({ ...styled, card: { ...styled.card, stack: { count: 9 } } }).scene;
+    expect(n.card.stack!.count).toBe(3);
+    expect(n.background.vignette).toEqual(styled.background.vignette);
   });
 
   it("sets values immutably with structural sharing", () => {

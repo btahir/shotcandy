@@ -17,6 +17,7 @@ import {
 import type { Ctx2D } from "../render/env";
 import type {
   BrowserSpec,
+  DeviceButton,
   DeviceSpec,
   FrameDrawInput,
   FrameGeometry,
@@ -30,10 +31,13 @@ import type {
 // Shared helpers
 // ----------------------------------------------------------------------------
 
-/** Chrome unit in cu: 1 ch = min(1, 1.6 W / max(W, H)) cu (caps chrome on tall captures). */
+/**
+ * Chrome unit in cu: 1 ch = min(1, W / 625) cu. Landscape shots (W = 1000 cu)
+ * get full-size chrome; narrow and tall windows scale it with their width, so
+ * a title bar is always about 3 % of the window's width at most.
+ */
 export function chromeUnit(content: Size): number {
-  const long = Math.max(content.width, content.height, 1e-9);
-  return Math.min(1, (1.6 * content.width) / long);
+  return Math.min(1, Math.max(0, content.width) / 625);
 }
 
 /** Truncate text with a trailing ellipsis to fit `maxWidth` (binary search). */
@@ -246,9 +250,13 @@ export const browserKind: FrameKind<BrowserSpec> = {
       ctx.textAlign = "left";
       const k = a.lockSize * ch;
       const gap = a.lockGap * ch;
-      const text = ref.url ? fitText(ctx, ref.url, aw - 24 * ch - k - gap) : "";
-      const tw = text ? ctx.measureText(text).width : 0;
-      const groupW = k + (text ? gap + tw : 0);
+      // Reload glyph at the right end of the field, when there is room.
+      const reload = aw > 150 * ch;
+      const room = aw - 24 * ch - k - gap - (reload ? 2 * k : 0);
+      const text = ref.url ? fitText(ctx, ref.url, room) : "";
+      // An empty address still reads as one: a soft placeholder bar the width of a short domain.
+      const tw = text ? ctx.measureText(text).width : Math.min(room, 76 * ch);
+      const groupW = k + gap + tw;
       const lx = w / 2 - groupW / 2;
       // Lock: filled body and a stroked shackle.
       fillRoundedRect(
@@ -265,6 +273,34 @@ export const browserKind: FrameKind<BrowserSpec> = {
       if (text) {
         ctx.fillStyle = toCss(t.url);
         ctx.fillText(text, lx + k + gap, cy);
+      } else if (tw > 0) {
+        const bh = a.textSize * 0.42 * ch;
+        fillRoundedRect(
+          ctx,
+          { x: lx + k + gap, y: cy - bh / 2, width: tw, height: bh },
+          bh / 2,
+          toCss(t.url, 0.22),
+        );
+      }
+      if (reload) {
+        const rx = field.x + field.width - 1.6 * k;
+        const r = 0.42 * k;
+        ctx.beginPath();
+        ctx.arc(rx, cy, r, -0.35 * Math.PI, 1.45 * Math.PI);
+        ctx.strokeStyle = toCss(t.nav);
+        ctx.lineWidth = 0.95 * ch;
+        ctx.lineCap = "round";
+        ctx.stroke();
+        // Arrow head at the start of the arc.
+        const ax0 = rx + r * Math.cos(-0.35 * Math.PI);
+        const ay0 = cy + r * Math.sin(-0.35 * Math.PI);
+        const hs = 0.34 * k;
+        ctx.beginPath();
+        ctx.moveTo(ax0 - hs * 0.9, ay0 - hs * 0.35);
+        ctx.lineTo(ax0 + hs * 0.15, ay0 + hs * 0.05);
+        ctx.lineTo(ax0 - hs * 0.2, ay0 + hs * 0.95);
+        ctx.fillStyle = toCss(t.nav);
+        ctx.fill();
       }
     });
   },
@@ -278,6 +314,71 @@ export const browserKind: FrameKind<BrowserSpec> = {
 // Devices (phone, tablet)
 // ----------------------------------------------------------------------------
 
+/**
+ * Where the content sits on a device screen. Content captured on such a device
+ * (a portrait phone shot, a tablet shot) fills the screen edge to edge. Anything
+ * else is letterboxed inside a screen of plausible proportions, with safe
+ * margins so the screen's rounded corners and the camera never cover it, and a
+ * landscape image turns the device sideways (camera on a short edge).
+ */
+export interface DeviceScreen {
+  screen: Size;
+  content: Rect;
+  contentRadius: number;
+  screenRadius: number;
+  orientation: "portrait" | "landscape";
+}
+
+export function deviceScreen(spec: DeviceSpec, content: Size): DeviceScreen {
+  const { width: w, height: h } = content;
+  const short = Math.max(1e-9, Math.min(w, h));
+  const long = Math.max(w, h);
+  const landscape = w > h * 1.001;
+  const orientation = landscape ? "landscape" : "portrait";
+  const A = long / short;
+  const fb = spec.fullBleed;
+  const bleedOk = fb
+    ? A >= fb.min && A <= fb.max && (!landscape || spec.id !== "phone")
+    : A >= spec.aspect.min && A <= spec.aspect.max;
+  if (bleedOk) {
+    const rs = Math.min(spec.screenRadius * short, short / 2);
+    return {
+      screen: { width: w, height: h },
+      content: { x: 0, y: 0, width: w, height: h },
+      contentRadius: rs,
+      screenRadius: rs,
+      orientation,
+    };
+  }
+  // Safe margin on the short axis, scaled with the screen's corner radius.
+  let dS = short * spec.screenRadius * 0.26;
+  let S = short + 2 * dS;
+  let rs = spec.screenRadius * S;
+  const cam = spec.camera;
+  const camClear = cam.placement === "screen" ? ((cam.offset ?? 0) + cam.diameter * 1.5) * S : 0;
+  const dLmin = Math.max(camClear, 0.6 * rs);
+  let L = Math.max(long + 2 * dLmin, spec.aspect.min * S);
+  if (L > spec.aspect.max * S) {
+    // Too long for the device: widen the short axis instead (letterbox the other way).
+    S = L / spec.aspect.max;
+    dS = (S - short) / 2;
+    rs = spec.screenRadius * S;
+    L = Math.max(long + 2 * Math.max(camClear, 0.6 * rs), spec.aspect.min * S);
+  }
+  const dL = (L - long) / 2;
+  const screen = landscape ? { width: L, height: S } : { width: S, height: L };
+  const rect: Rect = landscape
+    ? { x: dL, y: dS, width: w, height: h }
+    : { x: dS, y: dL, width: w, height: h };
+  return {
+    screen,
+    content: rect,
+    contentRadius: Math.max(0, rs - Math.max(dL, dS)),
+    screenRadius: rs,
+    orientation,
+  };
+}
+
 interface DeviceMetrics {
   u: number;
   b: number;
@@ -286,21 +387,63 @@ interface DeviceMetrics {
   rb: number;
   p: number;
   body: Rect;
+  landscape: boolean;
 }
 
-function deviceMetrics(spec: DeviceSpec, screen: Size): DeviceMetrics {
-  const u = spec.unit === "width" ? screen.width : Math.min(screen.width, screen.height);
+function deviceMetrics(
+  spec: DeviceSpec,
+  screen: Size,
+  orientation: "portrait" | "landscape" = "portrait",
+): DeviceMetrics {
+  const landscape = orientation === "landscape";
+  const u =
+    spec.unit === "width" && !landscape ? screen.width : Math.min(screen.width, screen.height);
   const b = spec.bezel * u;
   const rim = spec.rim * u;
   const rs = Math.min(spec.screenRadius * u, Math.min(screen.width, screen.height) / 2);
   const p = spec.buttonProtrusion * u;
+  const padX = landscape ? spec.padAllSides : true;
+  const padY = landscape ? true : spec.padAllSides;
   const body: Rect = {
-    x: p,
-    y: spec.padAllSides ? p : 0,
+    x: padX ? p : 0,
+    y: padY ? p : 0,
     width: screen.width + 2 * b,
     height: screen.height + 2 * b,
   };
-  return { u, b, rim, rs, rb: rs + b, p, body };
+  return { u, b, rim, rs, rb: rs + b, p, body, landscape };
+}
+
+/** Button rects in card units, rotated with the device in landscape. */
+function deviceButtons(spec: DeviceSpec, m: DeviceMetrics): Rect[] {
+  const { body, p } = m;
+  return spec.buttons.map((btn) => {
+    let side: DeviceButton["side"] | "bottom" = btn.side;
+    let from = btn.from;
+    let to = btn.to;
+    if (m.landscape) {
+      // Rotate 90 degrees counter-clockwise: right -> top, left -> bottom, top -> left.
+      if (btn.side === "right") side = "top";
+      else if (btn.side === "left") side = "bottom";
+      else {
+        side = "left";
+        [from, to] = [1 - btn.to, 1 - btn.from];
+      }
+    }
+    if (side === "top" || side === "bottom") {
+      return {
+        x: body.x + from * body.width,
+        y: side === "top" ? body.y - p : body.y + body.height - p,
+        width: (to - from) * body.width,
+        height: 2 * p,
+      };
+    }
+    return {
+      x: side === "left" ? body.x - p : body.x + body.width - p,
+      y: body.y + from * body.height,
+      width: 2 * p,
+      height: (to - from) * body.height,
+    };
+  });
 }
 
 export const deviceKind: FrameKind<DeviceSpec> = {
@@ -308,54 +451,49 @@ export const deviceKind: FrameKind<DeviceSpec> = {
   supportsInset: false,
   usesCardRadius: false,
   layout(spec, { plate }) {
-    const m = deviceMetrics(spec, plate);
+    const ds = deviceScreen(spec, plate);
+    const m = deviceMetrics(spec, ds.screen, ds.orientation);
+    const landscape = ds.orientation === "landscape";
+    const padW = landscape ? (spec.padAllSides ? 2 * m.p : 0) : 2 * m.p;
+    const padH = landscape ? 2 * m.p : spec.padAllSides ? 2 * m.p : 0;
+    const sx = m.body.x + m.b;
+    const sy = m.body.y + m.b;
+    const rb = ds.screenRadius + m.b;
     return {
-      size: {
-        width: m.body.width + 2 * m.p,
-        height: m.body.height + (spec.padAllSides ? 2 * m.p : 0),
-      },
-      screen: { x: m.body.x + m.b, y: m.body.y + m.b, width: plate.width, height: plate.height },
-      screenRadii: [m.rs, m.rs, m.rs, m.rs],
+      size: { width: m.body.width + padW, height: m.body.height + padH },
+      screen: { x: sx, y: sy, width: ds.screen.width, height: ds.screen.height },
+      screenRadii: [ds.screenRadius, ds.screenRadius, ds.screenRadius, ds.screenRadius],
       screenSmoothing: spec.smoothing,
-      outline: [{ rect: m.body, radii: [m.rb, m.rb, m.rb, m.rb], smoothing: spec.smoothing }],
+      outline: [{ rect: m.body, radii: [rb, rb, rb, rb], smoothing: spec.smoothing }],
+      content: { ...ds.content, x: sx + ds.content.x, y: sy + ds.content.y },
+      contentRadii: [ds.contentRadius, ds.contentRadius, ds.contentRadius, ds.contentRadius],
+      screenFill: "black",
+      orientation: ds.orientation,
     };
   },
   drawBack(ctx, spec, { ref, geometry, onePx }) {
     const t = spec.themes[ref.theme];
-    const m = deviceMetrics(spec, geometry.screen);
-    const { body, p } = m;
-    for (const btn of spec.buttons) {
-      let r: Rect;
-      if (btn.side === "top") {
-        r = {
-          x: body.x + btn.from * body.width,
-          y: body.y - p,
-          width: (btn.to - btn.from) * body.width,
-          height: 2 * p,
-        };
-      } else {
-        const x = btn.side === "left" ? body.x - p : body.x + body.width - p;
-        r = {
-          x,
-          y: body.y + btn.from * body.height,
-          width: 2 * p,
-          height: (btn.to - btn.from) * body.height,
-        };
-      }
+    const m = deviceMetrics(spec, geometry.screen, geometry.orientation);
+    const { body } = m;
+    // Screen radius comes from the layout (it may be letterboxed).
+    const rb = (geometry.screenRadii[0] ?? m.rs) + m.b;
+    for (const r of deviceButtons(spec, m)) {
       fillRoundedRect(ctx, r, Math.min(r.width, r.height) / 2, t.button);
     }
-    const g = ctx.createLinearGradient(body.x, 0, body.x + body.width, 0);
+    const g = m.landscape
+      ? ctx.createLinearGradient(0, body.y, 0, body.y + body.height)
+      : ctx.createLinearGradient(body.x, 0, body.x + body.width, 0);
     t.rim.forEach((c, i) =>
       g.addColorStop(t.rim.length > 1 ? i / (t.rim.length - 1) : 0, toCss(c)),
     );
-    fillPath(ctx, roundedRectPath(body, m.rb, spec.smoothing), g);
+    fillPath(ctx, roundedRectPath(body, rb, spec.smoothing), g);
     const inner: Rect = {
       x: body.x + m.rim,
       y: body.y + m.rim,
       width: body.width - 2 * m.rim,
       height: body.height - 2 * m.rim,
     };
-    fillRoundedRect(ctx, inner, m.rb - m.rim, t.bezel, spec.smoothing);
+    fillRoundedRect(ctx, inner, rb - m.rim, t.bezel, spec.smoothing);
     const edge: Rect = {
       x: body.x + m.rim / 2,
       y: body.y + m.rim / 2,
@@ -364,11 +502,12 @@ export const deviceKind: FrameKind<DeviceSpec> = {
     };
     strokePath(
       ctx,
-      roundedRectPath(edge, m.rb - m.rim / 2, spec.smoothing),
+      roundedRectPath(edge, rb - m.rim / 2, spec.smoothing),
       t.rimHighlight,
       Math.max(onePx, 0.35 * m.rim),
     );
     if (spec.camera.placement === "bezel" && ref.camera !== false) {
+      // Tablets keep the camera centred on the top edge in either orientation.
       const d = spec.camera.diameter * m.u;
       const cx = body.x + body.width / 2;
       const cy = body.y + m.b / 2;
@@ -379,10 +518,11 @@ export const deviceKind: FrameKind<DeviceSpec> = {
   drawFront(ctx, spec, { ref, geometry }) {
     if (spec.camera.placement !== "screen" || ref.camera === false) return;
     const t = spec.themes[ref.theme];
-    const m = deviceMetrics(spec, geometry.screen);
+    const m = deviceMetrics(spec, geometry.screen, geometry.orientation);
     const d = spec.camera.diameter * m.u;
-    const cx = m.body.x + m.body.width / 2;
-    const cy = m.body.y + m.b + (spec.camera.offset ?? 0) * m.u + d / 2;
+    const along = m.b + (spec.camera.offset ?? 0) * m.u + d / 2;
+    const cx = m.landscape ? m.body.x + along : m.body.x + m.body.width / 2;
+    const cy = m.landscape ? m.body.y + m.body.height / 2 : m.body.y + along;
     fillCircle(ctx, cx, cy, d / 2, t.camera);
     fillCircle(ctx, cx, cy, (d * 0.56) / 2, t.lens);
   },
@@ -413,13 +553,35 @@ export const laptopKind: FrameKind<LaptopSpec> = {
   supportsInset: false,
   usesCardRadius: false,
   layout(spec, { plate }) {
-    const m = laptopMetrics(spec, plate);
+    // A laptop screen keeps laptop proportions; other content is centred on its own edge colour.
+    const A = plate.width / Math.max(1e-9, plate.height);
+    const screen: Size =
+      A < spec.aspect.min
+        ? { width: plate.height * spec.aspect.min, height: plate.height }
+        : A > spec.aspect.max
+          ? { width: plate.width, height: plate.width / spec.aspect.max }
+          : plate;
+    const m = laptopMetrics(spec, screen);
     const h = m.deck.height;
     const sr = spec.screenRadiusTop * m.W;
+    const sx = m.lid.x + m.bs;
+    const letterboxed = screen !== plate;
     return {
       size: { width: m.deck.width, height: m.lid.height + h },
-      screen: { x: m.lid.x + m.bs, y: m.bt, width: plate.width, height: plate.height },
+      screen: { x: sx, y: m.bt, width: screen.width, height: screen.height },
       screenRadii: [sr, sr, 0, 0],
+      ...(letterboxed
+        ? {
+            content: {
+              x: sx + (screen.width - plate.width) / 2,
+              y: m.bt + (screen.height - plate.height) / 2,
+              width: plate.width,
+              height: plate.height,
+            },
+            contentRadii: [0, 0, 0, 0] as Radii,
+            screenFill: "edge" as const,
+          }
+        : {}),
       screenSmoothing: 0,
       outline: [
         { rect: m.lid, radii: m.lidRadii, smoothing: 0 },

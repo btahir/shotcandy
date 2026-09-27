@@ -112,8 +112,13 @@ describe("output size", () => {
         (r.canvas as { height: number }).height,
       ]).toEqual([1000 * scale, 700 * scale]);
     }
-    const auto = render(setIn(base(), ["canvas", "size"], { kind: "auto" }));
+    const auto = render(
+      setIn(setIn(base(), ["canvas", "size"], { kind: "auto" }), ["canvas", "upscale"], "off"),
+    );
     expect([auto.width, auto.height]).toEqual([960, 660]); // 800x500 + 2x100cu at 0.8 px/cu
+    // Small sources are upscaled by a whole number in auto canvases (800 px -> 2x).
+    const up = render(setIn(base(), ["canvas", "size"], { kind: "auto" }));
+    expect([up.width, up.height]).toEqual([1920, 1320]);
   });
 });
 

@@ -9,7 +9,11 @@
  * -----
  * Lengths that belong to the card (radius, border, inset, shadows, frame chrome,
  * annotation stroke widths and font sizes, and padding) are in *card units*
- * ("cu"): the screenshot's longer side is always 1000 cu. A design therefore
+ * ("cu"): the screenshot's reference side is always 1000 cu. The reference side
+ * is the longer side, capped at 1.8x the shorter one, so ordinary captures
+ * (up to 16:9) measure 1000 cu on their long side, while very tall or very
+ * wide captures scale padding, radius and shadows from their short side
+ * instead of drowning in margins (layout/layout.ts `referenceSide`). A design therefore
  * looks identical at every output size; switching from a 1200x630 Open Graph
  * canvas to a 1080x1920 story rescales the whole card instead of changing its
  * proportions. Positions of annotations are normalized (0..1) to their anchor
@@ -92,7 +96,37 @@ export interface CanvasSpec {
   size: CanvasSize;
   /** Minimum space around the card, in card units. */
   padding: number;
+  /**
+   * How the card fills a fixed or aspect canvas. "auto" (default): contain,
+   * but when that would leave wide empty bands the card grows (up to ~1.45x)
+   * and bleeds off one edge. "contain": always fully visible. "fill": grow
+   * until the loose axis is filled with padding, bleeding the rest.
+   */
+  fit?: CanvasFit;
+  /** 9-grid position of the card; with bleed the card runs off the opposite edge. */
+  anchor?: CanvasAnchor;
+  /** Fraction of the card (0..0.7) cut off by the canvas edge opposite the anchor. */
+  bleed?: number;
+  /**
+   * Small sources (long side under 1000 px) are upscaled by a whole number in
+   * auto and aspect canvases so exports are usable ("auto", default); "off"
+   * keeps native pixels.
+   */
+  upscale?: "auto" | "off";
 }
+
+export type CanvasFit = "auto" | "contain" | "fill";
+
+export type CanvasAnchor =
+  | "center"
+  | "top"
+  | "bottom"
+  | "left"
+  | "right"
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
 
 // ---------------------------------------------------------------------------
 // Background
@@ -155,6 +189,32 @@ export interface GrainSpec {
 export interface BackgroundSpec {
   fill: BackgroundFill;
   grain: GrainSpec;
+  /**
+   * App Store sets: this canvas is slide `index` of `count` slides laid side
+   * by side, and the background is painted across all of them, so it flows
+   * from one slide into the next. Absent = the background fits this canvas.
+   */
+  span?: { index: number; count: number };
+  /** Surface texture over the fill (paper fibres, canvas weave). Absent = none. */
+  texture?: TextureSpec | null;
+  /** Darkened edges and a soft light behind the card. Absent = none. */
+  vignette?: VignetteSpec | null;
+}
+
+export interface TextureSpec {
+  kind: "paper" | "canvas" | "halftone";
+  /** 0..1 */
+  amount: number;
+  seed: number;
+}
+
+export interface VignetteSpec {
+  /** Edge darkening, 0..1. */
+  amount: number;
+  /** Soft light pooled behind the card, 0..1. */
+  spotlight: number;
+  /** Vignette colour (usually a deep tone of the background). */
+  color: Color;
 }
 
 // ---------------------------------------------------------------------------
@@ -175,10 +235,25 @@ export interface CropRect {
  * rest of the pipeline.
  */
 export type Content =
-  | { kind: "image"; assetId: string | null; crop?: CropRect }
+  | ImageContent
   | { kind: "placeholder"; width: number; height: number; color: Color }
   | CodeContent
   | PostContent;
+
+export interface ImageContent {
+  kind: "image";
+  assetId: string | null;
+  crop?: CropRect;
+  /**
+   * Long captures: "auto" (default) shows the top of captures taller than 3:1,
+   * "top" always caps the height, "full" shows everything.
+   */
+  tall?: "auto" | "top" | "full";
+  /** Fade the bottom of a capped capture into its own background (0..0.5 of its height; default 0.18 when capped). */
+  fade?: number;
+  /** Upscaling filter: "auto" keeps small sources crisp (nearest neighbour) when magnified 2x or more. */
+  sampling?: "auto" | "smooth" | "pixel";
+}
 
 /**
  * Syntax-highlighting result stored with the code so rendering stays
@@ -239,7 +314,6 @@ export interface PostContent {
   accent: Color;
 }
 
-
 // ---------------------------------------------------------------------------
 // Card
 // ---------------------------------------------------------------------------
@@ -249,7 +323,11 @@ export type FrameTheme = "light" | "dark";
 export interface FrameRef {
   /** Registry id: "none", "macos", "browser", "phone", ... (see frames/). */
   id: string;
-  theme: FrameTheme;
+  /**
+   * Chrome colour. "auto" matches the screenshot: window and browser frames
+   * sample the luminance of its top rows; devices default to dark.
+   */
+  theme: FrameTheme | "auto";
   /** Window title (macOS window) */
   title: string;
   /** Address bar text (browser) */
@@ -308,6 +386,30 @@ export interface CardTransform {
   offsetY: number;
 }
 
+/** Ghost cards stacked behind the card, each with its own shadow. */
+export interface StackSpec {
+  /** Number of ghost cards (0..3). */
+  count: number;
+  /** Offset per ghost in cu (x, y) and rotation per ghost in degrees. */
+  x: number;
+  y: number;
+  rotate: number;
+  /** Shrink per ghost (0..0.2). */
+  shrink: number;
+  /** Ghost colour, or "auto" for the screenshot's own edge colour. */
+  color: Color | "auto";
+}
+
+/** A mirror image of the card on a glossy floor. */
+export interface ReflectionSpec {
+  /** Opacity at the card's bottom edge (0..1). */
+  opacity: number;
+  /** Fraction of the card height the reflection fades over (0.05..1). */
+  height: number;
+  /** Gap between card and reflection, in cu. */
+  gap: number;
+}
+
 export interface CardStyle {
   frame: FrameRef;
   /** Corner radius in cu (card outer corners, or window corners). */
@@ -319,6 +421,8 @@ export interface CardStyle {
   shadow: ShadowSpec;
   tilt: TiltSpec;
   transform: CardTransform;
+  stack?: StackSpec | null;
+  reflection?: ReflectionSpec | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -404,8 +508,13 @@ export type AnnotationKind = Annotation["kind"];
 
 /** Style-only subset of a scene, used by style presets. */
 export interface StylePatch {
-  canvas?: { padding?: number };
-  background?: { fill?: BackgroundFill; grain?: Partial<GrainSpec> };
+  canvas?: { padding?: number; fit?: CanvasFit; anchor?: CanvasAnchor; bleed?: number };
+  background?: {
+    fill?: BackgroundFill;
+    grain?: Partial<GrainSpec>;
+    texture?: TextureSpec | null;
+    vignette?: VignetteSpec | null;
+  };
   card?: {
     frame?: Partial<FrameRef>;
     radius?: number;
@@ -415,5 +524,7 @@ export interface StylePatch {
     shadow?: Partial<ShadowSpec>;
     tilt?: Partial<TiltSpec>;
     transform?: Partial<CardTransform>;
+    stack?: StackSpec | null;
+    reflection?: ReflectionSpec | null;
   };
 }

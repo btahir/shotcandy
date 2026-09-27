@@ -23,7 +23,7 @@ export const DEFAULT_BACKGROUND: BackgroundSpec = {
 };
 
 export const DEFAULT_CARD: CardStyle = {
-  frame: { id: "none", theme: "light", title: "", url: "" },
+  frame: { id: "none", theme: "auto", title: "", url: "" },
   radius: 16,
   smoothing: 0.6,
   border: { width: 0, color: "#ffffff66" },

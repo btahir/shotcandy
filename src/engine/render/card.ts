@@ -5,13 +5,15 @@
  */
 import type { AssetResolver } from "../assets/types";
 import { resolveFrame } from "../frames/registry";
-import type { SceneLayout } from "../layout/layout";
+import type { ResolvedFrameRef } from "../frames/types";
+import { type SceneLayout, contentFade, effectiveCrop } from "../layout/layout";
 import type { Palette } from "../palette/extract";
 import { roundedRectPath } from "../math/path";
 import type { Scene } from "../scene/types";
 import { drawAnnotation } from "./annotations";
 import type { RenderCache } from "./cache";
 import { getContentRenderer } from "./content";
+import { toCss } from "../math/color";
 import { clipPath, fillPath, fillRoundedRect, shapePath, withState } from "./draw";
 import type { Ctx2D, RenderEnvironment } from "./env";
 import { UI_FONT_ID, fontStack } from "./fonts";
@@ -39,9 +41,13 @@ export function drawCard(ctx: Ctx2D, scene: Scene, layout: SceneLayout, deps: Ca
 
   // 2. Frame body.
   const frame = card.frame ? resolveFrame(card.frame.id) : null;
+  const ref: ResolvedFrameRef = {
+    ...style.frame,
+    theme: style.frame.theme === "auto" ? "light" : style.frame.theme,
+  };
   const frameInput = card.frame
     ? {
-        ref: style.frame,
+        ref,
         geometry: card.frame.geometry,
         content: { width: card.content.width, height: card.content.height },
         onePx: 1 / layout.k,
@@ -55,7 +61,20 @@ export function drawCard(ctx: Ctx2D, scene: Scene, layout: SceneLayout, deps: Ca
     });
   }
 
-  // 3. Inset plate.
+  // 3. Letterboxed screens show the screenshot's own edge colour around it.
+  if (card.frame?.geometry.screenFill === "edge" && card.frame.geometry.content) {
+    const g = card.frame.geometry;
+    const o = card.frame.origin;
+    fillRoundedRect(
+      ctx,
+      { ...g.screen, x: g.screen.x + o.x, y: g.screen.y + o.y },
+      g.screenRadii,
+      deps.palette?.edge ?? "#ffffff",
+      g.screenSmoothing,
+    );
+  }
+
+  // 3b. Inset plate.
   if (card.inset > 0) {
     const color =
       style.inset.color === "auto" ? (deps.palette?.edge ?? "#ffffff") : style.inset.color;
@@ -74,6 +93,24 @@ export function drawCard(ctx: Ctx2D, scene: Scene, layout: SceneLayout, deps: Ca
       rect: card.content,
       pixelRatio: deps.pixelRatio,
     });
+    // A long capture capped to its top fades into its own background.
+    const c = scene.content;
+    const src = c.kind === "image" && c.assetId ? deps.assets.get(c.assetId) : undefined;
+    if (c.kind === "image" && src) {
+      const { capped } = effectiveCrop(c, src, style.frame.id);
+      const fade = contentFade(c, capped);
+      if (fade > 0) {
+        const r = card.content;
+        const y0 = r.y + r.height * (1 - fade);
+        const edge = deps.palette?.edge ?? "#ffffff";
+        const g = ctx.createLinearGradient(0, y0, 0, r.y + r.height);
+        g.addColorStop(0, toCss(edge, 0));
+        g.addColorStop(0.55, toCss(edge, 0.7));
+        g.addColorStop(1, toCss(edge, 1));
+        ctx.fillStyle = g;
+        ctx.fillRect(r.x, y0, r.width, r.y + r.height - y0);
+      }
+    }
   });
 
   // 5. Frame overlays (islands, hairline outlines).

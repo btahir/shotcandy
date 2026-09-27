@@ -13,7 +13,15 @@ import { coverRect, containRect, degToRad } from "../math/geometry";
 import { mulberry32, stableStringify } from "../math/random";
 import type { Palette } from "../palette/extract";
 import { resolveAutoFill } from "../palette/suggest";
-import type { BackgroundFill, GradientStop, GrainSpec, MeshPoint } from "../scene/types";
+import type {
+  BackgroundFill,
+  GradientStop,
+  GrainSpec,
+  MeshPoint,
+  TextureSpec,
+  VignetteSpec,
+} from "../scene/types";
+import { ditherRegion, drawTexture, drawVignette } from "./backdrop";
 import type { RenderCache } from "./cache";
 import { type Ctx2D, type RenderEnvironment, get2d, makeImageData } from "./env";
 
@@ -49,6 +57,23 @@ export function linearGradientLine(angleDeg: number, w: number, h: number) {
   };
 }
 
+export interface BackdropExtras {
+  texture?: TextureSpec | null;
+  vignette?: VignetteSpec | null;
+  /** Where the spotlight pools (the card centre), device px. */
+  focus?: { x: number; y: number };
+}
+
+/** Smooth fills that band in 8 bits and get dithered. */
+function bands(fill: BackgroundFill): boolean {
+  return (
+    fill.kind === "linear" ||
+    fill.kind === "radial" ||
+    fill.kind === "conic" ||
+    fill.kind === "mesh"
+  );
+}
+
 export function drawBackground(
   ctx: Ctx2D,
   fill: BackgroundFill,
@@ -56,9 +81,31 @@ export function drawBackground(
   w: number,
   h: number,
   deps: BackgroundDeps,
+  extras: BackdropExtras = {},
 ): void {
-  drawFill(ctx, fill, w, h, deps);
-  if (grain.amount > 0 && fill.kind !== "none") drawGrain(ctx, grain, w, h, deps);
+  const resolved = fill.kind === "auto" ? resolveAutoFill(fill, deps.palette) : fill;
+  const W = Math.round(w);
+  const H = Math.round(h);
+  if (bands(resolved) && W > 0 && H > 0 && W * H <= 40e6) {
+    // Gradients are dithered (+-1 LSB) so 8-bit steps never show as bands.
+    const key = `bgfill:${W}x${H}:${stableStringify(resolved)}`;
+    const canvas = deps.cache.get(key, () => {
+      const c = deps.env.createCanvas(W, H);
+      const g = get2d(c, { willReadFrequently: true });
+      drawFill(g, resolved, W, H, deps);
+      ditherRegion(g, W, H);
+      return { value: c, bytes: W * H * 4 };
+    });
+    ctx.drawImage(canvas, 0, 0);
+  } else {
+    drawFill(ctx, resolved, w, h, deps);
+  }
+  if (fill.kind === "none") return;
+  if (grain.amount > 0) drawGrain(ctx, grain, w, h, deps);
+  if (extras.texture && extras.texture.amount > 0) drawTexture(ctx, extras.texture, w, h, deps);
+  if (extras.vignette && (extras.vignette.amount > 0 || extras.vignette.spotlight > 0)) {
+    drawVignette(ctx, extras.vignette, w, h, extras.focus ?? { x: w / 2, y: h / 2 });
+  }
 }
 
 function drawFill(

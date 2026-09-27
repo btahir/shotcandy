@@ -11,6 +11,9 @@ import type { Radii, Rect, Size } from "../math/geometry";
 import type { Ctx2D } from "../render/env";
 import type { FrameRef, FrameTheme } from "../scene/types";
 
+/** A frame reference whose theme has been resolved (no "auto"). */
+export type ResolvedFrameRef = Omit<FrameRef, "theme"> & { theme: FrameTheme };
+
 /** A rounded-rect silhouette in card units. */
 export interface Shape {
   rect: Rect;
@@ -28,6 +31,16 @@ export interface FrameGeometry {
   screenSmoothing: number;
   /** Silhouette used for shadows and the border ring (buttons excluded). */
   outline: Shape[];
+  /**
+   * Where the content sits when it does not fill the screen (device safe
+   * areas, letterboxing). Absent = the content fills the screen.
+   */
+  content?: Rect;
+  contentRadii?: Radii;
+  /** What shows around letterboxed content: the display's black, or the screenshot's own edge colour. */
+  screenFill?: "black" | "edge";
+  /** Device orientation (landscape rotates buttons and moves the camera to a short edge). */
+  orientation?: "portrait" | "landscape";
 }
 
 export interface FrameLayoutInput {
@@ -41,7 +54,7 @@ export interface FrameLayoutInput {
 }
 
 export interface FrameDrawInput {
-  ref: FrameRef;
+  ref: ResolvedFrameRef;
   geometry: FrameGeometry;
   /** Size of the content alone, in card units. */
   content: Size;
@@ -159,6 +172,14 @@ export interface DeviceSpec {
   camera: { placement: "screen" | "bezel"; diameter: number; offset?: number };
   buttons: DeviceButton[];
   smoothing: number;
+  /**
+   * Screen proportions (long side / short side) the device can have. Content
+   * outside this range is letterboxed inside a plausible screen instead of
+   * stretching the device into an odd slab.
+   */
+  aspect: { min: number; max: number };
+  /** Portrait content in this range fills the screen edge to edge (it was captured on such a device). */
+  fullBleed?: { min: number; max: number };
   themes: Record<FrameTheme, DeviceTheme>;
 }
 
@@ -196,6 +217,8 @@ export interface LaptopSpec {
     /** Fraction of deck height. */
     notchDepth: number;
   };
+  /** Screen proportions (width / height); other content is letterboxed on its own edge colour. */
+  aspect: { min: number; max: number };
   themes: Record<FrameTheme, LaptopTheme>;
 }
 

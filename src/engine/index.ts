@@ -38,11 +38,21 @@ export {
   canvasToContent,
   hitContent,
   outputSize,
+  referenceSide,
+  effectiveCrop,
+  upscaleFactor,
   CONTENT_UNITS,
   MAX_CANVAS_SIDE,
+  TALL_THRESHOLD,
   type SceneLayout,
   type CardGeometry,
 } from "./layout/layout";
+export {
+  sourceAdvice,
+  themeForLightness,
+  topBandLightness,
+  type SourceAdvice,
+} from "./analysis/tone";
 export type { Point, Size, Rect, Radii } from "./math/geometry";
 
 // Rendering
@@ -51,6 +61,7 @@ export {
   renderToCanvas,
   layoutScene,
   scenePalette,
+  resolveFrameTheme,
   type RenderOptions,
   type RenderResult,
 } from "./render/render";
@@ -114,6 +125,27 @@ export {
   type PostTheme,
   type PostStyle,
 } from "./post/themes";
+
+// App Store screenshot sets (packing lives in appstore/pack.ts: import it lazily)
+export {
+  createSet,
+  createSetTemplate,
+  slideScene,
+  normalizeSet,
+  setCanvasSize,
+  newSlideId,
+  headlineWidth,
+  isTabletSize,
+  APPSTORE_SIZES,
+  SET_STYLES,
+  SET_MIN_SLIDES,
+  SET_MAX_SLIDES,
+  getSetStyle,
+  type AppStoreSet,
+  type AppStoreSlide,
+  type SetText,
+  type SetStyle,
+} from "./appstore/set";
 
 // Frames
 export {

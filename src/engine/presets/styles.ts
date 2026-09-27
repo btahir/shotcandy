@@ -23,10 +23,10 @@ export interface StylePreset {
 
 /** Every style field, at neutral values; each preset patch is merged over it. */
 export const STYLE_BASE: StylePatch = {
-  canvas: { padding: 80 },
-  background: { grain: { amount: 0, size: 1, seed: 7 } },
+  canvas: { padding: 80, anchor: "center", bleed: 0 },
+  background: { grain: { amount: 0, size: 1, seed: 7 }, texture: null, vignette: null },
   card: {
-    frame: { id: "none", theme: "light" },
+    frame: { id: "none", theme: "auto" },
     radius: 14,
     smoothing: 0.6,
     border: { width: 0, color: "#ffffff66" },
@@ -34,12 +34,17 @@ export const STYLE_BASE: StylePatch = {
     shadow: { preset: "soft", strength: 1, color: "#000000" },
     tilt: { rotateX: 0, rotateY: 0, rotateZ: 0, perspective: 3 },
     transform: { scale: 1, offsetX: 0, offsetY: 0 },
+    stack: null,
+    reflection: null,
   },
 };
 
 /** A preset patch as authored: `background.fill` may be an "@backgroundId" reference. */
 type RawPatch = Omit<StylePatch, "background"> & {
-  background?: { fill?: unknown; grain?: Partial<GrainSpec> };
+  background?: Omit<NonNullable<StylePatch["background"]>, "fill" | "grain"> & {
+    fill?: unknown;
+    grain?: Partial<GrainSpec>;
+  };
 };
 
 /** Resolve `@backgroundId` references and complete the patch against STYLE_BASE. */
@@ -53,7 +58,9 @@ export function completeStylePatch(raw: RawPatch): StylePatch {
     fill = ref.fill;
     grain = { ...ref.grain, ...(grain ?? {}) };
   }
-  const merged = deepMerge(STYLE_BASE, { ...raw, background: { grain } });
+  const { fill: _fill, ...rest } = bg;
+  void _fill;
+  const merged = deepMerge(STYLE_BASE, { ...raw, background: { ...rest, grain } });
   return fill === undefined
     ? merged
     : { ...merged, background: { ...merged.background, fill: fill as never } };

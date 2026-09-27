@@ -26,9 +26,22 @@ export function deepMerge<T>(base: T, patch: unknown): T {
   return out as T;
 }
 
+/** Optional style layers a patch clears with `null` (the key is then removed). */
+function dropCleared<T extends object>(obj: T, keys: readonly string[]): T {
+  if (!keys.some((k) => (obj as Record<string, unknown>)[k] === null)) return obj;
+  const out = { ...obj } as Record<string, unknown>;
+  for (const k of keys) if (out[k] === null) delete out[k];
+  return out as T;
+}
+
 /** Apply a style preset: only style fields change; content, size and annotations stay. */
 export function applyStylePatch(scene: Scene, patch: StylePatch, presetId?: string): Scene {
-  const next = deepMerge(scene, patch as unknown as Partial<Scene>);
+  const merged = deepMerge(scene, patch as unknown as Partial<Scene>);
+  const next: Scene = {
+    ...merged,
+    background: dropCleared(merged.background, ["texture", "vignette"]),
+    card: dropCleared(merged.card, ["stack", "reflection"]),
+  };
   return presetId ? { ...next, meta: { ...next.meta, stylePresetId: presetId } } : next;
 }
 
@@ -36,8 +49,16 @@ export function applyStylePatch(scene: Scene, patch: StylePatch, presetId?: stri
 export function extractStylePatch(scene: Scene): StylePatch {
   const { card, background, canvas } = JSON.parse(JSON.stringify(scene)) as Scene;
   return {
-    canvas: { padding: canvas.padding },
-    background,
+    canvas: {
+      padding: canvas.padding,
+      anchor: canvas.anchor ?? "center",
+      bleed: canvas.bleed ?? 0,
+    },
+    background: {
+      ...background,
+      texture: background.texture ?? null,
+      vignette: background.vignette ?? null,
+    },
     card: {
       frame: { id: card.frame.id, theme: card.frame.theme },
       radius: card.radius,
@@ -47,6 +68,8 @@ export function extractStylePatch(scene: Scene): StylePatch {
       shadow: card.shadow,
       tilt: card.tilt,
       transform: card.transform,
+      stack: card.stack ?? null,
+      reflection: card.reflection ?? null,
     },
   };
 }

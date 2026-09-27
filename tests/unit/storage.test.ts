@@ -72,7 +72,7 @@ describe.each(factories)("%s store", (_name, make) => {
     });
     const p = (await store.presets.get("p"))!;
     expect(p.patch.card!.radius).toBe(500);
-    expect(p.patch.card!.frame).toEqual({ id: "macos", theme: "light" });
+    expect(p.patch.card!.frame).toEqual({ id: "macos", theme: "auto" });
     expect(p.patch.background!.fill).toEqual({ kind: "solid", color: "#aabbcc" });
     expect(p.patch.canvas).toBeUndefined();
   });

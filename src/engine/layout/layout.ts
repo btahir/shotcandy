@@ -5,8 +5,15 @@
  *
  * Coordinate systems
  *  - card units (cu): card-local, origin at the card's top-left (including the
- *    border ring); the content's longer side is 1000 cu.
+ *    border ring); the content's reference side is 1000 cu (see referenceSide).
  *  - canvas px: output pixels at scale 1. Export multiplies by an integer scale.
+ *
+ * Composition
+ *  The card sits in a "design box": the card plus padding, minus whatever part
+ *  bleeds off the canvas (anchor + bleed). Auto canvases are the design box;
+ *  aspect and fixed canvases place the box by anchor, lift it optically when
+ *  there is room, and (fit "auto"/"fill") grow the card to remove dead bands,
+ *  letting it bleed off one edge instead.
  */
 import { resolveFrame } from "../frames/registry";
 import type { FrameGeometry, Shape } from "../frames/types";
@@ -30,10 +37,13 @@ import {
   tiltHomography,
   translation,
 } from "../math/matrix";
-import type { Scene } from "../scene/types";
+import { resolveShadowLayers } from "../presets/shadows";
+import type { CanvasAnchor, CropRect, ImageContent, Scene } from "../scene/types";
 
-/** Longest side of the content, in card units. */
+/** Reference side of the content, in card units. */
 export const CONTENT_UNITS = 1000;
+/** The reference side is the long side, capped at this multiple of the short side. */
+export const REFERENCE_ASPECT_CAP = 1.8;
 /** Largest canvas side at 1x (browsers cap canvases around 16k-32k px). */
 export const MAX_CANVAS_SIDE = 16384;
 
@@ -71,13 +81,71 @@ export interface SceneLayout {
   contentPixels: Size;
 }
 
-/** Content size in cu for a natural pixel size (longer side = 1000 cu). */
+/**
+ * The side of the content that measures 1000 cu: the longer side, capped at
+ * 1.8x the shorter one. Up to 16:9 this is simply the long side; a 1:10
+ * full-page capture measures its padding, radius and shadows from its width
+ * instead of its enormous height.
+ */
+export function referenceSide(px: Size): number {
+  const long = Math.max(px.width, px.height, 1e-9);
+  const short = Math.max(Math.min(px.width, px.height), 1e-9);
+  return Math.min(long, REFERENCE_ASPECT_CAP * short);
+}
+
+/** Content size in cu for a natural pixel size (reference side = 1000 cu). */
 export function contentUnits(px: Size): Size {
-  const m = Math.max(px.width, px.height, 1e-9);
+  const m = referenceSide(px);
   return {
     width: (px.width / m) * CONTENT_UNITS,
     height: (px.height / m) * CONTENT_UNITS,
   };
+}
+
+// ----------------------------------------------------------------------------
+// Long captures: show the top of very tall screenshots
+// ----------------------------------------------------------------------------
+
+const FULL_CROP: CropRect = { x: 0, y: 0, width: 1, height: 1 };
+/** Captures taller than this (height / width) are capped when `tall` is "auto". */
+export const TALL_THRESHOLD = 3;
+
+/** Height / width the visible top of a long capture is capped to, by frame. */
+export function tallCap(frameId: string, widthPx: number): number {
+  if (frameId === "phone") return 19.5 / 9;
+  if (frameId === "tablet") return 1.4;
+  if (frameId === "laptop") return 0.625;
+  // Narrow captures are phone pages; wide ones are desktop pages.
+  return widthPx <= 1290 ? 19.5 / 9 : 0.75;
+}
+
+export interface EffectiveCrop {
+  crop: CropRect;
+  /** True when a long capture was capped to its top. */
+  capped: boolean;
+}
+
+/** The crop actually drawn: the user's crop, capped to the top for long captures. */
+export function effectiveCrop(
+  content: ImageContent,
+  assetSize: Size | null,
+  frameId: string,
+): EffectiveCrop {
+  const base = content.crop ?? FULL_CROP;
+  if (!assetSize || content.tall === "full") return { crop: base, capped: false };
+  const w = assetSize.width * base.width;
+  const h = assetSize.height * base.height;
+  const aspect = h / Math.max(1e-9, w);
+  const cap = tallCap(frameId, w);
+  const limit = content.tall === "top" || aspect > TALL_THRESHOLD ? cap : Infinity;
+  if (aspect <= limit + 1e-9) return { crop: base, capped: false };
+  return { crop: { ...base, height: base.height * (limit / aspect) }, capped: true };
+}
+
+/** Bottom fade (fraction of content height) for a capped long capture. */
+export function contentFade(content: ImageContent, capped: boolean): number {
+  if (!capped) return 0;
+  return Math.min(0.5, Math.max(0, content.fade ?? 0.18));
 }
 
 function offsetShape(s: Shape, dx: number, dy: number): Shape {
@@ -147,15 +215,19 @@ export function computeCardGeometry(scene: Scene, contentPx: Size): CardGeometry
   plateRect = { ...plateRect, x: plateRect.x + dx, y: plateRect.y + dy };
   if (frame) frame = { ...frame, origin: { x: dx, y: dy } };
 
-  const content: Rect = {
-    x: plateRect.x + inset,
-    y: plateRect.y + inset,
-    width: c.width,
-    height: c.height,
-  };
-  const contentRadii = plateRadii.map((r) =>
-    r > 0 ? Math.max(0, r - inset) : 0,
-  ) as unknown as Radii;
+  const geoContent = frame?.geometry.content;
+  const content: Rect = geoContent
+    ? { ...geoContent, x: geoContent.x + dx, y: geoContent.y + dy }
+    : {
+        x: plateRect.x + inset,
+        y: plateRect.y + inset,
+        width: c.width,
+        height: c.height,
+      };
+  const contentRadii =
+    geoContent && frame?.geometry.contentRadii
+      ? frame.geometry.contentRadii
+      : (plateRadii.map((r) => (r > 0 ? Math.max(0, r - inset) : 0)) as unknown as Radii);
 
   return {
     size: { width: bounds.width, height: bounds.height },
@@ -178,8 +250,8 @@ export function contentPixelSize(scene: Scene, assetSize: Size | null): Size {
   // Other kinds (code, posts, ...) report their natural size via the content registry.
   if (content.kind !== "image") return assetSize ?? { width: 1600, height: 1000 };
   const base = assetSize ?? { width: 1600, height: 1000 };
-  const crop = content.crop;
-  if (!crop) return base;
+  const crop = effectiveCrop(content, assetSize, scene.card.frame.id).crop;
+  if (crop === FULL_CROP) return base;
   return {
     width: Math.max(1, base.width * crop.width),
     height: Math.max(1, base.height * crop.height),
@@ -204,12 +276,12 @@ export function computeLayout(scene: Scene, assetSize: Size | null): SceneLayout
     height: card.size.height,
   }).map((p) => applyMat3(H, p));
   const bbox = boundsOfPoints(projected);
-  const pad = scene.canvas.padding;
-  const fitW = bbox.width + 2 * pad;
-  const fitH = bbox.height + 2 * pad;
 
-  // Pixels per cu at the content's native resolution.
-  let kNat = Math.max(contentPx.width, contentPx.height) / CONTENT_UNITS;
+  // Composition in card units: canvas size and where the card's bbox sits.
+  const comp = compose(scene, bbox.width, bbox.height, shadowDrop(scene));
+
+  // Pixels per cu at the content's native resolution (small sources upscaled by a whole number).
+  let kNat = (referenceSide(contentPx) / CONTENT_UNITS) * upscaleFactor(scene, contentPx);
   const size = scene.canvas.size;
   let canvas: Size;
   let kFit: number;
@@ -218,29 +290,24 @@ export function computeLayout(scene: Scene, assetSize: Size | null): SceneLayout
 
   if (size.kind === "fixed") {
     canvas = { width: size.width, height: size.height };
-    kFit = Math.min(size.width / fitW, size.height / fitH);
+    kFit = Math.min(size.width / comp.width, size.height / comp.height);
   } else {
-    kNat *= cap(fitW * kNat, fitH * kNat);
-    let w = fitW * kNat;
-    let h = fitH * kNat;
-    if (size.kind === "aspect") {
-      const r = size.ratioW / size.ratioH;
-      if (w / h < r) w = h * r;
-      else h = w / r;
-      const c2 = cap(w, h);
-      w *= c2;
-      h *= c2;
-      kNat *= c2;
-    }
-    canvas = { width: Math.max(1, Math.round(w)), height: Math.max(1, Math.round(h)) };
+    kNat *= cap(comp.width * kNat, comp.height * kNat);
+    canvas = {
+      width: Math.max(1, Math.round(comp.width * kNat)),
+      height: Math.max(1, Math.round(comp.height * kNat)),
+    };
     // Keep the native scale exactly (not the rounded fit) so a 1x export shows
     // the screenshot pixel-for-pixel with no resampling.
     kFit = kNat;
   }
 
   const k = kFit * transform.scale;
-  const cx = canvas.width / 2 + transform.offsetX * canvas.width;
-  const cy = canvas.height / 2 + transform.offsetY * canvas.height;
+  // Centre of the card's bbox in canvas px (fixed canvases centre the composition).
+  const ox = (canvas.width - comp.width * kFit) / 2;
+  const oy = (canvas.height - comp.height * kFit) / 2;
+  const cx = ox + (comp.cardX + bbox.width / 2) * kFit + transform.offsetX * canvas.width;
+  const cy = oy + (comp.cardY + bbox.height / 2) * kFit + transform.offsetY * canvas.height;
   const bboxCx = bbox.x + bbox.width / 2;
   const bboxCy = bbox.y + bbox.height / 2;
 
@@ -290,6 +357,161 @@ export function computeLayout(scene: Scene, assetSize: Size | null): SceneLayout
     perspective,
     cardQuad: quad,
     contentPixels: contentPx,
+  };
+}
+
+// ----------------------------------------------------------------------------
+// Composition
+// ----------------------------------------------------------------------------
+
+const ANCHORS: Record<CanvasAnchor, [number, number]> = {
+  center: [0, 0],
+  top: [0, -1],
+  bottom: [0, 1],
+  left: [-1, 0],
+  right: [1, 0],
+  "top-left": [-1, -1],
+  "top-right": [1, -1],
+  "bottom-left": [-1, 1],
+  "bottom-right": [1, 1],
+};
+
+/** Composition result in card units: canvas size and the card bbox's top-left. */
+export interface Composition {
+  width: number;
+  height: number;
+  cardX: number;
+  cardY: number;
+  /** Axes on which the card runs off the canvas. */
+  bleedX: boolean;
+  bleedY: boolean;
+}
+
+/** Visible drop of the card's shadow (cu), used to lift the card optically. */
+function shadowDrop(scene: Scene): number {
+  let drop = 0;
+  for (const l of resolveShadowLayers(scene.card.shadow)) drop = Math.max(drop, l.y * l.opacity);
+  return drop;
+}
+
+/** Whole-number upscale for small sources in auto and aspect canvases. */
+export function upscaleFactor(scene: Scene, contentPx: Size): number {
+  if (scene.canvas.upscale === "off" || scene.canvas.size.kind === "fixed") return 1;
+  if (scene.content.kind !== "image") return 1;
+  const long = Math.max(contentPx.width, contentPx.height);
+  if (long >= 1000) return 1;
+  return Math.min(8, Math.max(1, Math.ceil(1200 / Math.max(1, long))));
+}
+
+/** "auto" fit: grow when a band wider than this share of the canvas is left, up to this factor. */
+const AUTO_BAND = 0.22;
+const AUTO_GROW_MAX = 1.5;
+
+/**
+ * Place a card (bbox bw x bh cu) with padding p on the canvas described by the
+ * scene: returns the canvas size in cu and the bbox position.
+ */
+export function compose(scene: Scene, bw: number, bh: number, drop = 0): Composition {
+  const p = scene.canvas.padding;
+  const [ax0, ay0] = ANCHORS[scene.canvas.anchor ?? "center"] ?? [0, 0];
+  const bleed = Math.min(0.7, Math.max(0, scene.canvas.bleed ?? 0));
+  let ax = ax0;
+  let ay = ay0;
+  let bleedX = ax !== 0 && bleed > 0;
+  let bleedY = ay !== 0 && bleed > 0;
+  // A reflection needs floor space below the card (unless the card bleeds off the bottom).
+  const refl = scene.card.reflection;
+  const floor =
+    refl && refl.opacity > 0 && !(bleedY && ay < 0)
+      ? Math.max(0, Math.min(1, refl.height)) * bh * 0.62 + refl.gap
+      : 0;
+  const dW = bleedX ? bw * (1 - bleed) + p : bw + 2 * p;
+  const dH = (bleedY ? bh * (1 - bleed) + p : bh + 2 * p) + floor;
+  const size = scene.canvas.size;
+
+  if (size.kind === "auto") {
+    return {
+      width: dW,
+      height: dH,
+      cardX: bleedX && ax > 0 ? dW - p - bw : p,
+      cardY: bleedY && ay > 0 ? dH - p - bh - floor : p,
+      bleedX,
+      bleedY,
+    };
+  }
+
+  const r = size.kind === "fixed" ? size.width / size.height : size.ratioW / size.ratioH;
+  // Contain: the design box fits; one axis has leftover space.
+  let W = Math.max(dW, dH * r);
+  let Hc = W / r;
+  const fit = scene.canvas.fit ?? "auto";
+  const looseX = W - dW > Hc - dH;
+  const band = looseX ? (W - dW) / W : (Hc - dH) / Hc;
+  const tightBled = looseX ? bleedY : bleedX;
+  if (fit === "fill" || (fit === "auto" && band > AUTO_BAND)) {
+    // Grow the card (shrink the canvas in cu). First until the tight axis keeps
+    // half its padding; if a wide band is still left, let the card bleed off
+    // one edge, keeping most of it visible.
+    const Cl = looseX ? W : Hc;
+    const Ct = looseX ? Hc : W;
+    const bt = looseX ? bh : bw;
+    const looseBled = looseX ? bleedX : bleedY;
+    const cap = fit === "fill" ? Infinity : AUTO_GROW_MAX;
+    // Loose axis snug: the whole design box along it (its own bleed included).
+    const gLoose = Cl / (looseX ? dW : dH);
+    // Tight axis: keep half the padding, or (if it already bleeds) half the card.
+    const gTight = tightBled ? Ct / (0.5 * bt + p) : Ct / (bt + p);
+    let g = Math.min(gLoose, gTight, cap);
+    const bandAfter = (Cl / g - (looseX ? dW : dH)) / (Cl / g);
+    // Only bare or windowed screenshots may be cropped by the canvas edge on
+    // their own; code, cards and devices stay whole unless a style bleeds them.
+    const device = resolveFrame(scene.card.frame.id)?.kind.supportsInset === false;
+    const croppable =
+      (scene.content.kind === "image" || scene.content.kind === "placeholder") &&
+      (!device || fit === "fill");
+    if (croppable && !tightBled && (fit === "fill" || bandAfter > 0.22 || looseBled)) {
+      const minVisible = fit === "fill" ? 0.45 : 0.7;
+      const gBleedMin = Ct / (0.9 * bt + p); // at least 10 % actually bleeds
+      const gVis = Ct / (minVisible * bt + p);
+      const gb = Math.min(gLoose, gVis, cap);
+      if (gb >= gBleedMin && gb > g) {
+        g = gb;
+        if (looseX) {
+          bleedY = true;
+          if (ay === 0) ay = -1;
+        } else {
+          bleedX = true;
+          if (ax === 0) ax = -1;
+        }
+      }
+    }
+    if (g > 1.005) {
+      W /= g;
+      Hc /= g;
+    }
+  }
+
+  const axis = (C: number, b: number, a: number, bled: boolean, lift: number) => {
+    if (bled) {
+      // Card held at the anchored edge's padding, running off the far edge; if
+      // it would stop short of the far edge, slide it there so the bleed is real.
+      const t = bleed > 0 ? 1 - bleed : 0.9;
+      return a > 0 ? Math.min(C - p - b, -b * (1 - t)) : Math.max(p, C - b * t);
+    }
+    const free = C - b - 2 * p;
+    if (free <= 0) return (C - b) / 2;
+    return p + (free * (a + 1)) / 2 - (a === 0 ? Math.min(free / 2, lift) : 0);
+  };
+  // The floor under a reflected card counts as part of the card for placement.
+  // Optical centre: a touch above the middle, more when a long shadow falls below.
+  const lift = 0.02 * Hc + 0.35 * drop;
+  return {
+    width: W,
+    height: Hc,
+    cardX: axis(W, bw, ax, bleedX, 0),
+    cardY: axis(Hc, bh + floor, ay, bleedY, floor > 0 ? 0 : lift),
+    bleedX,
+    bleedY,
   };
 }
 

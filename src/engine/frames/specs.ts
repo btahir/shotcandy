@@ -38,7 +38,7 @@ export const PHONE: DeviceSpec = {
   kind: "device",
   id: "phone",
   label: "Phone",
-  unit: "width",
+  unit: "short",
   bezel: frames.phone.bezel,
   rim: frames.phone.rim,
   screenRadius: frames.phone.screenRadius,
@@ -51,6 +51,8 @@ export const PHONE: DeviceSpec = {
   },
   buttons: buttons(frames.phone.buttons),
   smoothing: 0,
+  aspect: { min: 1.9, max: 2.4 },
+  fullBleed: { min: 1.8, max: 2.5 },
   themes: frames.phone.themes,
 };
 
@@ -70,6 +72,7 @@ export const TABLET: DeviceSpec = {
   },
   buttons: buttons(frames.tablet.buttons),
   smoothing: 0,
+  aspect: { min: 1.25, max: 1.6 },
   themes: frames.tablet.themes,
 };
 
@@ -87,6 +90,7 @@ export const LAPTOP: LaptopSpec = {
   camera: frames.laptop.camera,
   hinge: frames.laptop.hinge,
   deck: frames.laptop.deck,
+  aspect: { min: 1.45, max: 1.78 },
   themes: frames.laptop.themes,
 };
 

@@ -23,6 +23,12 @@ import type {
   MeshPoint,
   Scene,
   ShadowLayer,
+  ImageContent,
+  StackSpec,
+  ReflectionSpec,
+  TextureSpec,
+  VignetteSpec,
+  CanvasSpec,
 } from "./types";
 import { SCENE_VERSION } from "./types";
 
@@ -232,10 +238,47 @@ function fill(c: Ctx, v: unknown): BackgroundFill {
   }
 }
 
+function texture(c: Ctx, v: unknown): TextureSpec | undefined {
+  if (v === undefined || v === null) return undefined;
+  const o = obj(c, "background.texture", v);
+  return {
+    kind: oneOf(
+      c,
+      "background.texture.kind",
+      o.kind,
+      ["paper", "canvas", "halftone"] as const,
+      "paper",
+    ),
+    amount: num(c, "background.texture.amount", o.amount, 0.5, 0, 1),
+    seed: Math.round(num(c, "background.texture.seed", o.seed, 1, 0, 2 ** 31)),
+  };
+}
+
+function vignette(c: Ctx, v: unknown): VignetteSpec | undefined {
+  if (v === undefined || v === null) return undefined;
+  const o = obj(c, "background.vignette", v);
+  return {
+    amount: num(c, "background.vignette.amount", o.amount, 0.4, 0, 1),
+    spotlight: num(c, "background.vignette.spotlight", o.spotlight, 0, 0, 1),
+    color: color(c, "background.vignette.color", o.color, "#000000"),
+  };
+}
+
 function background(c: Ctx, v: unknown): BackgroundSpec {
   const o = obj(c, "background", v);
   const g = obj(c, "background.grain", o.grain);
+  const tex = texture(c, o.texture);
+  const vig = vignette(c, o.vignette);
+  const sp = obj(c, "background.span", o.span);
+  const count = Math.round(num(c, "background.span.count", sp.count, 1, 1, 20));
+  const span =
+    o.span !== undefined && count > 1
+      ? { index: Math.round(num(c, "background.span.index", sp.index, 0, 0, count - 1)), count }
+      : null;
   return {
+    ...(span ? { span } : {}),
+    ...(tex ? { texture: tex } : {}),
+    ...(vig ? { vignette: vig } : {}),
     fill: o.fill === undefined ? structuredClone(DEFAULT_BACKGROUND.fill) : fill(c, o.fill),
     grain: {
       amount: num(c, "background.grain.amount", g.amount, 0, 0, 1),
@@ -305,7 +348,18 @@ function content(c: Ctx, v: unknown): Content {
     };
   }
   const assetId = typeof o.assetId === "string" && o.assetId ? o.assetId : null;
-  const out: Content = { kind: "image", assetId };
+  const out: ImageContent = { kind: "image", assetId };
+  if (o.tall !== undefined)
+    out.tall = oneOf(c, "content.tall", o.tall, ["auto", "top", "full"] as const, "auto");
+  if (o.fade !== undefined) out.fade = num(c, "content.fade", o.fade, 0.18, 0, 0.5);
+  if (o.sampling !== undefined)
+    out.sampling = oneOf(
+      c,
+      "content.sampling",
+      o.sampling,
+      ["auto", "smooth", "pixel"] as const,
+      "auto",
+    );
   if (o.crop !== undefined) {
     const cr = obj(c, "content.crop", o.crop);
     const x = num(c, "content.crop.x", cr.x, 0, 0, 1);
@@ -359,6 +413,54 @@ function shadowLayers(c: Ctx, v: unknown): ShadowLayer[] | undefined {
     });
 }
 
+function stackSpec(c: Ctx, v: unknown): StackSpec | undefined {
+  if (v === undefined || v === null) return undefined;
+  const o = obj(c, "card.stack", v);
+  return {
+    count: Math.round(num(c, "card.stack.count", o.count, 2, 0, 3)),
+    x: num(c, "card.stack.x", o.x, 0, -300, 300),
+    y: num(c, "card.stack.y", o.y, -24, -300, 300),
+    rotate: num(c, "card.stack.rotate", o.rotate, 0, -30, 30),
+    shrink: num(c, "card.stack.shrink", o.shrink, 0.05, 0, 0.2),
+    color: o.color === "auto" ? "auto" : color(c, "card.stack.color", o.color, "auto" as string),
+  };
+}
+
+function reflectionSpec(c: Ctx, v: unknown): ReflectionSpec | undefined {
+  if (v === undefined || v === null) return undefined;
+  const o = obj(c, "card.reflection", v);
+  return {
+    opacity: num(c, "card.reflection.opacity", o.opacity, 0.25, 0, 1),
+    height: num(c, "card.reflection.height", o.height, 0.35, 0.05, 1),
+    gap: num(c, "card.reflection.gap", o.gap, 6, 0, 200),
+  };
+}
+
+const ANCHOR_IDS = [
+  "center",
+  "top",
+  "bottom",
+  "left",
+  "right",
+  "top-left",
+  "top-right",
+  "bottom-left",
+  "bottom-right",
+] as const;
+
+/** Optional composition fields of the canvas (absent stays absent). */
+function composition(c: Ctx, cv: Record<string, unknown>): Partial<CanvasSpec> {
+  const out: Partial<CanvasSpec> = {};
+  if (cv.fit !== undefined)
+    out.fit = oneOf(c, "canvas.fit", cv.fit, ["auto", "contain", "fill"] as const, "auto");
+  if (cv.anchor !== undefined)
+    out.anchor = oneOf(c, "canvas.anchor", cv.anchor, ANCHOR_IDS, "center");
+  if (cv.bleed !== undefined) out.bleed = num(c, "canvas.bleed", cv.bleed, 0, 0, 0.7);
+  if (cv.upscale !== undefined)
+    out.upscale = oneOf(c, "canvas.upscale", cv.upscale, ["auto", "off"] as const, "auto");
+  return out;
+}
+
 function card(c: Ctx, v: unknown): CardStyle {
   const d = DEFAULT_CARD;
   const o = obj(c, "card", v);
@@ -369,10 +471,20 @@ function card(c: Ctx, v: unknown): CardStyle {
   const ti = obj(c, "card.tilt", o.tilt);
   const tr = obj(c, "card.transform", o.transform);
   const layers = shadowLayers(c, sh.layers);
+  const stack = stackSpec(c, o.stack);
+  const reflection = reflectionSpec(c, o.reflection);
   return {
+    ...(stack ? { stack } : {}),
+    ...(reflection ? { reflection } : {}),
     frame: {
       id: str(c, "card.frame.id", fr.id, d.frame.id, 64),
-      theme: oneOf(c, "card.frame.theme", fr.theme, ["light", "dark"] as const, d.frame.theme),
+      theme: oneOf(
+        c,
+        "card.frame.theme",
+        fr.theme,
+        ["light", "dark", "auto"] as const,
+        d.frame.theme,
+      ),
       title: str(c, "card.frame.title", fr.title, d.frame.title, 200),
       url: str(c, "card.frame.url", fr.url, d.frame.url, 500),
       ...(fr.lights !== undefined
@@ -550,6 +662,7 @@ export function normalizeScene(input: unknown): NormalizeResult {
     canvas: {
       size: canvasSize(c, cv.size),
       padding: num(c, "canvas.padding", cv.padding, 80, 0, 2000),
+      ...composition(c, cv),
     },
     background: background(c, input.background),
     content: content(c, input.content),
