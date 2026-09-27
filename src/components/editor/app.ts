@@ -46,6 +46,8 @@ import {
   createSetTemplate,
   createProjectFile,
   evaluateScene,
+  extrapolateGifBytes,
+  extrapolateVideoBytes,
   getMotionPreset,
   getCodeStyle,
   getPostStyle,
@@ -64,6 +66,7 @@ import {
   importImage,
   isBuiltinAssetId,
   layoutScene,
+  setCanvasSize,
   maxExportScale,
   openStore,
   parseProject,
@@ -144,12 +147,13 @@ export interface ExportSettings {
   motion: MotionExportSettings;
 }
 
+/** GIF defaults (640 px, 15 fps) keep typical 3-4 s loops under 5 MB (REVIEW r2 N7). */
 export const DEFAULT_MOTION_EXPORT: MotionExportSettings = {
   format: "mp4",
   videoRes: 1080,
-  gifSize: 800,
+  gifSize: 640,
   quality: "balanced",
-  gifFps: 20,
+  gifFps: 15,
   gifColors: 128,
   dither: true,
 };
@@ -246,7 +250,7 @@ function loadMotionSettings(raw: unknown): MotionExportSettings {
   };
 }
 
-const SETTINGS_VERSION = 2;
+const SETTINGS_VERSION = 3;
 
 export function defaultExportSettings(): ExportSettings {
   return {
@@ -269,7 +273,7 @@ function loadSettings(): ExportSettings {
     const p = JSON.parse(raw) as Partial<ExportSettings> & { v?: number };
     // Settings from before smart scale kept the old 2x default: start them on Auto.
     const scale =
-      p.v === SETTINGS_VERSION && [0, 1, 2, 3, 4].includes(Number(p.scale)) ? Number(p.scale) : 0;
+      (p.v ?? 0) >= 2 && [0, 1, 2, 3, 4].includes(Number(p.scale)) ? Number(p.scale) : 0;
     return {
       format: p.format === "jpeg" || p.format === "webp" ? p.format : "png",
       scale: scale as ScaleChoice,
@@ -280,7 +284,11 @@ function loadSettings(): ExportSettings {
       quality: typeof p.quality === "number" ? Math.min(1, Math.max(0.3, p.quality)) : 0.92,
       pattern: typeof p.pattern === "string" && p.pattern.trim() ? p.pattern : d.pattern,
       kind: "image",
-      motion: loadMotionSettings(p.motion),
+      // Before v3 the GIF defaults made 6-9 MB files: start those on the new defaults.
+      motion:
+        (p.v ?? 0) < 3
+          ? { ...loadMotionSettings(p.motion), gifSize: 640, gifFps: 15 }
+          : loadMotionSettings(p.motion),
     };
   } catch {
     return d;
@@ -851,7 +859,17 @@ export class EditorApp {
       isImage: c.kind === "image",
     });
     this.userPickedStyle = true;
-    this.store.update(() => r.scene);
+    // Rolls keep the canvas size: an auto canvas is held at its current pixels
+    // so every roll exports at the same size (REVIEW r2 N21).
+    let next = r.scene;
+    if (this.scene.canvas.size.kind === "auto") {
+      const cur = layoutScene(this.scene, this.resolver).canvas;
+      next = {
+        ...next,
+        canvas: { ...next.canvas, size: { kind: "fixed", width: cur.width, height: cur.height } },
+      };
+    }
+    this.store.update(() => next);
     if (this.ui.get().hasContent) this.ui.set((s) => ({ xfade: s.xfade + 1 }));
     this.emit("shuffled", r.summary);
     this.announce(`Shuffled: ${r.summary}`);
@@ -1080,8 +1098,16 @@ export class EditorApp {
     // Each mode keeps its own undo history across switches.
     this.store.reset(scene, next?.history);
     this.store.select(null);
+    const firstTab: Record<Mode, MobileTab> = {
+      screenshot: "styles",
+      code: "code",
+      post: "post",
+      appstore: "slides",
+    };
     this.ui.set((s) => ({
       mode,
+      mobileTab: firstTab[mode],
+      mobileExport: false,
       hasContent: has,
       tool: "select",
       editingText: null,
@@ -1384,6 +1410,7 @@ export class EditorApp {
     if (!plan) return;
     const ac = new AbortController();
     this.motionAbort = ac;
+    this.motionEstimateAbort?.abort();
     this.pause();
     this.ui.set({
       motionExport: { format: settings.format, stage: "starting", done: 0, total: plan.frames },
@@ -1448,6 +1475,61 @@ export class EditorApp {
       this.motionAbort = null;
       this.ui.set({ motionExport: null });
     }
+  }
+
+  private motionEstimate: { key: string; scene: Scene; result: Promise<number> } | null = null;
+  private motionEstimateAbort: AbortController | null = null;
+
+  /**
+   * Expected size of the motion export: a small sample of the same clip is
+   * encoded for real (200 px GIF, 480p video) and scaled up with a
+   * calibrated model. Cached per scene and settings.
+   */
+  estimateMotion(
+    settings: MotionExportSettings = this.ui.get().exportSettings.motion,
+  ): Promise<number> {
+    const scene = this.scene;
+    const key = JSON.stringify(settings);
+    const c = this.motionEstimate;
+    if (c && c.scene === scene && c.key === key) return c.result;
+    this.motionEstimateAbort?.abort();
+    const ac = new AbortController();
+    this.motionEstimateAbort = ac;
+    const plan = this.motionPlan(settings);
+    if (!plan || !scene.animation) return Promise.reject(new Error("No motion"));
+    const gif = settings.format === "gif";
+    const long = Math.max(plan.width, plan.height);
+    const short = Math.min(plan.width, plan.height);
+    const k = gif ? Math.min(1, 200 / long) : Math.min(1, 480 / short);
+    const opts = {
+      format: settings.format,
+      scale: plan.scale * k,
+      quality: settings.quality,
+      ...(gif
+        ? { fps: settings.gifFps, gifColors: settings.gifColors, dither: settings.dither }
+        : {}),
+    };
+    const result = this.animator
+      .export(scene, this.exportAssets(scene), opts, { signal: ac.signal })
+      .then((r) => {
+        if (k >= 1) return r.blob.size;
+        const samplePlan = {
+          width: r.width,
+          height: r.height,
+          fps: r.fps,
+          frames: r.frames,
+          duration: r.duration,
+        };
+        return gif
+          ? extrapolateGifBytes(r.blob.size, samplePlan, plan)
+          : extrapolateVideoBytes(r.blob.size, samplePlan, plan, settings.quality);
+      });
+    const entry = { key, scene, result };
+    this.motionEstimate = entry;
+    result.catch(() => {
+      if (this.motionEstimate === entry) this.motionEstimate = null;
+    });
+    return result;
   }
 
   cancelMotionExport(): void {
@@ -1564,6 +1646,34 @@ export class EditorApp {
     return { ...r, fitted };
   }
 
+  private previewCache: {
+    scene: Scene;
+    key: string;
+    result: Promise<ExportResult & { fitted: boolean }>;
+  } | null = null;
+
+  /**
+   * The exact file an export with these settings saves: encoded for real (in
+   * the worker) and cached, so the popover shows its true size and format and
+   * Download hands over the very same file without encoding again.
+   */
+  previewExport(
+    settings: ExportSettings = this.ui.get().exportSettings,
+  ): Promise<ExportResult & { fitted: boolean }> {
+    const scene = this.exportTarget();
+    const plan = this.exportPlan(settings);
+    const key = JSON.stringify([plan, settings.destination]);
+    const c = this.previewCache;
+    if (c && c.scene === scene && c.key === key) return c.result;
+    const result = this.runPlan(plan, settings);
+    const entry = { scene, key, result };
+    this.previewCache = entry;
+    result.catch(() => {
+      if (this.previewCache === entry) this.previewCache = null;
+    });
+    return result;
+  }
+
   setExportSettings(patch: Partial<ExportSettings>): void {
     const next = { ...this.ui.get().exportSettings, ...patch };
     this.ui.set({ exportSettings: next });
@@ -1589,6 +1699,8 @@ export class EditorApp {
   copy(anchor?: Element | null, opts: { full?: boolean } = {}): void {
     if (!this.ui.get().hasContent) return this.nothingYet("copy");
     if (this.ui.get().copyState === "busy") return;
+    if (this.ui.get().mode === "appstore") return this.copySlide(anchor);
+    if (this.postIsEmpty()) return this.emptyPost();
     const settings = {
       ...this.ui.get().exportSettings,
       ...(opts.full ? { copyFull: true } : {}),
@@ -1646,6 +1758,59 @@ export class EditorApp {
     );
   }
 
+  /** App Store mode: copy the selected slide at its exact size, without alpha. */
+  private copySlide(anchor?: Element | null): void {
+    const i = this.sets.selected;
+    const job = this.sets.slideFile(i, "png");
+    this.ui.set({ copyState: "busy" });
+    let write: Promise<void>;
+    try {
+      write = copyImageToClipboard(job.then((r) => r.blob));
+    } catch (e) {
+      write = Promise.reject(e);
+    }
+    Promise.all([write, job]).then(
+      async ([, r]) => {
+        this.ui.set({ copyState: "done" });
+        setTimeout(() => {
+          if (this.ui.get().copyState === "done") this.ui.set({ copyState: "idle" });
+        }, 1600);
+        sprinkle(anchor ?? null);
+        const size = setCanvasSize(this.sets.set);
+        this.toast({
+          kind: "wrap",
+          title: `Copied slide ${i + 1}`,
+          detail: `${size.width} × ${size.height} PNG · no alpha · ${formatBytes(r.blob.size)}`,
+          thumb: await thumbUrl(r.blob),
+        });
+      },
+      () => {
+        this.ui.set({ copyState: "idle" });
+        this.toast({
+          kind: "error",
+          title: "Your browser blocked clipboard access",
+          detail: "Use Export ZIP instead.",
+          prose: true,
+        });
+      },
+    );
+  }
+
+  /** A post or testimonial with no text yet: nothing worth exporting. */
+  postIsEmpty(): boolean {
+    const c = this.exportTarget().content;
+    return c.kind === "post" && !c.text.trim();
+  }
+
+  private emptyPost(): void {
+    this.toast({
+      kind: "info",
+      title: "Write the post first",
+      detail: "The card has no text yet. Type it in the Post panel.",
+      prose: true,
+    });
+  }
+
   /** The Export button: the motion clip when motion export is chosen, else the image. */
   async download(anchor?: Element | null): Promise<void> {
     if (!this.ui.get().hasContent) return this.nothingYet("export");
@@ -1659,11 +1824,12 @@ export class EditorApp {
   /** Download a still image with the current export settings. */
   async downloadImage(anchor?: Element | null, override?: Partial<ExportSettings>): Promise<void> {
     if (!this.ui.get().hasContent || this.ui.get().exportBusy) return;
+    if (this.postIsEmpty()) return this.emptyPost();
     const settings = { ...this.ui.get().exportSettings, ...override };
     this.ui.set({ exportBusy: true });
     try {
       const plan = this.exportPlan(settings);
-      const r = await this.runPlan(plan, settings);
+      const r = await this.previewExport(settings);
       const actual = r.mime.includes("png")
         ? "png"
         : r.mime.includes("jpeg")
@@ -1678,9 +1844,11 @@ export class EditorApp {
       const dest = getDestination(settings.destination);
       const fit =
         dest.limitLabel && dest.limitBytes && r.blob.size <= dest.limitBytes
-          ? ` · fits ${dest.limitLabel}`
+          ? r.fitted
+            ? ` · saved as ${actual === "jpeg" ? "JPEG" : "a smaller PNG"} to fit ${dest.limitLabel}`
+            : ` · fits ${dest.limitLabel}`
           : "";
-      this.emit("downloaded", r);
+      this.emit("downloaded", { ...r, name });
       this.toast({
         kind: "wrap",
         title: `Saved ${name}`,
@@ -1706,9 +1874,20 @@ export class EditorApp {
     const settings = this.ui.get().exportSettings;
     this.ui.set({ exportBusy: true });
     try {
+      if (this.ui.get().mode === "appstore") {
+        await this.sets.saveSlide(this.sets.selected, settings.format === "jpeg" ? "jpeg" : "png");
+        this.ui.set({ mobileExport: false });
+        return;
+      }
+      if (this.postIsEmpty()) return this.emptyPost();
       const plan = this.exportPlan(settings);
-      const r = await this.runPlan(plan, settings);
-      const name = this.filenameFor(r, settings, plan.scale);
+      const r = await this.previewExport(settings);
+      const actual: ExportFormat = r.mime.includes("jpeg")
+        ? "jpeg"
+        : r.mime.includes("webp")
+          ? "webp"
+          : "png";
+      const name = this.filenameFor(r, { ...settings, format: actual }, plan.scale);
       const file = new File([r.blob], name, { type: r.mime });
       const nav = navigator as Navigator & {
         canShare?: (d: ShareData) => boolean;

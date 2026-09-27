@@ -114,6 +114,20 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
 
   // Render the preview (coalesced to one frame).
   const renderScene_ = useMemo(() => {
+    // An empty post shows placeholder copy on the stage only (export is blocked until it has text).
+    if (scene.content.kind === "post" && !scene.content.text.trim()) {
+      const c = scene.content;
+      return {
+        ...scene,
+        content: {
+          ...c,
+          text:
+            c.variant === "testimonial"
+              ? "“Write what your customer said here.”"
+              : "Write your post here. It wraps to the card as you type.",
+        },
+      } as Scene;
+    }
     if (!editing) return scene;
     return {
       ...scene,
@@ -376,6 +390,8 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
           app.copy(e.currentTarget.ownerDocument.querySelector("[data-copy-anchor]"));
       }}
     >
+      {/* The page's h1 (inside main, so it sits in a landmark) once the empty state's own is gone. */}
+      {(board || hasContent) && <h1 className="sr-only">Shotcandy editor</h1>}
       {board && <Board narrow={narrow} />}
       {!board && !hasContent && <EmptyState narrow={narrow} />}
       {!board && hasContent && (
@@ -383,7 +399,13 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
           <div
             ref={compRef}
             className={`comp${anim ? ` ${anim}` : ""}`}
-            style={{ left, top, width: dispW, height: dispH }}
+            style={{
+              left,
+              top,
+              width: dispW,
+              height: dispH,
+              ["--bloom" as string]: `${Math.round(Math.hypot(dispW, dispH) * 1.6)}px`,
+            }}
           >
             <canvas
               ref={canvasRef}

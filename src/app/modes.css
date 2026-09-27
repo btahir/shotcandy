@@ -92,20 +92,22 @@
   }
 
   /* ---------- Code ---------- */
+  /* Long lines wrap in the editor (never clipped); the image keeps them whole. */
   .code-input textarea {
     font:
       400 12px/19px var(--sc-font-mono),
       monospace;
-    white-space: pre;
-    overflow-x: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
     tab-size: 2;
-    min-height: 120px;
-    max-height: 340px;
+    min-height: 140px;
+    max-height: 460px;
     resize: vertical;
   }
+  /* Language and file name each get a full row, so "TypeScript" never truncates. */
   .code-row {
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
     margin-top: 8px;
   }

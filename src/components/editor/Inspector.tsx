@@ -1212,10 +1212,10 @@ function ModeTrays() {
       <>
         <CodeTray />
         <ThemesTray />
-        <MotionTray />
         <WindowTray />
         <BackgroundTray />
         <LayoutTray />
+        <MotionTray />
       </>
     );
   if (mode === "appstore")
@@ -1236,18 +1236,19 @@ function ModeTrays() {
         <PostTray />
         <PostStylesTray />
         <CardTray />
-        <MotionTray />
         <BackgroundTray />
         <LayoutTray />
+        <MotionTray />
       </>
     );
   return (
     <>
       <StylesTray />
-      <MotionTray />
       <BackgroundTray />
       <LayoutTray />
       <FrameTray />
+      {/* Motion is used least often: last, so Background and Layout stay above the fold (REVIEW r2 N9). */}
+      <MotionTray />
     </>
   );
 }

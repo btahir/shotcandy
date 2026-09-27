@@ -7,18 +7,10 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  // The empty-state fan is the first large paint: fetch it ahead of the scripts.
+  // The empty-state fan is the first large paint: fetch the two images both
+  // layouts show ahead of the scripts. (Media-conditional preloads for the
+  // layout-specific third image made Firefox warn on every load: REVIEW r2 N24.)
   for (const f of ["mint", "midnight"])
     preload(`/empty/fan-${f}.webp`, { as: "image", fetchPriority: "high" });
-  preload("/empty/fan-sherbet.webp", {
-    as: "image",
-    fetchPriority: "high",
-    media: "(min-width: 768px)",
-  });
-  preload("/empty/fan-phone.webp", {
-    as: "image",
-    fetchPriority: "high",
-    media: "(max-width: 767px)",
-  });
   return <Editor />;
 }

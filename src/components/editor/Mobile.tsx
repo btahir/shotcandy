@@ -8,7 +8,14 @@ import { AnnotationInspector, Colours } from "./AnnotationInspector";
 import { type MobileTab, formatBytes, styleName } from "./app";
 import { useApp, useScene, useUi } from "./context";
 import { TOOLS } from "./Dock";
-import { DestinationChips, SizeChip, sizeLabel, useExportEstimate, useExportPlan } from "./Header";
+import {
+  DestinationChips,
+  SetExportPanel,
+  SizeChip,
+  sizeLabel,
+  useExportPlan,
+  useExportResult,
+} from "./Header";
 import { type ScaleChoice, fitVerdict, getDestination } from "./export-plan";
 import { BackgroundTray, FrameTray, LayoutTray, useStyleRow } from "./Inspector";
 import { Stage } from "./Stage";
@@ -405,14 +412,33 @@ function MobileExport() {
   const scene = useScene((s) => s.scene);
   const custom = useUi((s) => s.customPresets);
   const plan = useExportPlan();
-  const bpp = useExportEstimate(open, plan.format, plan.quality);
+  const result = useExportResult(open && mode !== "appstore");
   const [closing, setClosing] = useState(false);
+  const sheetRef = useRef<HTMLElement>(null);
+  // Esc closes the sheet wherever focus is; focus moves into it when it opens.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      app.ui.set({ mobileExport: false });
+    };
+    window.addEventListener("keydown", onKey, true);
+    const raf = requestAnimationFrame(() =>
+      sheetRef.current?.querySelector<HTMLElement>("[data-autofocus], button")?.focus(),
+    );
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      cancelAnimationFrame(raf);
+    };
+  }, [open, app]);
   if (!open && !closing) return null;
-  const oW = plan.width;
-  const oH = plan.height;
+  const oW = result?.width ?? plan.width;
+  const oH = result?.height ?? plan.height;
+  const outFormat = result?.format ?? plan.format;
   const dest = getDestination(settings.destination);
-  const est = bpp ? bpp * oW * oH * (plan.format === "png" ? 0.85 : 0.9) : null;
-  const verdict = fitVerdict(dest, est, plan.format);
+  const est = result?.bytes ?? null;
+  const verdict = fitVerdict(dest, est, outFormat, result?.fitted);
   const close = () => {
     setClosing(true);
     setTimeout(() => {
@@ -422,14 +448,16 @@ function MobileExport() {
   };
   const file = app.filenameFor(
     { width: oW, height: oH },
-    { ...settings, format: plan.format },
+    { ...settings, format: outFormat },
     plan.scale,
   );
-  const motionTab = settings.kind === "motion" && !!scene.animation;
+  const motionTab = settings.kind === "motion" && !!scene.animation && mode !== "appstore";
+  const appstore = mode === "appstore";
   return (
     <>
       <div className={`scrim${closing ? " closing" : ""}`} onClick={close} aria-hidden="true" />
       <section
+        ref={sheetRef}
         className={`m-export${closing ? " closing" : ""}`}
         role="dialog"
         aria-modal="true"
@@ -438,8 +466,10 @@ function MobileExport() {
       >
         <div className="grab" onClick={close} aria-hidden="true" />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 id="m-export-title">{motionTab ? "Save your clip" : "Save your image"}</h2>
-          {scene.animation ? (
+          <h2 id="m-export-title">
+            {appstore ? "Export set" : motionTab ? "Save your clip" : "Save your image"}
+          </h2>
+          {appstore ? null : scene.animation ? (
             <Segmented
               label="Export type"
               value={motionTab ? "motion" : "image"}
@@ -455,12 +485,17 @@ function MobileExport() {
             </span>
           )}
         </div>
+        {appstore && (
+          <div style={{ marginTop: 4 }}>
+            <SetExportPanel mobile onDone={close} />
+          </div>
+        )}
         {motionTab && (
           <div style={{ marginTop: 12 }}>
             <MotionExportPanel onDone={close} />
           </div>
         )}
-        {!motionTab && (
+        {!motionTab && !appstore && (
           <>
             <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 12 }}>
               <div className="preview-img">
@@ -488,9 +523,9 @@ function MobileExport() {
                   {oW} × {oH}
                 </span>
                 <span className="fmt">
-                  {plan.format === "jpeg" ? "JPEG" : plan.format.toUpperCase()}
+                  {outFormat === "jpeg" ? "JPEG" : outFormat.toUpperCase()}
                 </span>
-                {est !== null && <span className="mono est">≈ {formatBytes(est)}</span>}
+                <span className="mono est">{est !== null ? formatBytes(est) : "sizing…"}</span>
               </div>
               {verdict.kind !== "none" && (
                 <div className="why">
@@ -536,19 +571,6 @@ function MobileExport() {
             >
               <Icon name="download" /> Save to Photos
             </button>
-            {mode === "appstore" && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-block"
-                style={{ marginTop: 10 }}
-                onClick={() => {
-                  void app.sets.exportZip(settings.format === "jpeg" ? "jpeg" : "png");
-                  close();
-                }}
-              >
-                <Icon name="zip" /> Export all slides (ZIP)
-              </button>
-            )}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
               <button
                 type="button"

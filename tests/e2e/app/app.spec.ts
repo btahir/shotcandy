@@ -137,6 +137,7 @@ test("recent designs are autosaved, survive a reload and render identically", as
       ).__shotcandy.app.ui.get().recents.length > 0,
   );
   await page.waitForTimeout(1200); // let the final debounced autosave land
+  await page.mouse.move(2, 2); // no hover preview in the capture
   const before = await previewData(page);
   await page.reload();
   await open(page);
@@ -144,6 +145,7 @@ test("recent designs are autosaved, survive a reload and render identically", as
   await page.getByRole("menuitem", { name: /Recent designs/ }).click();
   await page.getByRole("list", { name: "Saved designs" }).getByRole("button").first().click();
   await expect(page.getByTestId("preview")).toBeVisible();
+  await page.mouse.move(2, 2);
   // Fonts and thumbnails settle at their own pace under a loaded test run.
   await expect.poll(() => previewData(page), { timeout: 8000 }).toBe(before);
 });

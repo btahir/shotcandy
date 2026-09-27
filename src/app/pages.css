@@ -530,6 +530,18 @@
     border-radius: 999px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   }
+  /* On phones the pills would wrap over the image: keep one, the rest hide (REVIEW r2 N16). */
+  @media (max-width: 480px) {
+    .hero-art .pill {
+      left: 10px;
+      bottom: 10px;
+      flex-wrap: nowrap;
+      max-width: calc(100% - 20px);
+    }
+    .hero-art .pill span:not(:first-child) {
+      display: none;
+    }
+  }
   .checks {
     display: flex;
     gap: 18px;

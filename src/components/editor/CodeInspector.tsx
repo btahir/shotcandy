@@ -110,7 +110,8 @@ export const CodeTray = memo(function CodeTray({ bare = false }: { bare?: boolea
   const app = useApp();
   const c = useCode();
   if (!c) return null;
-  const lines = c.code.split("\n").length;
+  // A trailing newline doesn't make a line (REVIEW r2 N12).
+  const lines = c.code.replace(/\r?\n$/, "").split("\n").length;
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     e.stopPropagation();
     if (e.key === "Escape") {
@@ -139,8 +140,7 @@ export const CodeTray = memo(function CodeTray({ bare = false }: { bare?: boolea
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
-          wrap="off"
-          rows={Math.min(14, Math.max(6, lines + 1))}
+          rows={Math.min(18, Math.max(7, lines + 1))}
           placeholder="Paste your code here"
           data-testid="code-input"
           onChange={(e) => app.setCode({ code: e.target.value }, "code:text")}

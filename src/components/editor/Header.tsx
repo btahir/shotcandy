@@ -273,26 +273,57 @@ const TOKENS = [
   ["{preset}", "size preset"],
 ] as const;
 
-/** Bytes per pixel of the current design in a format (from a 1x test encode, debounced). */
-export function useExportEstimate(active: boolean, format: ExportFormat, quality: number) {
+export interface ExportPreview {
+  width: number;
+  height: number;
+  bytes: number;
+  format: ExportFormat;
+  fitted: boolean;
+}
+
+/**
+ * The file the current export settings save, encoded for real (debounced,
+ * cached in the app so Download reuses it). Null while it's being made.
+ */
+export function useExportResult(active: boolean): ExportPreview | null {
   const app = useApp();
   const scene = useScene((s) => s.scene);
-  const [bpp, setBpp] = useState<number | null>(null);
+  const settings = useUi((s) => s.exportSettings);
+  const v = useUi((s) => s.assetsVersion);
+  const [res, setRes] = useState<{ key: unknown; value: ExportPreview } | null>(null);
+  const key = useMemo(() => [scene, settings, v], [scene, settings, v]);
   useEffect(() => {
-    if (!active || !app.ui.get().hasContent) return;
+    if (!active || !app.ui.get().hasContent || app.ui.get().mode === "appstore") return;
     let alive = true;
     const t = setTimeout(() => {
       app
-        .runExport(format, 1, format === "png" ? undefined : quality)
-        .then((r) => alive && setBpp(r.blob.size / (r.width * r.height)))
+        .previewExport(settings)
+        .then((r) => {
+          if (!alive) return;
+          const format: ExportFormat = r.mime.includes("jpeg")
+            ? "jpeg"
+            : r.mime.includes("webp")
+              ? "webp"
+              : "png";
+          setRes({
+            key,
+            value: {
+              width: r.width,
+              height: r.height,
+              bytes: r.blob.size,
+              format,
+              fitted: r.fitted,
+            },
+          });
+        })
         .catch(() => undefined);
-    }, 350);
+    }, 300);
     return () => {
       alive = false;
       clearTimeout(t);
     };
-  }, [active, app, scene, format, quality]);
-  return bpp;
+  }, [active, app, key, settings]);
+  return res && res.key === key ? res.value : null;
 }
 
 /** App Store mode: what the set exports to. */
@@ -311,17 +342,28 @@ export function SetChip() {
   );
 }
 
-function SetExportPanel({ onDone }: { onDone?: () => void }) {
+export function SetExportPanel({
+  onDone,
+  mobile = false,
+}: {
+  onDone?: () => void;
+  mobile?: boolean;
+}) {
   const app = useApp();
   const settings = useUi((s) => s.exportSettings);
   const set = useStore(app.sets.state, (s) => s.set);
+  const selected = useStore(app.sets.state, (s) => s.selected);
   const packing = useStore(app.sets.state, (s) => s.packing);
+  useUi((s) => s.assetsVersion);
+  const [includeEmpty, setIncludeEmpty] = useState(false);
   const size = setCanvasSize(set);
   const fmt = settings.format === "jpeg" ? "jpeg" : "png";
+  const empty = app.sets.emptySlides(set);
+  const count = set.slides.length - (includeEmpty ? 0 : empty.length);
   return (
     <div className="export-panel" data-testid="set-export">
       <div className="export-head">
-        <h2>Export set</h2>
+        {mobile ? <span /> : <h2>Export set</h2>}
         <span className="mono muted">
           {set.slides.length} × {size.width} × {size.height}
         </span>
@@ -339,28 +381,62 @@ function SetExportPanel({ onDone }: { onDone?: () => void }) {
       <p className="note">
         Exact App Store Connect sizes, opaque, numbered in order. Upload up to 10 per device size.
       </p>
+      {empty.length > 0 && (
+        <div className="warn-note set-empty" data-testid="set-empty" role="status">
+          <Icon name="alert" size="sm" />
+          <span>
+            {empty.length === 1
+              ? `Slide ${empty[0]! + 1} has no screenshot.`
+              : `${empty.length} slides have no screenshot.`}
+            <Segmented
+              label="Slides without a screenshot"
+              className="set-empty-seg"
+              value={includeEmpty ? "include" : "skip"}
+              onChange={(v) => setIncludeEmpty(v === "include")}
+              options={[
+                { value: "skip", label: "Skip them" },
+                { value: "include", label: "Export anyway" },
+              ]}
+            />
+          </span>
+        </div>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: 8, marginTop: 14 }}>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={(e) => {
-            app.copy(e.currentTarget);
-            onDone?.();
-          }}
-        >
-          <Icon name="copy" /> Copy slide
-        </button>
+        {mobile ? (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            data-testid="save-slide"
+            onClick={() => {
+              void app.sets.saveSlide(selected, fmt);
+              onDone?.();
+            }}
+          >
+            <Icon name="download" /> Save slide {selected + 1}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={(e) => {
+              app.copy(e.currentTarget);
+              onDone?.();
+            }}
+          >
+            <Icon name="copy" /> Copy slide
+          </button>
+        )}
         <button
           type="button"
           className="btn btn-primary"
           data-testid="export-zip"
-          disabled={!!packing}
+          disabled={!!packing || count === 0}
           onClick={() => {
-            void app.sets.exportZip(fmt);
+            void app.sets.exportZip(fmt, { includeEmpty });
             onDone?.();
           }}
         >
-          <Icon name="zip" /> Export ZIP
+          <Icon name="zip" /> Export ZIP{count !== set.slides.length ? ` (${count})` : ""}
         </button>
       </div>
     </div>
@@ -485,19 +561,22 @@ export function ExportPanel({
   const plan = useExportPlan();
   const copyPlan = useExportPlan(true);
   const dest = getDestination(settings.destination);
-  const bpp = useExportEstimate(true, plan.format, plan.quality);
+  const result = useExportResult(true);
   const [tokensOpen, setTokensOpen] = useState(false);
   const tokRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const max = Math.max(1, maxExportScale(layout));
   const W = layout.canvas.width;
   const H = layout.canvas.height;
-  const est = bpp ? bpp * plan.width * plan.height * (plan.format === "png" ? 0.85 : 0.9) : null;
-  const verdict = fitVerdict(dest, est, plan.format);
+  const est = result?.bytes ?? null;
+  const outFormat = result?.format ?? plan.format;
+  const outW = result?.width ?? plan.width;
+  const outH = result?.height ?? plan.height;
+  const verdict = fitVerdict(dest, est, outFormat, result?.fitted);
   const heavy = dest.id === "original" && est !== null && est > 5 * 1024 * 1024;
   const preview = app.filenameFor(
-    { width: plan.width, height: plan.height },
-    { ...settings, format: plan.format },
+    { width: outW, height: outH },
+    { ...settings, format: outFormat },
     plan.scale,
   );
   const appstore = size.kind === "fixed" && size.presetId?.startsWith("appstore");
@@ -527,21 +606,21 @@ export function ExportPanel({
       <div className="export-summary" data-testid="export-summary">
         <div className="dims">
           <span className="mono" data-testid="export-dims">
-            {plan.width} × {plan.height}
+            {outW} × {outH}
           </span>
-          <span className="fmt">{plan.format === "jpeg" ? "JPEG" : plan.format.toUpperCase()}</span>
-          {est !== null && (
-            <span className="mono est" data-testid="export-size">
-              ≈ {formatBytes(est)}
-            </span>
-          )}
+          <span className="fmt" data-testid="export-format">
+            {outFormat === "jpeg" ? "JPEG" : outFormat.toUpperCase()}
+          </span>
+          <span className="mono est" data-testid="export-size" aria-live="polite">
+            {est !== null ? formatBytes(est) : "sizing…"}
+          </span>
         </div>
         <div className="why">
           {verdict.kind !== "none" ? (
             <FitBadge verdict={verdict} />
           ) : heavy ? (
             <span className="fit-badge switch">
-              <Icon name="alert" size="xs" /> Large for X or LinkedIn: try JPEG or For X
+              <Icon name="alert" size="xs" /> Over 5 MB: pick X or LinkedIn to fit
             </span>
           ) : (
             <span className="blurb">

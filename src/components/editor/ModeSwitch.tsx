@@ -65,12 +65,16 @@ export function ModeSwitch({ compact = false }: { compact?: boolean }) {
             tabIndex={on ? 0 : -1}
             data-mode={m.id}
             aria-label={m.label}
-            className={on ? "on" : undefined}
-            title={m.blurb}
+            className={`has-tip${on ? " on" : ""}`}
             onClick={() => app.setMode(m.id)}
           >
             <Icon name={m.icon} size="sm" />
             <span className="lbl">{compact ? m.short : m.label}</span>
+            {!compact && (
+              <span className="tip mode-tip" aria-hidden="true">
+                <b>{m.label}</b> {m.blurb}
+              </span>
+            )}
           </button>
         );
       })}

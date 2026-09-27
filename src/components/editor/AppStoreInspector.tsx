@@ -11,6 +11,7 @@ import {
   SET_MIN_SLIDES,
   SET_STYLES,
   applyStylePatch,
+  headlineLineCount,
   setCanvasSize,
   slideScene,
 } from "@/engine";
@@ -18,7 +19,7 @@ import { useStore } from "@/lib/store";
 import { Icon } from "../icons";
 import { Segmented, Switch } from "../ui/controls";
 import { Slider } from "../ui/Slider";
-import { useApp, useScene } from "./context";
+import { useApp, useScene, useUi } from "./context";
 import { openFilePicker } from "./EmptyState";
 import { ColourButton } from "./Inspector";
 import { SceneThumb } from "./SceneThumb";
@@ -161,8 +162,11 @@ export const SlideTray = memo(function SlideTray({ bare = false }: { bare?: bool
   const app = useApp();
   const { set, selected } = useSet();
   const slide = set.slides[selected];
+  useUi((u) => u.assetsVersion);
   if (!slide) return null;
   const n = set.slides.length;
+  const mismatch = app.sets.slideMismatch(selected);
+  const lines = headlineLineCount(set, slide);
   const body = (
     <>
       <div className="slide-shot">
@@ -184,6 +188,39 @@ export const SlideTray = memo(function SlideTray({ bare = false }: { bare?: bool
           </button>
         )}
       </div>
+      {mismatch && (
+        <div className="warn-note slide-guard" data-testid="slide-guard" role="status">
+          <Icon name="alert" size="sm" />
+          <span>
+            This screenshot is {set.landscape ? "portrait" : "landscape"}; in a{" "}
+            {set.landscape ? "landscape" : "portrait"} set it shows tiny.
+            <span className="guard-acts">
+              <button type="button" className="link" onClick={() => app.sets.rotateSet()}>
+                Rotate device
+              </button>
+              <button
+                type="button"
+                className="link"
+                onClick={() => app.sets.cropToDevice(selected)}
+              >
+                Crop to {set.sizePresetId.includes("ipad") ? "tablet" : "phone"}
+              </button>
+            </span>
+          </span>
+        </div>
+      )}
+      {slide.crop && (
+        <p className="note">
+          Showing a device-shaped part of the screenshot.{" "}
+          <button
+            type="button"
+            className="link quiet"
+            onClick={() => app.sets.updateSlide(selected, { crop: undefined })}
+          >
+            Show all
+          </button>
+        </p>
+      )}
       <label className="field-stack">
         <span className="field-label">Headline</span>
         <span className="input">
@@ -196,6 +233,12 @@ export const SlideTray = memo(function SlideTray({ bare = false }: { bare?: bool
           />
         </span>
       </label>
+      {lines > 3 && (
+        <p className="note warn-text" data-testid="headline-long">
+          This headline needs {lines} lines{lines > 4 ? " and gets cut off" : ""}. Keep it to 3 so
+          every slide lines up.
+        </p>
+      )}
       <label className="field-stack">
         <span className="field-label">Subhead</span>
         <span className="input area">

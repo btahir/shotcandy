@@ -161,6 +161,12 @@ export function drawRatio(layout: SceneLayout, isImage: boolean): number | null 
   return (layout.card.content.width * layout.k) / src;
 }
 
+/** Largest useful scale for a destination: retina for text, never beyond native for screenshots. */
+export function destinationScale(drawRatio: number | null): number {
+  if (drawRatio === null) return 2;
+  return Math.min(2, Math.max(1, 1 / Math.max(0.01, drawRatio)));
+}
+
 /** The whole-number scale "Auto" means for this canvas. */
 export function autoScale(input: PlanInput): number {
   const max = Math.max(1, input.maxScale);
@@ -192,8 +198,10 @@ export function planExport(
   if (dest.width) {
     scale = dest.width / input.width;
   } else if (dest.id !== "original") {
-    // Destinations: 2x when it fits the cap (retina displays), else as large as the cap allows.
-    scale = Math.max(scale, Math.min(2, input.maxScale));
+    // Destinations never go past the screenshot's own pixels: 1x when it is
+    // drawn at native size, up to 2x when drawn smaller; 2x for code and posts
+    // (text, no source pixels). Then the platform's cap (REVIEW r2 N1).
+    scale = Math.min(destinationScale(input.drawRatio), Math.max(1, input.maxScale));
     if (dest.maxLong && long * scale > dest.maxLong) {
       scale = dest.maxLong / long;
       capped = true;
@@ -224,17 +232,28 @@ export type FitVerdict =
   | { kind: "switch"; label: string }
   | { kind: "over"; label: string };
 
-/** How an estimated file size sits against a destination's limit. */
+/**
+ * How a file sits against a destination's limit. `bytes` and `format` are
+ * what will actually be saved (the export popover encodes the real file);
+ * `fitted` says the PNG didn't fit and the export switched to JPEG or shrank.
+ */
 export function fitVerdict(
   dest: Destination,
   bytes: number | null,
   format: ExportFormat,
+  fitted = false,
 ): FitVerdict {
   if (!dest.limitBytes || !dest.limitLabel || bytes === null) return { kind: "none" };
-  if (bytes <= dest.limitBytes * 0.97) return { kind: "fits", label: `fits ${dest.limitLabel}` };
-  if (dest.format === "auto" && format === "png")
-    return { kind: "switch", label: `JPEG to fit ${dest.limitLabel}` };
-  return { kind: "over", label: `we’ll shrink it to fit ${dest.limitLabel}` };
+  if (bytes > dest.limitBytes) return { kind: "over", label: `over ${dest.limitLabel}` };
+  if (fitted)
+    return {
+      kind: "switch",
+      label:
+        format === "jpeg"
+          ? `JPEG to fit ${dest.limitLabel}`
+          : `made smaller to fit ${dest.limitLabel}`,
+    };
+  return { kind: "fits", label: `fits ${dest.limitLabel}` };
 }
 
 /** Whether the canvas ratio shows uncropped at the destination. */

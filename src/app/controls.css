@@ -443,9 +443,11 @@
   }
 
   /* ---------- Stage: notes, preview pill, code lines ---------- */
+  /* Bottom-left, above the dock's row: clear of the size tag over the canvas
+     (REVIEW r2 N10), of the dock and zoom, and of a fitted canvas. */
   .stage-notes {
     position: absolute;
-    top: 14px;
+    bottom: calc(var(--sc-space-6) + 52px + 12px);
     left: 16px;
     z-index: 8;
     display: grid;
@@ -454,7 +456,11 @@
     max-width: min(560px, calc(100% - 32px));
     pointer-events: none;
   }
+  .stage.has-timeline .stage-notes {
+    bottom: calc(var(--sc-space-6) + 52px + 12px + 50px + 12px);
+  }
   .stage-notes.narrow {
+    bottom: auto;
     top: 8px;
     left: 8px;
     max-width: calc(100% - 16px);
@@ -546,7 +552,7 @@
   }
   .preview-pill {
     position: absolute;
-    bottom: 24px;
+    top: 14px;
     left: 18px;
     z-index: 9;
     padding: 5px 11px;
@@ -587,16 +593,19 @@
     white-space: nowrap;
   }
 
-  /* ---------- Toasts under the Export button, off the composition (P2-21) ---------- */
+  /* ---------- Toasts right under the Export button, over the inspector and
+     clear of the canvas and its size tag (REVIEW r2 N11) ---------- */
   @media (min-width: 768px) {
     .stage .toast-layer,
     .stage.has-timeline .toast-layer {
-      top: 14px;
+      position: fixed;
+      top: calc(var(--sc-header-h) + 6px);
       bottom: auto;
       left: auto;
       right: 16px;
       transform: none;
       align-items: flex-end;
+      max-width: min(560px, calc(100vw - 32px));
     }
   }
 
@@ -607,5 +616,91 @@
   .ann-layer g:hover > .outline.idle {
     display: inline;
     opacity: 0.5;
+  }
+
+  /* Motion pads with nothing to act on (Draw on without annotations, Scroll on a short page). */
+  .mtile.weak:not(.on) .mthumb {
+    opacity: 0.45;
+    filter: saturate(0.4);
+  }
+  .mtile.weak:not(.on) .name {
+    color: var(--sc-ink-3);
+  }
+  .motion-fit {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin: -4px 2px 12px;
+  }
+
+  /* App Store guards */
+  .slide-guard .guard-acts,
+  .motion-fit .guard-acts {
+    display: inline-flex;
+    gap: 12px;
+    margin-left: 2px;
+  }
+  .slide-guard .guard-acts {
+    display: flex;
+    margin-top: 4px;
+  }
+  .warn-note .link {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: var(--sc-weight-bold);
+  }
+  .warn-text {
+    color: var(--sc-warning);
+  }
+  .set-empty .set-empty-seg {
+    margin-top: 6px;
+  }
+  .slide-warn {
+    position: absolute;
+    left: 50%;
+    bottom: 8px;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--sc-warning-soft);
+    color: color-mix(in srgb, var(--sc-warning) 72%, var(--sc-ink));
+    font-size: 11px;
+    font-weight: var(--sc-weight-bold);
+    box-shadow: 0 1px 3px rgba(42, 31, 26, 0.18);
+  }
+
+  /* Mode tabs: a label tooltip under icon-only tabs (REVIEW r2 N25). */
+  .mode-switch .has-tip {
+    position: relative;
+  }
+  .mode-switch .mode-tip {
+    top: calc(100% + 8px);
+    bottom: auto;
+    font-weight: var(--sc-weight-medium);
+    z-index: var(--sc-z-popover);
+  }
+  .mode-switch .mode-tip b {
+    font-weight: var(--sc-weight-bold);
+  }
+  .mode-switch button.on .mode-tip {
+    display: none;
+  }
+  /* The current style's tile doesn't offer "Apply" (REVIEW r2 N18). */
+  .jar-card.on .apply {
+    display: none;
+  }
+  /* The App Store set chip is information, not a control (REVIEW r2 N19). */
+  .chip.static {
+    background: transparent;
+    box-shadow: none;
+  }
+  .chip.static:hover {
+    box-shadow: none;
   }
 }

@@ -2341,6 +2341,9 @@
 
   /* Landing moment */
   .comp.landing canvas.preview {
+    mask-image: radial-gradient(circle closest-side, #000 62%, transparent 100%);
+    mask-position: 50% 50%;
+    mask-repeat: no-repeat;
     animation: sc-bloom 360ms var(--sc-ease-out) both;
   }
   .comp.landing {
@@ -2988,14 +2991,15 @@
     transform: scale(0.6);
   }
 }
-/* An ellipse in the canvas's own proportions: the reveal follows the card's
-   shape and reaches the corners exactly at the end (71 % > 1/sqrt 2). */
+/* The bloom: a round, feathered mask growing from the centre (--bloom is set
+   on .comp to 1.6x its diagonal, so the solid core passes the corners). The
+   soft edge keeps it from reading as a clipped octagon mid-reveal. */
 @keyframes sc-bloom {
   from {
-    clip-path: ellipse(0% 0% at 50% 50%);
+    mask-size: 24px 24px;
   }
   to {
-    clip-path: ellipse(71% 71% at 50% 50%);
+    mask-size: var(--bloom, 300%) var(--bloom, 300%);
   }
 }
 /* Pre-sampled "drop" spring (stiffness 380, damping 22): 0.94 -> 1.015 -> 1 */
@@ -3127,6 +3131,9 @@
   .comp.landing,
   .comp.landing canvas.preview {
     animation: sc-fade-in 160ms var(--sc-ease-out) !important;
+  }
+  .comp.landing canvas.preview {
+    mask-image: none;
   }
   .preset:hover .thumb,
   .jar-card:hover .th,

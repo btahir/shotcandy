@@ -64,8 +64,15 @@ export const MotionTray = memo(function MotionTray({ bare = false }: { bare?: bo
   const preset = spec ? getMotionPreset(spec.preset) : undefined;
   const current = spec?.preset ?? "none";
   const presets = new Map(listMotionPresets().map((p) => [p.id, p]));
-  const scrollNote =
-    preset?.id === "scroll" && hasContent && scrollViewport(app.scene, app.motionContext()) >= 0.98;
+  const shortPage = hasContent && scrollViewport(app.scene, app.motionContext()) >= 0.98;
+  const scrollNote = preset?.id === "scroll" && shortPage;
+  // Pads with nothing to act on say so up front (REVIEW r2 N13).
+  const hintFor = (id: string): string | null =>
+    id === "draw" && annotations === 0
+      ? "Add an arrow or text first: this draws your annotations on"
+      : id === "scroll" && shortPage
+        ? "Best for long pages: this screenshot already fits"
+        : null;
 
   const onKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const btns = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>("button.mtile"));
@@ -85,14 +92,17 @@ export const MotionTray = memo(function MotionTray({ bare = false }: { bare?: bo
           if (id !== "none" && !p) return null;
           const label = p?.label ?? "None";
           const on = current === id;
+          const hint = hintFor(id);
           return (
             <button
               key={id}
               type="button"
-              className={`mtile${on ? " on" : ""}`}
+              className={`mtile${on ? " on" : ""}${hint ? " weak" : ""}`}
               aria-pressed={on}
-              aria-label={p ? `${label} motion: ${p.description}` : "No motion (still image)"}
-              title={p?.description ?? "A still image"}
+              aria-label={
+                p ? `${label} motion: ${hint ?? p.description}` : "No motion (still image)"
+              }
+              title={hint ?? p?.description ?? "A still image"}
               data-motion={id}
               onClick={() => app.setMotion(id === "none" ? null : id)}
             >

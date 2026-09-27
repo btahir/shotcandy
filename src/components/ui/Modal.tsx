@@ -138,14 +138,15 @@ export function Modal({
 
   if (!mounted || typeof document === "undefined") return null;
   return createPortal(
-    <div ref={rootRef} className="modal-root" inert={closing || undefined}>
+    // Inert in the very render that closes it (before the exit animation starts).
+    <div ref={rootRef} className="modal-root" inert={closing || !open || undefined}>
       <div className={`scrim${closing ? " closing" : ""}`} onClick={onClose} aria-hidden="true" />
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        aria-hidden={closing || undefined}
+        aria-hidden={closing || !open || undefined}
         className={`sheet${closing ? " closing" : ""}${className ? ` ${className}` : ""}`}
         onKeyDown={onKey}
         onAnimationEnd={(e) => {

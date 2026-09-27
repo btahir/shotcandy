@@ -13,6 +13,8 @@ import {
   SET_MIN_SLIDES,
   applyStylePatch,
   createSet,
+  deviceCrop,
+  orientationMismatch,
   getSetStyle,
   importImage,
   newSlideId,
@@ -25,6 +27,18 @@ import {
 } from "@/engine";
 import { createStore, type Store } from "@/lib/store";
 import type { EditorApp } from "./app";
+
+/** File-name slug: lower-case letters, digits and single dashes only. */
+export function slug(text: string, max = 40): string {
+  return text
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, max)
+    .replace(/-+$/g, "");
+}
 
 export interface SetState {
   set: AppStoreSet;
@@ -201,11 +215,123 @@ export class SetController {
     return slideScene(this.set, template, i, this.app.resolver);
   }
 
-  /** Download all slides as opaque PNGs (or JPEGs) in a ZIP. */
-  async exportZip(format: "png" | "jpeg" = "png"): Promise<void> {
+  /** Slides with no screenshot yet (they'd export as placeholder screens). */
+  emptySlides(set: AppStoreSet = this.set): number[] {
+    return set.slides.flatMap((sl, i) =>
+      sl.assetId && this.app.library.has(sl.assetId) ? [] : [i],
+    );
+  }
+
+  /** Whether slide i holds a screenshot whose shape fights the set (and isn't cropped yet). */
+  slideMismatch(i: number): boolean {
+    const sl = this.set.slides[i];
+    const a = sl?.assetId ? this.app.library.get(sl.assetId) : undefined;
+    return !!a && !sl?.crop && orientationMismatch(this.set, { width: a.width, height: a.height });
+  }
+
+  /** "Crop to phone": show a device-shaped part of the screenshot on this slide. */
+  cropToDevice(i: number): void {
+    const sl = this.set.slides[i];
+    const a = sl?.assetId ? this.app.library.get(sl.assetId) : undefined;
+    if (!a) return;
+    this.updateSlide(i, { crop: deviceCrop(this.set, { width: a.width, height: a.height }) });
+    this.app.announce(`Slide ${i + 1}: cropped to the device's shape`);
+  }
+
+  /** "Rotate device": switch the whole set to the screenshot's orientation. */
+  rotateSet(): void {
+    this.update({ landscape: !this.set.landscape });
+    this.app.announce(this.set.landscape ? "Set is now landscape" : "Set is now portrait");
+  }
+
+  /** One slide as an App Store-ready file: exact size, and PNGs re-encoded without alpha. */
+  async slideFile(
+    i: number,
+    format: "png" | "jpeg" = "png",
+  ): Promise<{ blob: Blob; name: string }> {
+    const set = this.set;
+    const scene = this.slideScene(i);
+    const r = await this.app.exporter.export(
+      scene,
+      this.app.library.exportAssets(sceneAssetIds(scene)),
+      { format: format === "jpeg" ? "jpeg" : "png", scale: 1, quality: 0.95 },
+    );
+    let blob = r.blob;
+    if (format === "png") {
+      const pack = await import("@/engine/appstore/pack");
+      const bmp = await createImageBitmap(r.blob);
+      const c = new OffscreenCanvas(bmp.width, bmp.height);
+      const g = c.getContext("2d", { willReadFrequently: true })!;
+      g.drawImage(bmp, 0, 0);
+      bmp.close();
+      const data = pack.encodePngRgb(
+        g.getImageData(0, 0, c.width, c.height).data,
+        c.width,
+        c.height,
+      );
+      blob = new Blob([data as Uint8Array<ArrayBuffer>], { type: "image/png" });
+    }
+    const s = slug(set.slides[i]!.headline);
+    const name = `${String(i + 1).padStart(2, "0")}${s ? `-${s}` : ""}.${format === "jpeg" ? "jpg" : "png"}`;
+    return { blob, name };
+  }
+
+  /** Save one slide (phones: the share sheet, so it can go to Photos). */
+  async saveSlide(i: number = this.selected, format: "png" | "jpeg" = "png"): Promise<void> {
+    try {
+      const { blob, name } = await this.slideFile(i, format);
+      const file = new File([blob], `shotcandy-${name}`, { type: blob.type });
+      const nav = navigator as Navigator & {
+        canShare?: (d: ShareData) => boolean;
+        share?: (d: ShareData) => Promise<void>;
+      };
+      if (typeof nav.share === "function" && nav.canShare?.({ files: [file] })) {
+        try {
+          await nav.share({ files: [file], title: "App Store screenshot" });
+          return;
+        } catch (e) {
+          if ((e as Error).name === "AbortError") return;
+        }
+      }
+      this.app.downloadFile(blob, file.name);
+      const size = setCanvasSize(this.set);
+      this.app.toast({
+        kind: "info",
+        title: `Saved ${file.name}`,
+        detail: `${size.width} × ${size.height} ${format === "png" ? "PNG, no alpha" : "JPEG"}`,
+      });
+    } catch (e) {
+      this.app.toast({
+        kind: "error",
+        title: "Couldn't save the slide",
+        detail: e instanceof Error ? e.message : String(e),
+        prose: true,
+      });
+    }
+  }
+
+  /**
+   * Download all slides as opaque PNGs (or JPEGs) in a ZIP. Slides without a
+   * screenshot are skipped unless `includeEmpty` (never shipped silently).
+   */
+  async exportZip(
+    format: "png" | "jpeg" = "png",
+    opts: { includeEmpty?: boolean } = {},
+  ): Promise<void> {
     if (this.state.get().packing) return;
     const set = this.set;
-    const total = set.slides.length;
+    const empty = new Set(this.emptySlides(set));
+    const indices = set.slides.map((_, i) => i).filter((i) => opts.includeEmpty || !empty.has(i));
+    if (!indices.length) {
+      this.app.toast({
+        kind: "info",
+        title: "Add a screenshot first",
+        detail: "Every slide is still a placeholder. Drop screenshots onto the slides.",
+        prose: true,
+      });
+      return;
+    }
+    const total = indices.length;
     this.state.set({ packing: { done: 0, total } });
     try {
       const pack = await import("@/engine/appstore/pack");
@@ -214,49 +340,27 @@ export class SetController {
         `shotcandy-${set.sizePresetId}${set.landscape ? "-landscape" : ""}`,
       );
       const files: { name: string; data: Uint8Array }[] = [];
-      for (let i = 0; i < total; i++) {
-        const scene = this.slideScene(i);
-        const r = await this.app.exporter.export(
-          scene,
-          this.app.library.exportAssets(sceneAssetIds(scene)),
-          {
-            format: format === "jpeg" ? "jpeg" : "png",
-            scale: 1,
-            quality: 0.95,
-          },
-        );
-        let data: Uint8Array;
-        if (format === "png") {
-          // Re-encode without an alpha channel (App Store requirement).
-          const bmp = await createImageBitmap(r.blob);
-          const c = new OffscreenCanvas(bmp.width, bmp.height);
-          const g = c.getContext("2d", { willReadFrequently: true })!;
-          g.drawImage(bmp, 0, 0);
-          bmp.close();
-          data = pack.encodePngRgb(g.getImageData(0, 0, c.width, c.height).data, c.width, c.height);
-        } else {
-          data = new Uint8Array(await r.blob.arrayBuffer());
-        }
-        const slug = sanitizeFilename(
-          set.slides[i]!.headline.toLowerCase().replace(/\s+/g, "-"),
-        ).slice(0, 40);
-        files.push({
-          name: `${folder}/${String(i + 1).padStart(2, "0")}${slug ? `-${slug}` : ""}.${format === "jpeg" ? "jpg" : "png"}`,
-          data,
-        });
-        this.state.set({ packing: { done: i + 1, total } });
+      for (let k = 0; k < total; k++) {
+        const { blob, name } = await this.slideFile(indices[k]!, format);
+        files.push({ name: `${folder}/${name}`, data: new Uint8Array(await blob.arrayBuffer()) });
+        this.state.set({ packing: { done: k + 1, total } });
         await new Promise((res) => setTimeout(res, 0));
       }
       const zip = pack.zipFiles(files);
       const blob = new Blob([zip as Uint8Array<ArrayBuffer>], { type: "application/zip" });
       this.app.downloadFile(blob, `${folder}.zip`);
+      const skipped = set.slides.length - total;
       this.app.toast({
         kind: "info",
         title: `Saved ${folder}.zip`,
-        detail: `${total} slides · ${size.width} × ${size.height} ${format.toUpperCase()}${format === "png" ? " (no alpha)" : ""}`,
+        detail: `${total} slides · ${size.width} × ${size.height} ${format.toUpperCase()}${format === "png" ? " (no alpha)" : ""}${skipped ? ` · skipped ${skipped} without a screenshot` : ""}`,
         duration: 4200,
       });
       this.app.announce(`Saved ${total} slides as a ZIP`);
+      this.app.emit(
+        "set-exported",
+        files.map((f) => f.name),
+      );
     } catch (e) {
       this.app.toast({
         kind: "error",

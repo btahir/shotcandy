@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   COPY_MAX_LONG,
   autoScale,
+  destinationScale,
   exportTag,
   fitVerdict,
   getDestination,
@@ -10,7 +11,11 @@ import {
   ratioOk,
 } from "@/components/editor/export-plan";
 import {
+  GIF_AREA_EXPONENT,
   MapAssetResolver,
+  extrapolateGifBytes,
+  extrapolateVideoBytes,
+  videoBitrate,
   applyStylePatch,
   createScene,
   fromGradientEdit,
@@ -18,7 +23,13 @@ import {
   layoutScene,
   toGradientEdit,
 } from "@/engine";
-import { orientationOf, shuffleComposition, suitedStyles } from "@/components/editor/shuffle";
+import {
+  orientationOf,
+  paletteIsLively,
+  shuffleComposition,
+  suitedStyles,
+} from "@/components/editor/shuffle";
+import { slug } from "@/components/editor/appstore";
 import { createEditorStore } from "@/state/editor-store";
 import { syntheticScreenshot } from "../helpers/node-canvas";
 
@@ -54,18 +65,46 @@ describe("smart export scale", () => {
 });
 
 describe("export destinations", () => {
-  it("X: retina size up to 4096 px, PNG first, and knows the 5 MB limit", () => {
-    const p = planExport(native, { ...base, destination: "x" });
-    expect(Math.max(p.width, p.height)).toBe(4096);
-    expect(p.format).toBe("png");
-    const small = planExport(
-      { ...native, width: 1200, height: 630, fixed: true },
+  it("N1: X and LinkedIn never upscale past the screenshot's own pixels", () => {
+    for (const destination of ["x", "linkedin"] as const) {
+      const p = planExport(native, { ...base, destination });
+      expect([p.width, p.height]).toEqual([3398, 2376]); // native, not 4096 x 2864
+      expect(p.format).toBe("png");
+    }
+    // Drawn at half size in a fixed canvas: up to 2x, never past native.
+    const half = planExport(
+      { ...native, width: 1200, height: 630, fixed: true, drawRatio: 0.5 },
       { ...base, destination: "x" },
     );
-    expect(small.width).toBe(2400);
+    expect(half.width).toBe(2400);
+    const third = planExport(
+      { ...native, width: 1200, height: 630, fixed: true, drawRatio: 0.8 },
+      { ...base, destination: "x" },
+    );
+    expect(third.width).toBe(1500);
+    // Text content (code, posts) gets retina 2x, still capped at 4096.
+    const code = planExport(
+      { ...native, width: 900, height: 500, drawRatio: null },
+      { ...base, destination: "x" },
+    );
+    expect(code.width).toBe(1800);
+    const bigCode = planExport(
+      { ...native, width: 3000, height: 1000, drawRatio: null },
+      { ...base, destination: "x" },
+    );
+    expect(bigCode.width).toBe(4096);
+    expect(destinationScale(1)).toBe(1);
+    expect(destinationScale(0.25)).toBe(2);
+  });
+
+  it("N1: the limit badge describes the file that is actually saved", () => {
     const x = getDestination("x");
     expect(fitVerdict(x, 2e6, "png")).toEqual({ kind: "fits", label: "fits X’s 5 MB" });
-    expect(fitVerdict(x, 9e6, "png").kind).toBe("switch");
+    expect(fitVerdict(x, 2e6, "jpeg", true)).toEqual({
+      kind: "switch",
+      label: "JPEG to fit X’s 5 MB",
+    });
+    expect(fitVerdict(x, 9e6, "png").kind).toBe("over");
     expect(fitVerdict(getDestination("instagram"), 9e6, "jpeg").kind).toBe("none");
   });
 
@@ -166,5 +205,43 @@ describe("conic gradients round-trip without growing", () => {
     for (let i = 0; i < 4; i++) edit = toGradientEdit(fromGradientEdit(edit));
     expect(edit.stops.length).toBe(2);
     expect(edit.stops[1]!.offset).toBeCloseTo(1, 2);
+  });
+});
+
+describe("round 2: motion size models, App Store names, lively palettes", () => {
+  it("N1/N7: scales sample encodes up with the calibrated models", () => {
+    const small = { width: 200, height: 125, fps: 15, frames: 60, duration: 4 };
+    const full = { width: 640, height: 400, fps: 15, frames: 60, duration: 4 };
+    // GIF: area ratio 10.24, exponent 0.78 -> about 6.1x.
+    expect(extrapolateGifBytes(500_000, small, full) / 500_000).toBeCloseTo(10.24 ** 0.78, 3);
+    expect(extrapolateGifBytes(500_000, full, full)).toBe(500_000);
+    // Video: the sample's share of its bitrate target carries over.
+    const s480 = { width: 854, height: 480, fps: 30, frames: 120, duration: 4 };
+    const f1080 = { width: 1920, height: 1080, fps: 30, frames: 120, duration: 4 };
+    const targetS = (videoBitrate("balanced", 854, 480, 30) * 4) / 8;
+    const targetF = (videoBitrate("balanced", 1920, 1080, 30) * 4) / 8;
+    expect(extrapolateVideoBytes(targetS * 0.5, s480, f1080, "balanced")).toBeCloseTo(
+      targetF * 0.5,
+      -2,
+    );
+    expect(GIF_AREA_EXPONENT).toBeLessThan(1);
+  });
+
+  it("N20: App Store file names are plain slugs", () => {
+    expect(slug("Your day, beautifully planned.")).toBe("your-day-beautifully-planned");
+    expect(slug("  Crème brûlée — 100% ✨ ")).toBe("creme-brulee-100");
+    expect(slug("a".repeat(60))).toHaveLength(40);
+    expect(slug("!!!")).toBe("");
+  });
+
+  it("N21: only clear, bright palettes feed 'from your shot' rolls", () => {
+    const sw = (L: number, C: number) => ({ hex: "#000000", lch: { L, C, h: 40 }, weight: 1 });
+    const pal = (L: number, C: number, achromatic = false) =>
+      ({ vibrant: sw(L, C), achromatic }) as unknown as Parameters<typeof paletteIsLively>[0];
+    expect(paletteIsLively(pal(0.7, 0.15))).toBe(true);
+    expect(paletteIsLively(pal(0.7, 0.04))).toBe(false);
+    expect(paletteIsLively(pal(0.3, 0.2))).toBe(false);
+    expect(paletteIsLively(pal(0.7, 0.2, true))).toBe(false);
+    expect(paletteIsLively(null)).toBe(false);
   });
 });

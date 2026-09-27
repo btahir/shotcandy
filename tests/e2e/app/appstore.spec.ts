@@ -88,6 +88,16 @@ test("dropping a screenshot on a slide fills it; styles apply to all slides", as
 test("exports a ZIP of exact-size PNGs without alpha", async ({ page }) => {
   await appStoreMode(page);
   await page.getByRole("radio", { name: /iPad 13/ }).click();
+  // Every slide gets a screenshot (empty slides are skipped by default).
+  await page.evaluate(async () => {
+    const app = (
+      window as unknown as {
+        __shotcandy: { app: { sets: { setSlideImage(i: number, b: Blob): Promise<void> } } };
+      }
+    ).__shotcandy.app;
+    const b = await (await fetch("/samples/sample-tablet-reader.webp")).blob();
+    for (let i = 0; i < 5; i++) await app.sets.setSlideImage(i, b);
+  });
   const [dl] = await Promise.all([
     page.waitForEvent("download", { timeout: 90_000 }),
     page.getByTestId("export").click(),

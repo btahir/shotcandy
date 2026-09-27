@@ -110,14 +110,6 @@ function LiveRegion() {
   return host ? createPortal(region, host) : region;
 }
 
-/** The page's h1 once the empty state (which carries its own) is gone. */
-function EditorHeading() {
-  const mode = useUi((s) => s.mode);
-  const hasContent = useUi((s) => s.hasContent);
-  if (mode === "screenshot" && !hasContent) return null;
-  return <h1 className="sr-only">Shotcandy editor</h1>;
-}
-
 export function Editor() {
   const [app] = useState(() => new EditorApp());
   const narrow = useNarrow();
@@ -162,7 +154,6 @@ export function Editor() {
       <Gallery narrow={!!narrow} />
       <ShortcutsSheet />
       <RecentsDialog />
-      <EditorHeading />
       <LiveRegion />
     </AppContext.Provider>
   );

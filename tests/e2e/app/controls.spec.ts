@@ -42,7 +42,10 @@ test("export defaults to Auto 1× (native pixels) and says how big the file is",
   await expect(page.getByTestId("export")).toContainText("Auto 1×");
   await page.getByTestId("export-options").click();
   await expect(page.getByTestId("export-dims")).toHaveText(`${plan.width} × ${plan.height}`);
-  await expect(page.getByTestId("export-size")).toContainText(/≈ \d/);
+  // The size is the real encoded file's (REVIEW r2 N1), not an estimate.
+  await expect(page.getByTestId("export-size")).toHaveText(/^\d+(\.\d)? (KB|MB)$/, {
+    timeout: 20_000,
+  });
   const [dl] = await Promise.all([
     page.waitForEvent("download"),
     page.getByTestId("download").click(),

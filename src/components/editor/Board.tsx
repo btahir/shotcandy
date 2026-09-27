@@ -136,6 +136,12 @@ export function Board({ narrow = false }: { narrow?: boolean }) {
                   Drop a screenshot
                 </span>
               )}
+              {app.sets.slideMismatch(i) && (
+                <span className="slide-warn" data-testid={`slide-warn-${i}`}>
+                  <Icon name="alert" size="xs" />
+                  {set.landscape ? "Portrait shot" : "Landscape shot"}
+                </span>
+              )}
             </button>
             <span className="slide-num mono" aria-hidden="true">
               {i + 1}

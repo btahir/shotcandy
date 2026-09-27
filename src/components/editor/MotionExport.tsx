@@ -1,6 +1,6 @@
 "use client";
 /** Export options for the motion clip: MP4 / WebM / GIF, size, frame rate and quality. */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type AnimationFormat, canEncodeFormat } from "@/engine";
 import { useModKey } from "@/lib/platform";
 import { Icon } from "../icons";
@@ -39,11 +39,39 @@ export function useVideoSupport() {
   return support;
 }
 
+/** Expected size of the motion export (a real sample encode, scaled up), debounced. */
+export function useMotionEstimate(active: boolean): number | null {
+  const app = useApp();
+  const scene = useScene((s) => s.scene);
+  const settings = useUi((s) => s.exportSettings.motion);
+  const busy = useUi((s) => !!s.motionExport);
+  const [res, setRes] = useState<{ key: unknown; bytes: number } | null>(null);
+  const key = useMemo(() => [scene, settings], [scene, settings]);
+  useEffect(() => {
+    if (!active || busy || !scene.animation) return;
+    let alive = true;
+    const t = setTimeout(() => {
+      app
+        .estimateMotion(settings)
+        .then((bytes) => alive && setRes({ key, bytes }))
+        .catch(() => undefined);
+    }, 400);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [active, busy, app, key, scene.animation, settings]);
+  return res && res.key === key ? res.bytes : null;
+}
+
+const GIF_TARGET = 5 * 1024 * 1024;
+
 export function MotionExportPanel({ onDone }: { onDone?: () => void }) {
   const app = useApp();
   const mod = useModKey();
   const spec = useScene((s) => s.scene.animation);
   useScene((s) => s.scene);
+  const est = useMotionEstimate(true);
   const settings = useUi((s) => s.exportSettings.motion);
   const busy = useUi((s) => !!s.motionExport);
   const support = useVideoSupport();
@@ -72,14 +100,6 @@ export function MotionExportPanel({ onDone }: { onDone?: () => void }) {
   const plan = app.motionPlan(settings);
   const gif = settings.format === "gif";
   const video = !gif;
-  const bits = plan
-    ? plan.width *
-      plan.height *
-      plan.fps *
-      (settings.quality === "small" ? 0.05 : settings.quality === "best" ? 0.2 : 0.1)
-    : 0;
-  // Screen designs compress well: VBR lands around half the target bitrate.
-  const est = plan && video ? (bits * plan.duration) / 8 / 2 : null;
   const label = settings.format === "gif" ? "GIF" : settings.format.toUpperCase();
 
   return (
@@ -189,13 +209,54 @@ export function MotionExportPanel({ onDone }: { onDone?: () => void }) {
       <div className="motion-summary mono" data-testid="motion-summary">
         {plan && (
           <>
-            {plan.duration.toFixed(1)} s · {plan.frames} frames
-            {est ? ` · ≈ ${formatBytes(est)}` : ""}
+            {plan.duration.toFixed(1)} s · {plan.frames} frames ·{" "}
+            <span data-testid="motion-size">
+              {est !== null ? `≈ ${formatBytes(est)}` : "sizing…"}
+            </span>
           </>
         )}
       </div>
-      {gif && plan && plan.width * plan.height * plan.frames > 90_000_000 && (
-        <p className="note">Big GIF ahead. MP4 is about ten times smaller for the same clip.</p>
+      {gif && est !== null && (
+        <div className="motion-fit">
+          {est <= GIF_TARGET ? (
+            <span className="fit-badge fits" data-testid="gif-fit">
+              <Icon name="check" size="xs" /> Under 5 MB: fine for a README or a post
+            </span>
+          ) : (
+            <>
+              <span className="fit-badge over" data-testid="gif-fit">
+                <Icon name="alert" size="xs" /> Over 5 MB. MP4 is about ten times smaller.
+              </span>
+              <span className="guard-acts">
+                {support.mp4 !== false && (
+                  <button type="button" className="link" onClick={() => set({ format: "mp4" })}>
+                    Use MP4
+                  </button>
+                )}
+                {settings.gifSize > 480 && (
+                  <button
+                    type="button"
+                    className="link"
+                    onClick={() =>
+                      set({
+                        gifSize:
+                          GIF_SIZES[GIF_SIZES.findIndex((g) => g.value === settings.gifSize) - 1]
+                            ?.value ?? 480,
+                      })
+                    }
+                  >
+                    Smaller size
+                  </button>
+                )}
+                {settings.dither && (
+                  <button type="button" className="link" onClick={() => set({ dither: false })}>
+                    Dither off
+                  </button>
+                )}
+              </span>
+            </>
+          )}
+        </div>
       )}
       <button
         type="button"

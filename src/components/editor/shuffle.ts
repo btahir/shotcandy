@@ -95,6 +95,16 @@ const LAYER_LABEL: Record<Layer, string> = {
   peek: "peeking from the corner",
 };
 
+/**
+ * "From your shot" rolls only when the screenshot has a clear, bright accent:
+ * greyish or muddy palettes gave mustard-on-pink results (REVIEW r2 N21).
+ */
+export function paletteIsLively(p: Palette | null): boolean {
+  if (!p || p.achromatic) return false;
+  const v = p.vibrant.lch;
+  return v.C >= 0.1 && v.L >= 0.45 && v.L <= 0.9;
+}
+
 export interface ShuffleContext {
   seed: number;
   /** Source size of the screenshot (null for code/posts). */
@@ -131,7 +141,7 @@ export function shuffleComposition(scene: Scene, ctx: ShuffleContext): ShuffleRe
   if (!wallpaper && base.family !== "paper") {
     const choice = pick(r, [
       ["keep", 4],
-      ["auto", ctx.palette ? 3 : 0],
+      ["auto", paletteIsLively(ctx.palette) ? 3 : 0],
       ["curated", 3],
     ] as const);
     let fill: BackgroundFill | null = null;
