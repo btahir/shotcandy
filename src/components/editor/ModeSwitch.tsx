@@ -3,7 +3,7 @@
  * The mode switcher: Screenshot · Code · Post · App Store, as a candy
  * segmented pill in the header. Each mode keeps its own design.
  */
-import { useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "../icons";
 import { Popover, menuKeys } from "../ui/controls";
 import { useApp, useUi } from "./context";
@@ -12,25 +12,48 @@ import { MODES } from "./modes";
 export function ModeSwitch({ compact = false }: { compact?: boolean }) {
   const app = useApp();
   const mode = useUi((s) => s.mode);
+  const ref = useRef<HTMLDivElement>(null);
+  const [pill, setPill] = useState<{ x: number; w: number } | null>(null);
+  useLayoutEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const measure = () => {
+      const b = root.querySelector<HTMLElement>("button.on");
+      if (b) setPill({ x: b.offsetLeft, w: b.offsetWidth });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(root);
+    return () => ro.disconnect();
+  }, [mode]);
   const onKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
     if (!d) return;
     e.preventDefault();
     const i = MODES.findIndex((m) => m.id === mode);
     const next = MODES[(i + d + MODES.length) % MODES.length]!;
+    const root = e.currentTarget;
     app.setMode(next.id);
     requestAnimationFrame(() =>
-      e.currentTarget.querySelector<HTMLButtonElement>(`[data-mode="${next.id}"]`)?.focus(),
+      root.querySelector<HTMLButtonElement>(`[data-mode="${next.id}"]`)?.focus(),
     );
   };
   return (
     <div
+      ref={ref}
       className={`mode-switch${compact ? " compact" : ""}`}
       role="tablist"
       aria-label="What are you making?"
       data-testid="mode-switch"
       onKeyDown={onKey}
     >
+      {pill && (
+        <span
+          className="ms-pill"
+          aria-hidden="true"
+          style={{ width: pill.w, transform: `translateX(${pill.x}px)` }}
+        />
+      )}
       {MODES.map((m) => {
         const on = m.id === mode;
         return (

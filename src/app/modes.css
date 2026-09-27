@@ -35,12 +35,35 @@
     color: var(--sc-ink);
     background: var(--sc-well-hover);
   }
-  .mode-switch button.on {
-    color: var(--sc-ink);
+  .mode-switch {
+    position: relative;
+    isolation: isolate;
+  }
+  .mode-switch button {
+    position: relative;
+    z-index: 1;
+  }
+  .mode-switch .ms-pill {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 0;
+    border-radius: 11px;
     background: var(--sc-surface);
     box-shadow:
       0 1px 2px rgba(74, 45, 20, 0.12),
       inset 0 -1.5px 0 rgba(74, 45, 20, 0.07);
+    transition:
+      transform var(--sc-dur-base) var(--sc-ease-out),
+      width var(--sc-dur-base) var(--sc-ease-out);
+    z-index: 0;
+    pointer-events: none;
+  }
+  .mode-switch button.on {
+    color: var(--sc-ink);
+  }
+  .mode-switch button.on:hover {
+    background: none;
   }
   .mode-switch button.on svg {
     color: var(--sc-accent-text);
@@ -588,5 +611,88 @@
   .presets.set-styles .thumb.tall,
   .rail .thumb.tall {
     aspect-ratio: 9 / 17;
+  }
+}
+
+@layer components {
+  /* ---------- Empty state: other modes ---------- */
+  .empty-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+  }
+  .mode-picks {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: sc-fade-in var(--sc-dur-slow) var(--sc-ease-out) 120ms both;
+  }
+  .mp-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--sc-ink-3);
+    margin-right: 4px;
+  }
+  .mode-pick {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px 7px 7px;
+    border-radius: 16px;
+    background: var(--sc-surface);
+    box-shadow: var(--sc-shadow-raised);
+    text-align: left;
+    transition:
+      transform var(--sc-dur-fast) var(--sc-ease-pop),
+      box-shadow var(--sc-dur-fast);
+  }
+  .mode-pick:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sc-shadow-raised-hover);
+  }
+  .mode-pick:active {
+    transform: translateY(1px);
+  }
+  .mode-pick:focus-visible {
+    outline: none;
+    box-shadow: var(--sc-focus-ring);
+  }
+  .mp-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    background: var(--sc-accent-soft);
+    color: var(--sc-accent-text);
+    flex: none;
+  }
+  .mp-txt {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .mp-txt b {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--sc-ink);
+    white-space: nowrap;
+  }
+  .mp-txt small {
+    font-size: 11.5px;
+    color: var(--sc-ink-3);
+    white-space: nowrap;
+  }
+  .mode-picks.narrow {
+    margin-top: 16px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .mode-picks.narrow .mp-label {
+    text-align: center;
+    margin: 0 0 2px;
   }
 }

@@ -5,6 +5,46 @@ import { ACCEPT_ATTRIBUTE } from "@/engine";
 import { isApple } from "@/lib/platform";
 import { Icon } from "../icons";
 import { useApp, useUi } from "./context";
+import { MODES } from "./modes";
+
+/** "Or make…": the other modes, from the empty screenshot state. */
+function ModePicks({ narrow }: { narrow?: boolean }) {
+  const app = useApp();
+  const picks = MODES.filter((m) => m.id !== "screenshot");
+  const sub: Record<string, string> = {
+    code: "Paste code, pick a theme",
+    post: "Posts and testimonials",
+    appstore: "3–10 slides, exact sizes",
+  };
+  return (
+    <nav className={`mode-picks${narrow ? " narrow" : ""}`} aria-label="Make something else">
+      <span className="mp-label">Or make</span>
+      {picks.map((m) => (
+        <button
+          key={m.id}
+          type="button"
+          className="mode-pick"
+          data-testid={`pick-${m.id}`}
+          onClick={() => app.setMode(m.id)}
+        >
+          <span className="mp-icon">
+            <Icon name={m.icon} size="sm" />
+          </span>
+          <span className="mp-txt">
+            <b>
+              {m.id === "code"
+                ? "A code image"
+                : m.id === "post"
+                  ? "A post card"
+                  : "An App Store set"}
+            </b>
+            <small>{sub[m.id]}</small>
+          </span>
+        </button>
+      ))}
+    </nav>
+  );
+}
 
 export const SAMPLES = [
   { id: "sample-dashboard-light", label: "Try the dashboard sample", pos: "left top" },
@@ -116,65 +156,75 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
           <div className="privacy-line">
             <Icon name="lock" size="sm" /> Stays on your phone. No upload.
           </div>
+          <ModePicks narrow />
         </div>
       </div>
     );
 
   return (
     <div className="empty-wrap">
-      <div className={`paste-card${drag ? " is-drag" : ""}`} data-testid="empty-state">
-        {importing && <span className="progress-shimmer" aria-hidden="true" />}
-        <div className="fan" aria-hidden="true">
-          <div className="f f1">
-            <img src="/empty/fan-mint.webp" alt="" width={170} height={117} fetchPriority="high" />
+      <div className="empty-stack">
+        <div className={`paste-card${drag ? " is-drag" : ""}`} data-testid="empty-state">
+          {importing && <span className="progress-shimmer" aria-hidden="true" />}
+          <div className="fan" aria-hidden="true">
+            <div className="f f1">
+              <img
+                src="/empty/fan-mint.webp"
+                alt=""
+                width={170}
+                height={117}
+                fetchPriority="high"
+              />
+            </div>
+            <div className="f f3">
+              <img
+                src="/empty/fan-midnight.webp"
+                alt=""
+                width={170}
+                height={117}
+                fetchPriority="high"
+              />
+            </div>
+            <div className="f f2">
+              <img
+                src="/empty/fan-sherbet.webp"
+                alt=""
+                width={170}
+                height={117}
+                fetchPriority="high"
+              />
+            </div>
           </div>
-          <div className="f f3">
-            <img
-              src="/empty/fan-midnight.webp"
-              alt=""
-              width={170}
-              height={117}
-              fetchPriority="high"
-            />
+          <h1>Paste a screenshot</h1>
+          <p className="lede">We’ll make it look lovely in one step.</p>
+          <div className="keys">
+            <kbd className="kbd kbd-lg">{mod}</kbd>
+            <kbd className="kbd kbd-lg">V</kbd>
+            <span className="or">or drop an image anywhere</span>
           </div>
-          <div className="f f2">
-            <img
-              src="/empty/fan-sherbet.webp"
-              alt=""
-              width={170}
-              height={117}
-              fetchPriority="high"
-            />
+          <div className="row">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={choose}>
+              <Icon name="upload" size="sm" /> Choose file
+            </button>
+            <span className="try">Try a sample</span>
+            <SampleButtons order={SAMPLES} />
           </div>
+          <div className="privacy">
+            <Icon name="lock" size="sm" /> Your image never leaves this browser. No account, no
+            upload.
+          </div>
+          {recents > 0 && (
+            <button
+              type="button"
+              className="link quiet"
+              style={{ marginTop: 12 }}
+              onClick={() => app.ui.set({ modal: "recents" })}
+            >
+              <Icon name="clock" size="xs" /> Pick up a recent design
+            </button>
+          )}
         </div>
-        <h1>Paste a screenshot</h1>
-        <p className="lede">We’ll make it look lovely in one step.</p>
-        <div className="keys">
-          <kbd className="kbd kbd-lg">{mod}</kbd>
-          <kbd className="kbd kbd-lg">V</kbd>
-          <span className="or">or drop an image anywhere</span>
-        </div>
-        <div className="row">
-          <button type="button" className="btn btn-secondary btn-sm" onClick={choose}>
-            <Icon name="upload" size="sm" /> Choose file
-          </button>
-          <span className="try">Try a sample</span>
-          <SampleButtons order={SAMPLES} />
-        </div>
-        <div className="privacy">
-          <Icon name="lock" size="sm" /> Your image never leaves this browser. No account, no
-          upload.
-        </div>
-        {recents > 0 && (
-          <button
-            type="button"
-            className="link quiet"
-            style={{ marginTop: 12 }}
-            onClick={() => app.ui.set({ modal: "recents" })}
-          >
-            <Icon name="clock" size="xs" /> Pick up a recent design
-          </button>
-        )}
+        <ModePicks />
       </div>
     </div>
   );
