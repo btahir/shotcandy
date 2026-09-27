@@ -32,7 +32,7 @@ test("Code mode starts with a highlighted sample and loads Shiki lazily", async 
       timeout: 15_000,
     })
     .toBe("typescript");
-  await expect(page.getByTestId("language")).toContainText("Auto · TypeScript");
+  await expect(page.getByTestId("language")).toHaveAccessibleName("Language: Auto · TypeScript");
   await expect(page.getByTestId("export")).toBeEnabled();
 });
 
@@ -83,7 +83,10 @@ test("exports the code image as PNG at 2x", async ({ page }) => {
     return el.textContent ?? "";
   });
   const m = /(\d+) × (\d+)/.exec(dims)!;
-  const [dl] = await Promise.all([page.waitForEvent("download"), page.getByTestId("export").click()]);
+  const [dl] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByTestId("export").click(),
+  ]);
   const size = pngSize(readFileSync(await dl.path()));
   expect(size).toEqual({ width: Number(m[1]) * 2, height: Number(m[2]) * 2 });
 });

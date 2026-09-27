@@ -183,6 +183,104 @@ const desktop = [
       await sample("sample-mobile-habits")(page);
     },
   ],
+  [
+    "editor-motion",
+    async (page) => {
+      await sample("sample-dashboard-light")(page);
+      await page.getByRole("button", { name: /^Float motion/ }).click();
+      await page.evaluate(() => window.__shotcandy.app.seek(1.1));
+      await page.waitForTimeout(700);
+    },
+  ],
+  [
+    "editor-motion-export",
+    async (page) => {
+      await sample("sample-dashboard-light")(page);
+      await page.getByRole("button", { name: /^Zoom in motion/ }).click();
+      await page.evaluate(() => window.__shotcandy.app.seek(1.2));
+      await page.click("[data-testid=export-options]");
+      await page.getByRole("tab", { name: "Video" }).click();
+      await page.waitForTimeout(700);
+    },
+  ],
+  [
+    "editor-motion-rendering",
+    async (page) => {
+      await sample("sample-dashboard-light")(page);
+      await page.getByRole("button", { name: /^3D sweep motion/ }).click();
+      await page.evaluate(() => {
+        const app = window.__shotcandy.app;
+        app.setExportSettings({
+          motion: { ...app.ui.get().exportSettings.motion, videoRes: 2160 },
+        });
+        void app.exportMotion();
+      });
+      await page.waitForSelector("[data-testid=render-pill]");
+      await page.waitForTimeout(1500);
+    },
+  ],
+  [
+    "editor-code",
+    async (page) => {
+      await page.getByRole("tab", { name: "Code" }).click();
+      await page.evaluate(() => window.__shotcandy.app.setCode({ highlight: [7, 8] }));
+      await page.waitForTimeout(2200);
+    },
+  ],
+  [
+    "editor-code-language",
+    async (page) => {
+      await page.getByRole("tab", { name: "Code" }).click();
+      await page.waitForTimeout(1500);
+      await page.getByTestId("language").click();
+      await page.waitForTimeout(500);
+    },
+  ],
+  [
+    "editor-post",
+    async (page) => {
+      await page.getByRole("tab", { name: "Post" }).click();
+      await page.waitForTimeout(1800);
+    },
+  ],
+  [
+    "editor-testimonial",
+    async (page) => {
+      await page.getByRole("tab", { name: "Post" }).click();
+      await page.getByRole("radio", { name: "Testimonial" }).click();
+      await page.getByRole("button", { name: "Midnight card style" }).click();
+      await page.waitForTimeout(1800);
+    },
+  ],
+  [
+    "editor-appstore",
+    async (page) => {
+      await page.getByRole("tab", { name: "App Store" }).click();
+      await page.evaluate(async () => {
+        const app = window.__shotcandy.app;
+        const r = await fetch("/samples/sample-mobile-habits.webp");
+        const b = await r.blob();
+        await app.sets.setSlideImage(0, b);
+        await app.sets.setSlideImage(2, b);
+        app.sets.select(0);
+      });
+      await page.waitForTimeout(2000);
+    },
+  ],
+  [
+    "editor-appstore-export",
+    async (page) => {
+      await page.getByRole("tab", { name: "App Store" }).click();
+      await page.evaluate(async () => {
+        const app = window.__shotcandy.app;
+        const r = await fetch("/samples/sample-mobile-habits.webp");
+        await app.sets.setSlideImage(1, await r.blob());
+        app.sets.applyStyle("set-grape");
+      });
+      await page.click("[data-testid=export-options]");
+      await page.waitForTimeout(1500);
+    },
+  ],
 ];
 
 const mobile = [
@@ -223,6 +321,42 @@ const mobile = [
       await page.waitForTimeout(1200);
     },
   ],
+  [
+    "mobile-motion",
+    async (page) => {
+      await sample("sample-mobile-habits")(page);
+      await page.click('[role=tab]:has-text("Motion")');
+      await page.getByRole("button", { name: /^Float motion/ }).click();
+      await page.evaluate(() => window.__shotcandy.app.seek(1));
+      await page.waitForTimeout(700);
+    },
+  ],
+  [
+    "mobile-code",
+    async (page) => {
+      await page.evaluate(() => window.__shotcandy.app.setMode("code"));
+      await page.waitForTimeout(1800);
+    },
+  ],
+  [
+    "mobile-post",
+    async (page) => {
+      await page.evaluate(() => window.__shotcandy.app.setMode("post"));
+      await page.waitForTimeout(1500);
+    },
+  ],
+  [
+    "mobile-appstore",
+    async (page) => {
+      await page.evaluate(async () => {
+        const app = window.__shotcandy.app;
+        app.setMode("appstore");
+        const r = await fetch("/samples/sample-mobile-habits.webp");
+        await app.sets.setSlideImage(0, await r.blob());
+      });
+      await page.waitForTimeout(1800);
+    },
+  ],
 ];
 
 const pages = [
@@ -230,6 +364,7 @@ const pages = [
   ["landing-screenshot-beautifier", "/screenshot-beautifier/"],
   ["landing-macos-window-frame", "/macos-window-frame/"],
   ["landing-og-image-maker", "/og-image-maker/"],
+  ["landing-code-screenshot", "/code-screenshot/"],
 ];
 
 async function shoot(name, scheme, viewport, fn, path = "/", full = false) {

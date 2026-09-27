@@ -66,6 +66,7 @@ const TABS: TabDef[] = [
 
 function MobileHeader() {
   const app = useApp();
+  const mode = useUi((s) => s.mode);
   const hasContent = useUi((s) => s.hasContent);
   const canUndo = useScene((s) => s.canUndo);
   return (
@@ -74,7 +75,7 @@ function MobileHeader() {
         <LogoMark className="mark" />
       </a>
       <MobileModeButton />
-      <SizeChip compact />
+      {mode !== "appstore" && <SizeChip compact />}
       <div style={{ flex: 1 }} />
       {hasContent && (
         <button

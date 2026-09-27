@@ -90,7 +90,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
   const W = frameLayout.canvas.width;
   const H = frameLayout.canvas.height;
   const padX = narrow ? 32 : 150;
-  const padY = (narrow ? 40 : 190) + (motion && !narrow ? 60 : 0);
+  const padY = (narrow ? 40 : 190) + (motion ? (narrow ? 96 : 60) : 0);
   const fit =
     size.w > 0
       ? Math.max(0.02, Math.min((size.w - padX) / W, (size.h - padY) / H, narrow ? 2 : 1.5))

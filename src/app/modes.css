@@ -28,8 +28,7 @@
     white-space: nowrap;
     transition:
       background var(--sc-dur-base) var(--sc-ease-out),
-      color var(--sc-dur-base),
-      box-shadow var(--sc-dur-base);
+      color var(--sc-dur-base);
   }
   .mode-switch button:hover {
     color: var(--sc-ink);
@@ -126,6 +125,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: left;
+  }
+  .lang-auto {
+    font-size: 10.5px;
+    color: var(--sc-accent-text);
+    background: var(--sc-accent-soft);
+    border-radius: 6px;
+    padding: 2px 5px;
+    flex: none;
   }
   .code-title svg {
     color: var(--sc-ink-3);

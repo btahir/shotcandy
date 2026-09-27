@@ -56,7 +56,13 @@ function LanguageMenu({ c }: { c: CodeContent }) {
         data-testid="language"
         onClick={() => setOpen((o) => !o)}
       >
-        <Icon name="code" size="sm" /> <span className="lang-txt">{languageLabel(c)}</span>
+        <Icon name={c.language === "auto" ? "sparkle" : "code"} size="sm" />
+        <span className="lang-txt">
+          {c.language === "auto"
+            ? (getCodeLanguage(c.tokens?.language ?? detectLanguage(c.code))?.label ?? "Plain text")
+            : languageLabel(c)}
+        </span>
+        {c.language === "auto" && <span className="lang-auto mono">auto</span>}
         <Icon name="chevronDown" size="sm" />
       </button>
       <Popover
