@@ -126,27 +126,6 @@ export {
   type PostStyle,
 } from "./post/themes";
 
-// App Store screenshot sets (packing lives in appstore/pack.ts: import it lazily)
-export {
-  createSet,
-  createSetTemplate,
-  slideScene,
-  normalizeSet,
-  setCanvasSize,
-  newSlideId,
-  headlineWidth,
-  isTabletSize,
-  APPSTORE_SIZES,
-  SET_STYLES,
-  SET_MIN_SLIDES,
-  SET_MAX_SLIDES,
-  getSetStyle,
-  type AppStoreSet,
-  type AppStoreSlide,
-  type SetText,
-  type SetStyle,
-} from "./appstore/set";
-
 // Frames
 export {
   registerFrame,
