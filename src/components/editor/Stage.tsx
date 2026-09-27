@@ -30,7 +30,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
   const app = useApp();
   const scene = useScene((s) => s.scene);
   const selection = useScene((s) => s.selection);
-  const hasImage = useUi((s) => s.hasImage);
+  const hasContent = useUi((s) => s.hasContent);
   const zoomPref = useUi((s) => s.zoom);
   const pan = useUi((s) => s.pan);
   const tool = useUi((s) => s.tool);
@@ -70,7 +70,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
   const layout = useMemo(
     () => layoutScene(scene, app.library),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scene, app, assetsVersion],
+    [scene, app, assetsVersion, fontsReady],
   );
   // Motion frames share one pinned canvas; size the preview from it.
   const frameLayout = useMemo(
@@ -120,7 +120,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
   const drawRef = useRef<() => void>(() => undefined);
   const draw = () => {
     const canvas = canvasRef.current;
-    if (!canvas || !hasImage) return;
+    if (!canvas || !hasContent) return;
     const dpr = window.devicePixelRatio || 1;
     let s = zoom * dpr;
     const long = Math.max(W, H) * s;
@@ -157,7 +157,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
   useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
 
   useEffect(() => {
-    if (hasImage) schedule();
+    if (hasContent) schedule();
   }, [
     schedule,
     renderScene_,
@@ -165,7 +165,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
     zoom,
     W,
     H,
-    hasImage,
+    hasContent,
     fontsReady,
     assetsVersion,
     showFrames,
@@ -240,7 +240,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
 
   useEffect(() => {
     const el = stageRef.current;
-    if (!el || !hasImage) return;
+    if (!el || !hasContent) return;
     const onWheel = (e: WheelEvent) => {
       const r = el.getBoundingClientRect();
       if (e.ctrlKey || e.metaKey) {
@@ -258,7 +258,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [app, hasImage, zoomAt]);
+  }, [app, hasContent, zoomAt]);
 
   // Pointer: pan (space / middle button / background when zoomed), pinch, deselect.
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -272,7 +272,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
   } | null>(null);
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!hasImage) return;
+    if (!hasContent) return;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const onComp = compRef.current?.contains(e.target as Node);
     if (pointers.current.size === 2) {
@@ -337,33 +337,33 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
     scene.content.kind === "image" && scene.content.assetId
       ? (app.library.get(scene.content.assetId)?.palette ?? null)
       : null;
-  const tint = hasImage
+  const tint = hasContent
     ? (palette?.dominant.hex ?? fillDominant(scene.background.fill, palette) ?? "transparent")
     : "#FF8FAB";
 
   const showMarks =
-    hasImage && !selection && tool === "select" && !editing && !narrow && !showFrames;
+    hasContent && !selection && tool === "select" && !editing && !narrow && !showFrames;
   const zoomed = zoom > fit * 1.01;
 
   return (
     <main
       ref={stageRef}
-      className={`stage${spaceDown || zoomed ? " can-pan" : ""}${panning ? " panning" : ""}${motion && hasImage && !narrow ? " has-timeline" : ""}`}
+      className={`stage${spaceDown || zoomed ? " can-pan" : ""}${panning ? " panning" : ""}${motion && hasContent && !narrow ? " has-timeline" : ""}`}
       style={{ ["--tint" as string]: tint }}
-      tabIndex={hasImage ? 0 : -1}
-      aria-label={hasImage ? "Canvas. Press ⌘C to copy the image" : "Canvas"}
+      tabIndex={hasContent ? 0 : -1}
+      aria-label={hasContent ? "Canvas. Press ⌘C to copy the image" : "Canvas"}
       data-testid="stage"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endPointer}
       onPointerCancel={endPointer}
       onDoubleClick={(e) => {
-        if (hasImage && !compRef.current?.contains(e.target as Node) && tool === "select")
+        if (hasContent && !compRef.current?.contains(e.target as Node) && tool === "select")
           app.copy(e.currentTarget.ownerDocument.querySelector("[data-copy-anchor]"));
       }}
     >
-      {!hasImage && <EmptyState narrow={narrow} />}
-      {hasImage && (
+      {!hasContent && <EmptyState narrow={narrow} />}
+      {hasContent && (
         <>
           <div
             ref={compRef}
@@ -402,7 +402,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
           {!narrow && <Dock />}
         </>
       )}
-      {!narrow && <ZoomControl disabled={!hasImage} />}
+      {!narrow && <ZoomControl disabled={!hasContent} />}
       <RenderPill />
       <Toasts />
       <DropVeil />

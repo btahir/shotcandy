@@ -29,6 +29,7 @@ import { useApp, useScene, useUi } from "./context";
 import { openFilePicker } from "./EmptyState";
 import { StyleThumb } from "./StyleThumb";
 import { MotionTray } from "./MotionTray";
+import { CodeTray, ThemesTray, WindowTray } from "./CodeInspector";
 
 const DEFAULT_ROW = ["sherbet", "mint-julep", "grape-soda", "paper", "midnight", "satin"];
 
@@ -258,7 +259,7 @@ export const BackgroundTray = memo(function BackgroundTray({ bare = false }: { b
   const contentId = useScene((s) =>
     s.scene.content.kind === "image" ? s.scene.content.assetId : null,
   );
-  const hasImage = useUi((s) => s.hasImage);
+  const hasContent = useUi((s) => s.hasContent);
   useUi((s) => s.assetsVersion);
   const palette = contentId ? (app.library.get(contentId)?.palette ?? null) : null;
   const [tab, setTab] = useState<BgTab>(() => tabFor(fill));
@@ -369,9 +370,9 @@ export const BackgroundTray = memo(function BackgroundTray({ bare = false }: { b
         </div>
         <div className="txt">
           From your shot
-          <small>{hasImage && palette ? "3 colours picked" : "Paste an image to unlock"}</small>
+          <small>{hasContent && palette ? "3 colours picked" : "Paste an image to unlock"}</small>
         </div>
-        {hasImage && palette && (
+        {hasContent && palette && (
           <div className="sws">
             {autoStyles.map((a) => {
               const on = fill.kind === "auto" && fill.style === a.style;
@@ -1035,6 +1036,30 @@ export const FrameTray = memo(function FrameTray({ bare = false }: { bare?: bool
 // Inspector
 // ---------------------------------------------------------------------------
 
+function ModeTrays() {
+  const mode = useUi((s) => s.mode);
+  if (mode === "code")
+    return (
+      <>
+        <CodeTray />
+        <ThemesTray />
+        <MotionTray />
+        <WindowTray />
+        <BackgroundTray />
+        <LayoutTray />
+      </>
+    );
+  return (
+    <>
+      <StylesTray />
+      <MotionTray />
+      <BackgroundTray />
+      <LayoutTray />
+      <FrameTray />
+    </>
+  );
+}
+
 export function Inspector() {
   const tool = useUi((s) => s.tool);
   const selection = useScene((s) => s.selection);
@@ -1051,11 +1076,7 @@ export function Inspector() {
         </div>
       ) : (
         <div className="inspector-pane" key="style">
-          <StylesTray />
-          <MotionTray />
-          <BackgroundTray />
-          <LayoutTray />
-          <FrameTray />
+          <ModeTrays />
           <div className="foot-note">
             Free and open source ·{" "}
             <a href={SUPPORT_URL} target="_blank" rel="noreferrer">

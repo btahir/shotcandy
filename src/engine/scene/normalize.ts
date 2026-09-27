@@ -12,6 +12,8 @@ import { DEFAULT_BACKGROUND, DEFAULT_CARD, createScene } from "./defaults";
 import type {
   AnimationSpec,
   Annotation,
+  CodeTokens,
+  PostContent,
   BackgroundFill,
   BackgroundSpec,
   CanvasSize,
@@ -243,9 +245,57 @@ function background(c: Ctx, v: unknown): BackgroundSpec {
   };
 }
 
+function codeTokens(c: Ctx, v: unknown): CodeTokens | null {
+  if (v === undefined || v === null) return null;
+  if (!isObj(v) || typeof v.key !== "string" || !Array.isArray(v.lines)) {
+    c.warn("content.tokens", "malformed tokens dropped");
+    return null;
+  }
+  const lines: [string, number][][] = [];
+  for (const line of v.lines.slice(0, 2000)) {
+    if (!Array.isArray(line)) return null;
+    const out: [string, number][] = [];
+    for (const t of line) {
+      if (!Array.isArray(t) || typeof t[0] !== "string" || typeof t[1] !== "number") return null;
+      out.push([t[0], Math.max(0, Math.min(63, Math.round(t[1])))]);
+    }
+    lines.push(out);
+  }
+  return {
+    key: v.key.slice(0, 200),
+    language: typeof v.language === "string" ? v.language.slice(0, 32) : "text",
+    lines,
+  };
+}
+
 function content(c: Ctx, v: unknown): Content {
   const o = obj(c, "content", v);
-  const kind = oneOf(c, "content.kind", o.kind, ["image", "placeholder"] as const, "image");
+  const kind = oneOf(
+    c,
+    "content.kind",
+    o.kind,
+    ["image", "placeholder", "code", "post"] as const,
+    "image",
+  );
+  if (kind === "code") {
+    const highlight = arr(c, "content.highlight", o.highlight)
+      .filter((n): n is number => typeof n === "number" && Number.isInteger(n) && n >= 1)
+      .slice(0, 500);
+    return {
+      kind,
+      code: str(c, "content.code", o.code, "", 50_000),
+      language: str(c, "content.language", o.language, "auto", 32),
+      theme: str(c, "content.theme", o.theme, "midnight-candy", 64),
+      fontSize: num(c, "content.fontSize", o.fontSize, 15, 10, 32),
+      lineNumbers: typeof o.lineNumbers === "boolean" ? o.lineNumbers : true,
+      highlight: [...new Set(highlight)].sort((a, b) => a - b),
+      title: str(c, "content.title", o.title, "", 120),
+      chrome: oneOf(c, "content.chrome", o.chrome, ["mac", "minimal", "none"] as const, "mac"),
+      padding: num(c, "content.padding", o.padding, 28, 8, 120),
+      tokens: codeTokens(c, o.tokens),
+    };
+  }
+  if (kind === "post") return postContent(c, o);
   if (kind === "placeholder") {
     return {
       kind,
@@ -268,6 +318,28 @@ function content(c: Ctx, v: unknown): Content {
     };
   }
   return out;
+}
+
+function postContent(c: Ctx, o: Obj): PostContent {
+  const m = obj(c, "content.metrics", o.metrics);
+  return {
+    kind: "post",
+    variant: oneOf(c, "content.variant", o.variant, ["social", "testimonial"] as const, "social"),
+    name: str(c, "content.name", o.name, "", 80),
+    handle: str(c, "content.handle", o.handle, "", 120),
+    avatarAssetId: typeof o.avatarAssetId === "string" && o.avatarAssetId ? o.avatarAssetId : null,
+    text: str(c, "content.text", o.text, "", 4000),
+    date: str(c, "content.date", o.date, "", 60),
+    theme: str(c, "content.theme", o.theme, "light", 64),
+    rating: Math.round(num(c, "content.rating", o.rating, 0, 0, 5)),
+    metrics: {
+      replies: str(c, "content.metrics.replies", m.replies, "", 12),
+      reposts: str(c, "content.metrics.reposts", m.reposts, "", 12),
+      likes: str(c, "content.metrics.likes", m.likes, "", 12),
+    },
+    width: num(c, "content.width", o.width, 560, 320, 900),
+    accent: color(c, "content.accent", o.accent, "#ff4f7b"),
+  };
 }
 
 function shadowLayers(c: Ctx, v: unknown): ShadowLayer[] | undefined {

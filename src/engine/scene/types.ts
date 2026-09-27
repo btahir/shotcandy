@@ -176,7 +176,69 @@ export interface CropRect {
  */
 export type Content =
   | { kind: "image"; assetId: string | null; crop?: CropRect }
-  | { kind: "placeholder"; width: number; height: number; color: Color };
+  | { kind: "placeholder"; width: number; height: number; color: Color }
+  | CodeContent
+  | PostContent;
+
+/**
+ * Syntax-highlighting result stored with the code so rendering stays
+ * synchronous, deterministic and worker-safe (no highlighter needed to draw).
+ * Each token is [text, category]; categories are listed in code/themes.ts.
+ */
+export interface CodeTokens {
+  /** Hash of (code, language) the tokens were computed for. */
+  key: string;
+  /** Resolved language id the tokens were computed with. */
+  language: string;
+  lines: [string, number][][];
+}
+
+/** A code snippet drawn as a window (a ray.so-style code image). */
+export interface CodeContent {
+  kind: "code";
+  code: string;
+  /** Language id (code/languages.ts) or "auto" to detect it. */
+  language: string;
+  /** Code theme id (code/themes.ts). */
+  theme: string;
+  /** Font size in px at 1x (10..32). */
+  fontSize: number;
+  lineNumbers: boolean;
+  /** 1-based line numbers to highlight. */
+  highlight: number[];
+  /** Window title, usually a file name. Empty hides it. */
+  title: string;
+  /** Window controls: coloured dots, a quiet title bar, or none. */
+  chrome: "mac" | "minimal" | "none";
+  /** Space around the code, px at 1x. */
+  padding: number;
+  tokens?: CodeTokens | null;
+}
+
+/** A social post or testimonial card (typed in by the user; no network). */
+export interface PostContent {
+  kind: "post";
+  variant: "social" | "testimonial";
+  name: string;
+  /** Handle or role line, e.g. "@maya" or "Head of Design, Quokka". */
+  handle: string;
+  /** Uploaded avatar asset, or null for an initials avatar. */
+  avatarAssetId: string | null;
+  text: string;
+  /** Free text date, e.g. "Sep 26, 2026". Empty hides it. */
+  date: string;
+  /** Card theme id (post/themes.ts). */
+  theme: string;
+  /** 0 hides the stars (testimonial only). */
+  rating: number;
+  /** Social post footer numbers (free text, e.g. "1.2K"); empty hides the footer. */
+  metrics: { replies: string; reposts: string; likes: string };
+  /** Card width in px at 1x (320..900). */
+  width: number;
+  /** Accent colour for the quote mark, links and hashtags. */
+  accent: Color;
+}
+
 
 // ---------------------------------------------------------------------------
 // Card

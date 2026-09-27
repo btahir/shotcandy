@@ -20,10 +20,16 @@ export interface ToolPageData {
   faq: [string, string][];
   related: { label: string; href: string }[];
   cta: string;
+  /** Replaces the paste-a-screenshot box (e.g. a paste-your-code box). */
+  drop?: ReactNode;
+  /** Editor link override (default: the style/size preset). */
+  editorHref?: string;
+  /** The "see more" link above the examples. */
+  more?: { label: string; href: string };
 }
 
 export function ToolLanding({ d }: { d: ToolPageData }) {
-  const editorHref = `/?style=${d.style}${d.size ? `&size=${d.size}` : ""}`;
+  const editorHref = d.editorHref ?? `/?style=${d.style}${d.size ? `&size=${d.size}` : ""}`;
   return (
     <div className="page">
       <SiteNav active="tools" />
@@ -38,7 +44,7 @@ export function ToolLanding({ d }: { d: ToolPageData }) {
             <p className="lede" style={{ marginTop: 16, maxWidth: 500 }}>
               {d.lede}
             </p>
-            <DropInline style={d.style} size={d.size} frameLabel={d.frameLabel} />
+            {d.drop ?? <DropInline style={d.style} size={d.size} frameLabel={d.frameLabel} />}
             <div className="checks">
               <span>
                 <Icon name="check" size="sm" /> No sign-up
@@ -103,10 +109,10 @@ export function ToolLanding({ d }: { d: ToolPageData }) {
               <h2 className="h2">Made with this tool</h2>
               <Link
                 className="support-link"
-                href="/?gallery=1"
+                href={d.more?.href ?? "/?gallery=1"}
                 style={{ color: "var(--sc-ink-2)" }}
               >
-                See all 24 styles <Icon name="chevronRight" size="sm" />
+                {d.more?.label ?? "See all 24 styles"} <Icon name="chevronRight" size="sm" />
               </Link>
             </div>
             <div className="grid-3">

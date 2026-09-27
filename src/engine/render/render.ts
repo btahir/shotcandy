@@ -32,6 +32,8 @@ import { perspectiveMagnification } from "./magnification";
 import { warpPerspective } from "./perspective";
 import { affinePath, drawShadows } from "./shadow";
 import { toCss } from "../math/color";
+// Content kinds beyond images register themselves with the content registry.
+import "../code/render";
 
 export interface RenderOptions {
   /** Device pixels per canvas pixel (export 1x-4x, or a preview fraction). */

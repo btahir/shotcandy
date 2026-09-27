@@ -13,6 +13,7 @@ import {
   type MotionContext,
   type Annotation,
   type AnnotationKind,
+  type CodeContent,
   type AssetResolver,
   type AssetSource,
   type CanvasSize,
@@ -43,6 +44,9 @@ import {
   createProjectFile,
   evaluateScene,
   getMotionPreset,
+  getCodeStyle,
+  clearTextMeasureCache,
+  codeTokensKey,
   isAbortError,
   planAnimation,
   renderToCanvas,
@@ -74,13 +78,25 @@ import { createStore, type Store } from "@/lib/store";
 import { ThumbService } from "@/lib/thumbs/service";
 import { sprinkle } from "@/lib/sprinkles";
 import { prefersReducedMotion } from "@/lib/platform";
+import { type Mode, initialCodeScene, modeForScene } from "./modes";
 
 registerBrandFonts();
 
 export type Tool = "select" | "text" | "arrow" | "rect" | "redact";
-export type Popover = null | "size" | "export" | "more";
+export type Popover = null | "size" | "export" | "more" | "mode";
 export type Modal = null | "gallery" | "shortcuts" | "recents";
-export type MobileTab = "styles" | "motion" | "background" | "layout" | "frame" | "draw";
+export type MobileTab =
+  | "styles"
+  | "motion"
+  | "background"
+  | "layout"
+  | "frame"
+  | "draw"
+  | "code"
+  | "theme"
+  | "window"
+  | "post"
+  | "slides";
 
 export interface MotionExportSettings {
   format: AnimationFormat;
@@ -140,7 +156,10 @@ export interface Toast {
 }
 
 export interface UiState {
-  hasImage: boolean;
+  /** Which kind of design is being edited. */
+  mode: Mode;
+  /** The design has something to export (a screenshot, code, a post, ...). */
+  hasContent: boolean;
   tool: Tool;
   popover: Popover;
   modal: Modal;
@@ -235,7 +254,12 @@ export function initialScene(): Scene {
 
 export function styleName(id: string | undefined, custom: PresetRecord[] = []): string {
   if (!id) return "Custom";
-  return getStylePreset(id)?.name ?? custom.find((p) => p.id === id)?.name ?? "Custom";
+  return (
+    getStylePreset(id)?.name ??
+    getCodeStyle(id)?.name ??
+    custom.find((p) => p.id === id)?.name ??
+    "Custom"
+  );
 }
 
 function downloadBlob(blob: Blob, name: string) {
@@ -291,6 +315,10 @@ export class EditorApp {
   readonly playback: Store<PlaybackState> = createStore<PlaybackState>({ playing: false, t: null });
   private motionAbort: AbortController | null = null;
   private tickRaf = 0;
+  /** Each mode's design while another mode is shown. */
+  private stash: Partial<Record<Mode, { scene: Scene; hasContent: boolean; designId: string | null }>> = {};
+  private highlightTimer: ReturnType<typeof setTimeout> | null = null;
+  private highlightJob = 0;
   private lastTick = 0;
   thumbs: ThumbService | null = null;
   db: ShotcandyStore | null = null;
@@ -310,7 +338,8 @@ export class EditorApp {
   constructor() {
     this.store = createEditorStore(initialScene());
     this.ui = createStore<UiState>({
-      hasImage: false,
+      mode: "screenshot",
+      hasContent: false,
       tool: "select",
       popover: null,
       modal: null,
@@ -375,6 +404,7 @@ export class EditorApp {
     this.thumbs = new ThumbService(this.resolver);
     void loadCanvasFonts().then(() => {
       if (this.disposed) return;
+      clearTextMeasureCache();
       this.cache.clear();
       this.thumbs?.syncFonts();
       this.ui.set((s) => ({ fontsReady: s.fontsReady + 1 }));
@@ -391,6 +421,7 @@ export class EditorApp {
       this.bumpAssets();
     });
     this.store.subscribe(() => this.onSceneChange());
+    this.store.subscribe(() => this.scheduleHighlight());
     const idle = (cb: () => void) =>
       (
         window as unknown as { requestIdleCallback?: (c: () => void, o?: object) => void }
@@ -398,6 +429,22 @@ export class EditorApp {
     idle(() => this.exporter.prewarm());
 
     const params = new URLSearchParams(window.location.search);
+    const modeParam = params.get("mode");
+    if (modeParam === "code" || modeParam === "post" || modeParam === "appstore")
+      this.setMode(modeParam);
+    if (modeParam === "code") {
+      // Code handed over from the code screenshot page.
+      try {
+        const handoff = sessionStorage.getItem("shotcandy:code-handoff");
+        if (handoff) {
+          sessionStorage.removeItem("shotcandy:code-handoff");
+          this.setCode({ code: handoff, language: "auto", title: "", highlight: [] });
+          this.store.reset(this.scene);
+        }
+      } catch {
+        /* storage blocked */
+      }
+    }
     const style = params.get("style");
     if (style && getStylePreset(style)) {
       this.applyStyle(style, { history: false });
@@ -423,7 +470,7 @@ export class EditorApp {
     if (params.get("gallery")) this.ui.set({ modal: "gallery" });
     const open = params.get("open");
     const sample = params.get("sample");
-    if (open || sample || style || size || params.get("gallery")) {
+    if (open || sample || style || size || modeParam || params.get("gallery")) {
       const url = new URL(window.location.href);
       url.search = "";
       window.history.replaceState(null, "", url.toString());
@@ -485,6 +532,9 @@ export class EditorApp {
       });
       return false;
     }
+    // Pasting a screenshot in Code or Post mode starts a screenshot design.
+    const m = this.ui.get().mode;
+    if (m === "code" || m === "post") this.setMode("screenshot");
     this.ui.set({ importing: true });
     let img: ImportedImage;
     try {
@@ -498,7 +548,7 @@ export class EditorApp {
     if (this.disposed) return false;
     this.library.add(img);
     void this.thumbs?.setAsset(img.id, img.proxy, img.width, img.height, img.palette);
-    const first = !this.ui.get().hasImage;
+    const first = !this.ui.get().hasContent;
     const portrait = img.height / img.width >= 1.6;
     this.store.update((s) => {
       let next: Scene = { ...s, content: { kind: "image", assetId: img.id } };
@@ -513,7 +563,7 @@ export class EditorApp {
     this.designId = newId("d");
     this.designCreated = Date.now();
     this.ui.set((s) => ({
-      hasImage: true,
+      hasContent: true,
       importing: false,
       landing: first ? s.landing + 1 : s.landing,
       xfade: first ? s.xfade : s.xfade + 1,
@@ -634,7 +684,7 @@ export class EditorApp {
     this.store.update((s) => applyStylePatch(s, patch, id), {
       ...(opts.history === false ? { transient: true } : {}),
     });
-    if (this.ui.get().hasImage) this.ui.set((s) => ({ xfade: s.xfade + 1 }));
+    if (this.ui.get().hasContent) this.ui.set((s) => ({ xfade: s.xfade + 1 }));
   }
 
   /** Styles in gallery order, portrait shots float device styles up. */
@@ -814,6 +864,114 @@ export class EditorApp {
     });
   }
 
+  // ------------------------------------------------------------------- modes
+  /** Switch editor mode; each mode keeps its own design (and starts fresh once). */
+  setMode(mode: Mode): void {
+    const ui = this.ui.get();
+    if (ui.mode === mode) return;
+    this.stopPreview();
+    this.stash[ui.mode] = { scene: this.scene, hasContent: ui.hasContent, designId: this.designId };
+    const next = this.stash[mode];
+    let scene: Scene;
+    let has: boolean;
+    if (next) {
+      scene = next.scene;
+      has = next.hasContent;
+      this.designId = next.designId;
+    } else {
+      scene = this.freshScene(mode);
+      has = mode === "code" || mode === "post";
+      this.designId = has ? newId("d") : null;
+      this.designCreated = Date.now();
+    }
+    this.store.reset(scene);
+    this.store.select(null);
+    this.ui.set((s) => ({
+      mode,
+      hasContent: has,
+      tool: "select",
+      editingText: null,
+      popover: null,
+      zoom: null,
+      pan: { x: 0, y: 0 },
+      xfade: s.xfade + 1,
+      exportSettings: { ...s.exportSettings, kind: scene.animation ? s.exportSettings.kind : "image" },
+    }));
+    this.emit("mode", mode);
+    this.announce(`${mode === "appstore" ? "App Store set" : mode[0]!.toUpperCase() + mode.slice(1)} mode`);
+  }
+
+  protected freshScene(mode: Mode): Scene {
+    if (mode === "code") return initialCodeScene();
+    return initialScene();
+  }
+
+  /** Put a loaded design (recent or project) into the mode its content belongs to. */
+  private adoptMode(scene: Scene): void {
+    const mode = modeForScene(scene);
+    const ui = this.ui.get();
+    if (ui.mode !== mode) {
+      this.stash[ui.mode] = { scene: this.scene, hasContent: ui.hasContent, designId: this.designId };
+      delete this.stash[mode];
+      this.ui.set({ mode });
+    }
+  }
+
+  // -------------------------------------------------------------------- code
+  get code(): CodeContent | null {
+    const c = this.scene.content;
+    return c.kind === "code" ? c : null;
+  }
+
+  /** Edit the code content (text, language, theme, window options). */
+  setCode(patch: Partial<CodeContent>, coalesce?: string): void {
+    this.store.update(
+      (s) => (s.content.kind === "code" ? { ...s, content: { ...s.content, ...patch } } : s),
+      { coalesce: coalesce ?? `code:${Object.keys(patch).join(",")}` },
+    );
+  }
+
+  /** Apply a code style: the theme on the code plus its matching background. */
+  applyCodeStyle(id: string): void {
+    const style = getCodeStyle(id);
+    if (!style) return;
+    this.store.update((s) => {
+      const next = applyStylePatch(s, style.patch, id);
+      return next.content.kind === "code"
+        ? { ...next, content: { ...next.content, theme: style.theme } }
+        : next;
+    });
+    this.ui.set((u) => ({ xfade: u.xfade + 1 }));
+    this.announce(`Theme: ${style.name}`);
+  }
+
+  /** Re-highlight code whose stored tokens are stale (debounced; Shiki loads lazily). */
+  private scheduleHighlight(): void {
+    const c = this.code;
+    if (!c) return;
+    const key = codeTokensKey(c.code, c.language);
+    if (c.tokens?.key === key) return;
+    if (this.highlightTimer) clearTimeout(this.highlightTimer);
+    const job = ++this.highlightJob;
+    this.highlightTimer = setTimeout(async () => {
+      try {
+        const { highlightCode } = await import("@/lib/code/highlight");
+        const tokens = await highlightCode(c.code, c.language);
+        if (job !== this.highlightJob || this.disposed) return;
+        this.store.update(
+          (s) =>
+            s.content.kind === "code" && codeTokensKey(s.content.code, s.content.language) === tokens.key
+              ? { ...s, content: { ...s.content, tokens } }
+              : s,
+          { transient: true },
+        );
+        this.emit("highlighted", tokens.language);
+      } catch {
+        /* keep plain text */
+      }
+    }, 90);
+  }
+
   // ------------------------------------------------------------------ motion
   /** Assets and palette the motion timeline needs. */
   motionContext(): MotionContext {
@@ -936,7 +1094,7 @@ export class EditorApp {
   /** Render and download the motion clip (MP4, WebM or GIF). */
   async exportMotion(anchor?: Element | null): Promise<void> {
     const scene = this.scene;
-    if (!scene.animation || !this.ui.get().hasImage || this.ui.get().motionExport) return;
+    if (!scene.animation || !this.ui.get().hasContent || this.ui.get().motionExport) return;
     const settings = this.ui.get().exportSettings.motion;
     const plan = this.motionPlan(settings);
     if (!plan) return;
@@ -1070,7 +1228,7 @@ export class EditorApp {
 
   /** Copy PNG to the clipboard. Call synchronously from the user gesture. */
   copy(anchor?: Element | null): void {
-    if (!this.ui.get().hasImage || this.ui.get().copyState === "busy") return;
+    if (!this.ui.get().hasContent || this.ui.get().copyState === "busy") return;
     const { scale } = this.ui.get().exportSettings;
     const job = this.runExport("png", scale);
     this.ui.set({ copyState: "busy" });
@@ -1130,7 +1288,7 @@ export class EditorApp {
 
   /** Download a still image with the current export settings. */
   async downloadImage(anchor?: Element | null, override?: Partial<ExportSettings>): Promise<void> {
-    if (!this.ui.get().hasImage || this.ui.get().exportBusy) return;
+    if (!this.ui.get().hasContent || this.ui.get().exportBusy) return;
     const settings = { ...this.ui.get().exportSettings, ...override };
     this.ui.set({ exportBusy: true });
     try {
@@ -1217,7 +1375,7 @@ export class EditorApp {
 
   // ----------------------------------------------------------------- project
   async saveProject(): Promise<void> {
-    if (!this.ui.get().hasImage) return;
+    if (!this.ui.get().hasContent) return;
     const scene = this.scene;
     const file = await createProjectFile(
       scene,
@@ -1239,13 +1397,14 @@ export class EditorApp {
         this.library.add(img);
         void this.thumbs?.setAsset(img.id, img.proxy, img.width, img.height, img.palette);
       }
+      this.adoptMode(p.scene);
       this.store.reset(p.scene);
       this.ensureBuiltins(p.scene);
-      const has = p.scene.content.kind === "image" && !!p.scene.content.assetId;
+      const has = p.scene.content.kind !== "image" || !!p.scene.content.assetId;
       this.designId = newId("d");
       this.designCreated = Date.now();
       this.ui.set((s) => ({
-        hasImage: has,
+        hasContent: has,
         xfade: s.xfade + 1,
         zoom: null,
         pan: { x: 0, y: 0 },
@@ -1338,14 +1497,14 @@ export class EditorApp {
   }
 
   private onSceneChange() {
-    if (!this.ui.get().hasImage || !this.db) return;
+    if (!this.ui.get().hasContent || !this.db) return;
     if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
     this.autosaveTimer = setTimeout(() => void this.autosave(), 900);
   }
 
   /** Save the current design into "Recent designs" (debounced after edits). */
   async autosave(): Promise<void> {
-    if (!this.db || !this.ui.get().hasImage) return;
+    if (!this.db || !this.ui.get().hasContent) return;
     const scene = this.scene;
     if (!this.designId) {
       this.designId = newId("d");
@@ -1413,13 +1572,14 @@ export class EditorApp {
         void this.thumbs?.setAsset(img.id, img.proxy, img.width, img.height, img.palette);
       }
     }
+    this.adoptMode(d.scene);
     this.store.reset(d.scene);
     this.ensureBuiltins(d.scene);
     this.designId = d.id;
     this.designCreated = d.createdAt;
-    const has = d.scene.content.kind === "image" && !!d.scene.content.assetId;
+    const has = d.scene.content.kind !== "image" || !!d.scene.content.assetId;
     this.ui.set((s) => ({
-      hasImage: has,
+      hasContent: has,
       modal: null,
       xfade: s.xfade + 1,
       zoom: null,

@@ -59,13 +59,13 @@ export const MotionTray = memo(function MotionTray({ bare = false }: { bare?: bo
   const annotations = useScene(
     (s) => s.scene.annotations.filter((a) => a.kind !== "redact").length,
   );
-  const hasImage = useUi((s) => s.hasImage);
+  const hasContent = useUi((s) => s.hasContent);
   useUi((s) => s.assetsVersion);
   const preset = spec ? getMotionPreset(spec.preset) : undefined;
   const current = spec?.preset ?? "none";
   const presets = new Map(listMotionPresets().map((p) => [p.id, p]));
   const scrollNote =
-    preset?.id === "scroll" && hasImage && scrollViewport(app.scene, app.motionContext()) >= 0.98;
+    preset?.id === "scroll" && hasContent && scrollViewport(app.scene, app.motionContext()) >= 0.98;
 
   const onKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const btns = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>("button.mtile"));

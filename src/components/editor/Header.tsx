@@ -22,6 +22,7 @@ import { formatBytes } from "./app";
 import { useApp, useScene, useUi } from "./context";
 import { openFilePicker } from "./EmptyState";
 import { MotionExportPanel } from "./MotionExport";
+import { ModeSwitch } from "./ModeSwitch";
 
 const RATIO_HINT: Record<string, string> = {
   "16x9": "widescreen",
@@ -57,21 +58,22 @@ function useCanvasSize() {
   const app = useApp();
   const scene = useScene((s) => s.scene);
   const v = useUi((s) => s.assetsVersion);
+  const f = useUi((s) => s.fontsReady);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  return useMemo(() => layoutScene(scene, app.library), [scene, app, v]);
+  return useMemo(() => layoutScene(scene, app.library), [scene, app, v, f]);
 }
 
 export function SizeChip({ compact = false }: { compact?: boolean }) {
   const app = useApp();
   const size = useScene((s) => s.scene.canvas.size);
-  const hasImage = useUi((s) => s.hasImage);
+  const hasContent = useUi((s) => s.hasContent);
   const open = useUi((s) => s.popover === "size");
   const layout = useCanvasSize();
   const ref = useRef<HTMLButtonElement>(null);
   const meta =
     size.kind === "fixed"
       ? `${size.width} × ${size.height}`
-      : hasImage
+      : hasContent
         ? `${layout.canvas.width} × ${layout.canvas.height}`
         : size.kind === "auto"
           ? "fits your image"
@@ -263,7 +265,7 @@ export function useExportEstimate(active: boolean) {
   const settings = useUi((s) => s.exportSettings);
   const [bpp, setBpp] = useState<number | null>(null);
   useEffect(() => {
-    if (!active || !app.ui.get().hasImage) return;
+    if (!active || !app.ui.get().hasContent) return;
     let alive = true;
     const t = setTimeout(() => {
       app
@@ -531,7 +533,7 @@ export function ExportPanel({
 
 function MoreMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; open: boolean }) {
   const app = useApp();
-  const hasImage = useUi((s) => s.hasImage);
+  const hasContent = useUi((s) => s.hasContent);
   const recents = useUi((s) => s.recents.length);
   const theme = useThemePref();
   const close = () => app.ui.set({ popover: null });
@@ -584,7 +586,7 @@ function MoreMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
             type="button"
             role="menuitem"
             className="menu-item"
-            disabled={!hasImage}
+            disabled={!hasContent}
             onClick={run(() => void app.saveProject())}
           >
             <Icon name="save" size="sm" /> Save project file
@@ -666,7 +668,7 @@ export function Header() {
   const mod = useModKey();
   const canUndo = useScene((s) => s.canUndo);
   const canRedo = useScene((s) => s.canRedo);
-  const hasImage = useUi((s) => s.hasImage);
+  const hasContent = useUi((s) => s.hasContent);
   const popover = useUi((s) => s.popover);
   const copyState = useUi((s) => s.copyState);
   const exportBusy = useUi((s) => s.exportBusy);
@@ -695,6 +697,7 @@ export function Header() {
         <LogoMark className="mark" />
         <span className="word">shotcandy</span>
       </Link>
+      <ModeSwitch />
       <div className="centre">
         <SizeChip />
       </div>
@@ -735,10 +738,10 @@ export function Header() {
       <button
         type="button"
         className={`btn btn-secondary copy-btn${copyState === "done" ? " copied pop" : ""}${copyState === "busy" ? " shimmer-busy" : ""}`}
-        disabled={!hasImage}
+        disabled={!hasContent}
         data-copy-anchor
         data-testid="copy"
-        title={hasImage ? "Copy image (⌘C)" : "Paste a screenshot first"}
+        title={hasContent ? "Copy image (⌘C)" : "Paste a screenshot first"}
         onClick={(e) => app.copy(e.currentTarget)}
       >
         {copyState === "done" ? (
@@ -756,11 +759,11 @@ export function Header() {
           ref={mainRef}
           type="button"
           className={`btn btn-primary${exportBusy || motionJob ? " pressed" : ""}`}
-          disabled={!hasImage}
+          disabled={!hasContent}
           aria-busy={!!motionJob}
           data-testid="export"
           title={
-            hasImage
+            hasContent
               ? motionKind
                 ? "Export the clip (⌘S)"
                 : "Download (⌘S)"
@@ -769,7 +772,7 @@ export function Header() {
           onClick={(e) => void app.download(e.currentTarget)}
         >
           <Icon name={motionKind ? "film" : "download"} /> Export{" "}
-          {hasImage && (
+          {hasContent && (
             <span className="tag">
               {motionJob ? (
                 `${motionJob.total ? Math.round((motionJob.done / motionJob.total) * 100) : 0}%`
@@ -793,7 +796,7 @@ export function Header() {
           aria-label="Export options (⇧⌘S)"
           aria-haspopup="dialog"
           aria-expanded={popover === "export"}
-          disabled={!hasImage}
+          disabled={!hasContent}
           data-testid="export-options"
           onClick={() => app.ui.set({ popover: popover === "export" ? null : "export" })}
         >

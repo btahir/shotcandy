@@ -100,6 +100,8 @@ export function removeAnnotation(scene: Scene, id: string): Scene {
 export function sceneAssetIds(scene: Scene, opts: { includeBuiltin?: boolean } = {}): string[] {
   const ids = new Set<string>();
   if (scene.content.kind === "image" && scene.content.assetId) ids.add(scene.content.assetId);
+  if (scene.content.kind === "post" && scene.content.avatarAssetId)
+    ids.add(scene.content.avatarAssetId);
   if (scene.background.fill.kind === "image") ids.add(scene.background.fill.assetId);
   const all = [...ids];
   return opts.includeBuiltin === false ? all.filter((id) => !id.startsWith("builtin:")) : all;

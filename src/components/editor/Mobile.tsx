@@ -13,9 +13,28 @@ import { BackgroundTray, FrameTray, LayoutTray, useStyleRow } from "./Inspector"
 import { Stage } from "./Stage";
 import { MotionTray } from "./MotionTray";
 import { MotionExportPanel } from "./MotionExport";
+import { CodeTray, ThemesTray, WindowTray } from "./CodeInspector";
+import { MobileModeButton } from "./ModeSwitch";
 import { StyleThumb } from "./StyleThumb";
 
-const TABS: { id: MobileTab; label: string; icon: IconName }[] = [
+type TabDef = { id: MobileTab; label: string; icon: IconName };
+
+const CODE_TABS: TabDef[] = [
+  { id: "code", label: "Code", icon: "code" },
+  { id: "theme", label: "Theme", icon: "sparkle" },
+  { id: "motion", label: "Motion", icon: "motion" },
+  { id: "background", label: "Background", icon: "image" },
+  { id: "window", label: "Window", icon: "frameMac" },
+  { id: "draw", label: "Draw", icon: "arrow" },
+];
+
+export function useMobileTabs(): TabDef[] {
+  const mode = useUi((s) => s.mode);
+  if (mode === "code") return CODE_TABS;
+  return TABS;
+}
+
+const TABS: TabDef[] = [
   { id: "styles", label: "Styles", icon: "sparkle" },
   { id: "motion", label: "Motion", icon: "motion" },
   { id: "background", label: "Background", icon: "image" },
@@ -26,16 +45,17 @@ const TABS: { id: MobileTab; label: string; icon: IconName }[] = [
 
 function MobileHeader() {
   const app = useApp();
-  const hasImage = useUi((s) => s.hasImage);
+  const hasContent = useUi((s) => s.hasContent);
   const canUndo = useScene((s) => s.canUndo);
   return (
     <header className="m-top">
       <a href="/about/" aria-label="About Shotcandy" className="brand">
         <LogoMark className="mark" />
       </a>
+      <MobileModeButton />
       <SizeChip compact />
       <div style={{ flex: 1 }} />
-      {hasImage && (
+      {hasContent && (
         <button
           type="button"
           className="icon-btn"
@@ -49,7 +69,7 @@ function MobileHeader() {
       <button
         type="button"
         className="btn btn-primary"
-        disabled={!hasImage}
+        disabled={!hasContent}
         data-testid="export"
         onClick={() => app.ui.set({ mobileExport: true })}
       >
@@ -165,7 +185,9 @@ function DrawTools() {
 
 function MobileSheet() {
   const app = useApp();
-  const tab = useUi((s) => s.mobileTab);
+  const tabs = useMobileTabs();
+  const rawTab = useUi((s) => s.mobileTab);
+  const tab = tabs.some((t) => t.id === rawTab) ? rawTab : tabs[0]!.id;
   const expanded = useUi((s) => s.mobileExpanded);
   const selection = useScene((s) => s.selection);
   const ref = useRef<HTMLElement>(null);
@@ -224,7 +246,10 @@ function MobileSheet() {
           }
         }}
       />
-      <div className="m-body" role="tabpanel" aria-label={TABS.find((t) => t.id === tab)?.label}>
+      <div className="m-body" role="tabpanel" aria-label={tabs.find((t) => t.id === tab)?.label}>
+        {tab === "code" && <CodeTray bare />}
+        {tab === "theme" && <ThemesTray bare />}
+        {tab === "window" && <WindowTray bare />}
         {tab === "styles" && (
           <>
             <StyleRail />
@@ -245,7 +270,7 @@ function MobileSheet() {
         )}
       </div>
       <nav className="m-tabs" role="tablist" aria-label="Panels">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
@@ -433,12 +458,12 @@ function MobileExport() {
 }
 
 export function MobileEditor() {
-  const hasImage = useUi((s) => s.hasImage);
+  const hasContent = useUi((s) => s.hasContent);
   return (
     <div className="m" data-layout="narrow">
       <MobileHeader />
       <Stage narrow />
-      {hasImage && <MobileSheet />}
+      {hasContent && <MobileSheet />}
       <MobileExport />
     </div>
   );

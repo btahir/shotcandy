@@ -15,4 +15,5 @@ export const TOOL_PAGES = [
   { href: "/screenshot-beautifier/", label: "Screenshot beautifier" },
   { href: "/macos-window-frame/", label: "macOS window frame" },
   { href: "/og-image-maker/", label: "Open Graph image maker" },
+  { href: "/code-screenshot/", label: "Code screenshot" },
 ] as const;

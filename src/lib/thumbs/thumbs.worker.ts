@@ -9,6 +9,7 @@ import {
   type AssetSource,
   type FontDefinition,
   RenderCache,
+  clearTextMeasureCache,
   isBuiltinAssetId,
   registerFont,
   renderToCanvas,
@@ -83,7 +84,7 @@ let chain: Promise<unknown> = Promise.resolve();
 self.onmessage = (e: MessageEvent<ThumbRequest>) => {
   const msg = e.data;
   if (msg.type === "init") {
-    fontsReady = loadFonts(msg.fonts);
+    fontsReady = loadFonts(msg.fonts).then(() => clearTextMeasureCache());
     return;
   }
   if (msg.type === "asset") {

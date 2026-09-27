@@ -69,6 +69,40 @@ export {
   type ContentRenderer,
 } from "./render/content";
 
+// Text measurement (content kinds made of text)
+export {
+  measureText,
+  wrapText,
+  setMeasureEnvironment,
+  clearTextMeasureCache,
+  measureGeneration,
+} from "./render/measure";
+
+// Code images
+export { codeLayout, codeLines, codeTokensKey, type CodeLayout } from "./code/render";
+export {
+  CODE_THEMES,
+  CODE_CATEGORIES,
+  getCodeTheme,
+  categoryColor,
+  type CodeTheme,
+  type CodeCategory,
+} from "./code/themes";
+export {
+  CODE_LANGUAGES,
+  detectLanguage,
+  resolveLanguage,
+  getCodeLanguage,
+  type CodeLanguage,
+} from "./code/languages";
+export {
+  CODE_STYLES,
+  getCodeStyle,
+  codeStylePatch,
+  SAMPLE_CODE,
+  type CodeStyle,
+} from "./code/presets";
+
 // Frames
 export {
   registerFrame,

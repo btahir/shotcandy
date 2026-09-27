@@ -175,6 +175,8 @@ export function computeCardGeometry(scene: Scene, contentPx: Size): CardGeometry
 export function contentPixelSize(scene: Scene, assetSize: Size | null): Size {
   const content = scene.content;
   if (content.kind === "placeholder") return { width: content.width, height: content.height };
+  // Other kinds (code, posts, ...) report their natural size via the content registry.
+  if (content.kind !== "image") return assetSize ?? { width: 1600, height: 1000 };
   const base = assetSize ?? { width: 1600, height: 1000 };
   const crop = content.crop;
   if (!crop) return base;

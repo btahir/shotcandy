@@ -4,6 +4,7 @@
  * same self-hosted files with FontFace, so worker renders match the preview.
  */
 import { type FontDefinition, registerFont } from "../render/fonts";
+import { clearTextMeasureCache } from "../render/measure";
 
 const loadedFonts = new Set<string>();
 
@@ -34,4 +35,6 @@ export async function ensureWorkerFonts(fonts: FontDefinition[]): Promise<void> 
     }
   }
   await Promise.all(jobs);
+  // Text measured before these faces loaded (code and post layouts) is stale.
+  if (jobs.length) clearTextMeasureCache();
 }

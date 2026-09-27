@@ -32,7 +32,7 @@ export function useShortcuts(app: EditorApp) {
       }
       if (typing) {
         // Inputs keep their native undo/copy/paste.
-        if (mod && key === "s" && ui.hasImage) {
+        if (mod && key === "s" && ui.hasContent) {
           e.preventDefault();
           if (e.shiftKey) app.ui.set({ popover: "export" });
           else void app.download(document.querySelector("[data-testid=export]"));
@@ -51,11 +51,11 @@ export function useShortcuts(app: EditorApp) {
         } else if (key === "c") {
           const sel = window.getSelection();
           if (sel && !sel.isCollapsed) return;
-          if (!ui.hasImage) return;
+          if (!ui.hasContent) return;
           e.preventDefault();
           app.copy(document.querySelector("[data-copy-anchor]"));
         } else if (key === "s") {
-          if (!ui.hasImage) return;
+          if (!ui.hasContent) return;
           e.preventDefault();
           if (e.shiftKey) app.ui.set({ popover: "export" });
           else void app.download(document.querySelector("[data-testid=export]"));
@@ -125,7 +125,7 @@ export function useShortcuts(app: EditorApp) {
         }
       }
       if (TOOL_KEYS[key] && !e.shiftKey) {
-        if (!ui.hasImage) return;
+        if (!ui.hasContent) return;
         app.setTool(TOOL_KEYS[key]);
         return;
       }
