@@ -2988,12 +2988,14 @@
     transform: scale(0.6);
   }
 }
+/* An ellipse in the canvas's own proportions: the reveal follows the card's
+   shape and reaches the corners exactly at the end (71 % > 1/sqrt 2). */
 @keyframes sc-bloom {
   from {
-    clip-path: circle(0% at 50% 50%);
+    clip-path: ellipse(0% 0% at 50% 50%);
   }
   to {
-    clip-path: circle(75% at 50% 50%);
+    clip-path: ellipse(71% 71% at 50% 50%);
   }
 }
 /* Pre-sampled "drop" spring (stiffness 380, damping 22): 0.94 -> 1.015 -> 1 */

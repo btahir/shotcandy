@@ -514,7 +514,34 @@
     .stage-note {
       white-space: normal;
       font-size: 12px;
+      line-height: 16px;
+      border-radius: 16px;
+      padding: 6px 6px 6px 11px;
     }
+    .stage-note .note-act {
+      white-space: nowrap;
+      flex: none;
+    }
+  }
+  .m-quick-colours {
+    padding: 0 16px 8px;
+  }
+  .m-quick-colours .ann-colours {
+    padding: 4px 4px 2px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .rail .shuffle-tile .thumb {
+    display: grid;
+    place-items: center;
+    color: var(--sc-accent-text);
+    background: var(--sc-accent-soft);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sc-accent) 35%, transparent);
+  }
+  .rail .shuffle-tile .thumb svg {
+    width: 26px;
+    height: 26px;
   }
   .preview-pill {
     position: absolute;
@@ -574,10 +601,10 @@
 
   /* An unselected blur shows its outline only while the Select tool hovers it (P2-26). */
   .ann-layer .outline.idle {
-    opacity: 0;
-    transition: opacity var(--sc-dur-fast);
+    display: none;
   }
   .ann-layer g:hover > .outline.idle {
+    display: inline;
     opacity: 0.5;
   }
 }

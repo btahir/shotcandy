@@ -42,7 +42,7 @@ function detail(a: Annotation): string {
   }
 }
 
-function Colours({
+export function Colours({
   value,
   onPick,
 }: {
@@ -74,7 +74,8 @@ function Colours({
   );
 }
 
-export function AnnotationInspector() {
+/** `quickColours`: the colour row is shown elsewhere (the phone sheet puts it under the tools). */
+export function AnnotationInspector({ quickColours = false }: { quickColours?: boolean }) {
   const app = useApp();
   const annotations = useScene((s) => s.scene.annotations);
   const selection = useScene((s) => s.selection);
@@ -126,7 +127,7 @@ export function AnnotationInspector() {
           )}
         </div>
 
-        {!a && tool !== "redact" && (
+        {!a && tool !== "redact" && !quickColours && (
           <>
             <div className="sub">Colour</div>
             <Colours value={annColor} onPick={(c) => app.ui.set({ annColor: c })} />
@@ -145,11 +146,19 @@ export function AnnotationInspector() {
                 onKeyDown={(e) => e.stopPropagation()}
               />
             </label>
-            <div className="sub">Colour</div>
-            <Colours
-              value={a.color}
-              onPick={(c, f) => up({ color: c }, f ? undefined : `ann:${a.id}:color`)}
-            />
+            {!quickColours && (
+              <>
+                {!quickColours && (
+                  <>
+                    <div className="sub">Colour</div>
+                    <Colours
+                      value={a.color}
+                      onPick={(c, f) => up({ color: c }, f ? undefined : `ann:${a.id}:color`)}
+                    />
+                  </>
+                )}
+              </>
+            )}
             <div style={{ marginTop: 12 }}>
               <Slider
                 label="Size"
@@ -210,11 +219,19 @@ export function AnnotationInspector() {
 
         {a?.kind === "arrow" && (
           <>
-            <div className="sub">Colour</div>
-            <Colours
-              value={a.color}
-              onPick={(c, f) => up({ color: c }, f ? undefined : `ann:${a.id}:color`)}
-            />
+            {!quickColours && (
+              <>
+                {!quickColours && (
+                  <>
+                    <div className="sub">Colour</div>
+                    <Colours
+                      value={a.color}
+                      onPick={(c, f) => up({ color: c }, f ? undefined : `ann:${a.id}:color`)}
+                    />
+                  </>
+                )}
+              </>
+            )}
             <div style={{ marginTop: 12 }}>
               <Slider
                 label="Width"
@@ -265,11 +282,15 @@ export function AnnotationInspector() {
             />
             {a.style !== "spotlight" && (
               <>
-                <div className="sub">Colour</div>
-                <Colours
-                  value={a.color}
-                  onPick={(c, f) => up({ color: c }, f ? undefined : `ann:${a.id}:color`)}
-                />
+                {!quickColours && (
+                  <>
+                    <div className="sub">Colour</div>
+                    <Colours
+                      value={a.color}
+                      onPick={(c, f) => up({ color: c }, f ? undefined : `ann:${a.id}:color`)}
+                    />
+                  </>
+                )}
               </>
             )}
             <div style={{ marginTop: 12 }}>

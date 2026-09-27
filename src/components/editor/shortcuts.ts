@@ -173,7 +173,7 @@ export function useShortcuts(app: EditorApp) {
         default:
           if (/^[1-6]$/.test(key)) {
             const tiles = document.querySelectorAll<HTMLButtonElement>(
-              "[data-testid=styles-tray] button.preset, .rail button.preset",
+              "[data-testid=styles-tray] button.preset, .rail button.preset:not(.shuffle-tile)",
             );
             tiles[Number(key) - 1]?.click();
           }

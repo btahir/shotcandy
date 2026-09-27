@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { type ExportFormat, getStylePreset, layoutScene } from "@/engine";
 import { Icon, LogoMark, type IconName } from "../icons";
 import { Segmented } from "../ui/controls";
-import { AnnotationInspector } from "./AnnotationInspector";
+import { AnnotationInspector, Colours } from "./AnnotationInspector";
 import { type MobileTab, formatBytes, styleName } from "./app";
 import { useApp, useScene, useUi } from "./context";
 import { TOOLS } from "./Dock";
@@ -123,6 +123,17 @@ function StyleRail() {
     current && !ids.includes(current) && getStylePreset(current) ? [current, ...ids] : ids;
   return (
     <div className="rail" role="group" aria-label="Styles">
+      <button
+        type="button"
+        className="preset shuffle-tile"
+        onClick={() => app.shuffle()}
+        aria-label="Candy Shuffle: a whole new look"
+      >
+        <div className="thumb">
+          <Icon name="shuffle" />
+        </div>
+        <span className="name">Shuffle</span>
+      </button>
       {list.map((id) => {
         const p = getStylePreset(id);
         if (!p) return null;
@@ -202,6 +213,28 @@ function DrawTools() {
           <Icon name={t.icon} />
         </button>
       ))}
+    </div>
+  );
+}
+
+/** The annotation colour row, right under the tools so it fits the peeking sheet (P2-24). */
+function QuickColours() {
+  const app = useApp();
+  const tool = useUi((s) => s.tool);
+  const annColor = useUi((s) => s.annColor);
+  const a = useScene((s) => s.scene.annotations.find((x) => x.id === s.selection));
+  if (a?.kind === "redact" || (a?.kind === "rect" && a.style === "spotlight")) return null;
+  if (!a && tool === "redact") return null;
+  const value = a && "color" in a ? a.color : annColor;
+  return (
+    <div className="m-quick-colours">
+      <Colours
+        value={value}
+        onPick={(c, f) => {
+          if (a) app.updateAnnotation(a.id, { color: c }, f ? undefined : `ann:${a.id}:color`);
+          else app.ui.set({ annColor: c });
+        }}
+      />
     </div>
   );
 }
@@ -302,8 +335,9 @@ function MobileSheet() {
         {tab === "draw" && (
           <>
             <DrawTools />
+            <QuickColours />
             <div className="m-draw">
-              <AnnotationInspector />
+              <AnnotationInspector quickColours />
             </div>
           </>
         )}
