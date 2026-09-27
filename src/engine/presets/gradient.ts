@@ -93,8 +93,25 @@ export function toGradientEdit(fill: BackgroundFill, palette: Palette | null = n
       return { type: "linear", angle: f.angle, stops: normalizeStops(f.stops) };
     case "radial":
       return { type: "radial", angle: 135, stops: normalizeStops(f.stops) };
-    case "conic":
-      return { type: "conic", angle: f.angle, stops: normalizeStops(f.stops) };
+    case "conic": {
+      // Drop the seam stop fromGradientEdit adds to close the wheel.
+      let stops = f.stops;
+      const last = stops[stops.length - 1];
+      if (
+        stops.length > 2 &&
+        last &&
+        last.offset >= 0.9999 &&
+        normalizeColor(last.color) === normalizeColor(stops[0]!.color)
+      ) {
+        const rest = stops.slice(0, -1);
+        const top = rest[rest.length - 1]!.offset || 1;
+        stops = rest.map((s) => ({
+          ...s,
+          offset: top >= 0.998 ? Math.min(1, s.offset / top) : s.offset,
+        }));
+      }
+      return { type: "conic", angle: f.angle, stops: normalizeStops(stops) };
+    }
     case "mesh": {
       const colors = [f.base, ...f.points.map((p) => p.color)].slice(0, MAX_STOPS);
       return {

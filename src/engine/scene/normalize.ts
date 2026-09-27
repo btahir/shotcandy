@@ -335,6 +335,9 @@ function content(c: Ctx, v: unknown): Content {
       title: str(c, "content.title", o.title, "", 120),
       chrome: oneOf(c, "content.chrome", o.chrome, ["mac", "minimal", "none"] as const, "mac"),
       padding: num(c, "content.padding", o.padding, 28, 8, 120),
+      ...(typeof o.width === "number" && o.width > 0
+        ? { width: num(c, "content.width", o.width, 0, 200, 4000) }
+        : {}),
       tokens: codeTokens(c, o.tokens),
     };
   }

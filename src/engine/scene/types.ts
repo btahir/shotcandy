@@ -287,6 +287,8 @@ export interface CodeContent {
   chrome: "mac" | "minimal" | "none";
   /** Space around the code, px at 1x. */
   padding: number;
+  /** Window width in px at 1x (never narrower than the code needs); absent = hug the code. */
+  width?: number;
   tokens?: CodeTokens | null;
 }
 

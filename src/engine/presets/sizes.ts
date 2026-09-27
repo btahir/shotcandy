@@ -47,6 +47,7 @@ const X_ADS = "https://business.x.com/en/help/campaign-setup/creative-ad-specifi
 const LINKEDIN = "https://www.linkedin.com/help/lms/answer/a426534";
 const INSTAGRAM_HELP = "https://help.instagram.com/1631821640426723";
 const INSTAGRAM_STORY = "https://www.facebook.com/business/ads-guide/update/image/instagram-story";
+const PRODUCT_HUNT = "https://help.producthunt.com/en/articles/479557-how-to-post-a-product";
 const APP_STORE =
   "https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/";
 
@@ -73,6 +74,8 @@ export const SIZE_PRESETS: readonly SizePreset[] = [
   fixed("instagram-tall", "Instagram 3:4", "social", 1080, 1440, INSTAGRAM_HELP),
   // Stories are 9:16 (Meta recommends 1440x2560 for ads; 1080x1920 is the same ratio).
   fixed("instagram-story", "Instagram story", "social", 1080, 1920, INSTAGRAM_STORY),
+  // Product Hunt: "The recommended size for images in the gallery is 1270x760" (checked 2026-09-26).
+  fixed("producthunt", "Product Hunt", "social", 1270, 760, PRODUCT_HUNT),
   // App Store Connect accepted sizes (portrait; rotateSize() gives landscape). No alpha allowed.
   fixed("appstore-iphone-69", 'iPhone 6.9"', "appstore", 1320, 2868, APP_STORE),
   fixed("appstore-iphone-65", 'iPhone 6.5"', "appstore", 1284, 2778, APP_STORE),

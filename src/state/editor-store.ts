@@ -24,12 +24,20 @@ export interface UpdateOptions {
   transient?: boolean;
 }
 
+/** Undo/redo stacks, kept aside while another design is shown (mode switches). */
+export interface EditorHistory {
+  past: Scene[];
+  future: Scene[];
+}
+
 export interface EditorStore {
   getState(): EditorState;
   subscribe(listener: () => void): () => void;
   update(recipe: (scene: Scene) => Scene, opts?: UpdateOptions): void;
-  /** Replace the scene and reset history (loading a design or project). */
-  reset(scene: Scene): void;
+  /** Replace the scene and reset history (loading a design or project), or restore a saved history. */
+  reset(scene: Scene, history?: EditorHistory): void;
+  /** A copy of the undo/redo stacks. */
+  history(): EditorHistory;
   select(id: string | null): void;
   undo(): void;
   redo(): void;
@@ -85,11 +93,14 @@ export function createEditorStore(initial: Scene, opts: EditorStoreOptions = {})
           : null;
       commit({ scene: next, selection });
     },
-    reset(scene) {
-      past = [];
-      future = [];
+    reset(scene, history) {
+      past = history ? history.past.slice() : [];
+      future = history ? history.future.slice() : [];
       lastKey = null;
       commit({ scene, selection: null });
+    },
+    history() {
+      return { past: past.slice(), future: future.slice() };
     },
     select(id) {
       if (id !== state.selection) commit({ selection: id });

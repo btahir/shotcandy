@@ -22,6 +22,8 @@ export function codeTokensKey(code: string, language: string): string {
 
 export interface CodeLayout {
   width: number;
+  /** Width the code needs on its own (the window is never narrower). */
+  naturalWidth: number;
   height: number;
   font: string;
   titleFont: string;
@@ -77,11 +79,13 @@ export function codeLayout(c: CodeContent): CodeLayout {
   }
   const minCode = measureText(font, "0".repeat(32));
   const titleW = c.title ? measureText(titleFont, c.title) + F * 9 : 0;
-  const width = Math.ceil(Math.max(pad * 2 + gutterW + Math.max(codeW, minCode), titleW));
+  const natural = Math.ceil(Math.max(pad * 2 + gutterW + Math.max(codeW, minCode), titleW));
+  const width = Math.max(natural, Math.ceil(c.width ?? 0));
   const codeY = headerH ? headerH + pad * 0.55 : pad;
   const height = Math.ceil(codeY + Math.max(1, lines.length) * lineHeight + pad);
   const layout: CodeLayout = {
     width,
+    naturalWidth: natural,
     height,
     font,
     titleFont,
