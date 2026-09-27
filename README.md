@@ -25,8 +25,6 @@ Free, open source, and it runs entirely in your browser. No account, no upload.
 
 <img src="docs/media/hero.webp" alt="A plain dashboard screenshot blooms into a styled image, then shuffles through Grape Isometric, Strawberry Satin, Midnight Spotlight, Tangerine Tilt, Caramel Laptop, Grape Aurora and Retro Pop" width="1000">
 
-<sub><a href="docs/media/shotcandy-launch.mp4">Watch the 38-second launch film</a> · <a href="docs/media/shotcandy-feed-4x5.mp4">27-second 4:5 cut for feeds</a></sub>
-
 </div>
 
 ---
