@@ -59,7 +59,7 @@ Every "after" below is a real export from Shotcandy's engine, one click from the
 
 ### Styles
 
-36 one-click styles in seven families (from your shot, fruity, pastel, paper, deep, wallpaper and device). Hover to preview, press <kbd>G</kbd> for the whole Candy Jar, or press <kbd>S</kbd> for Candy Shuffle, which re-rolls background, tilt and frame together. Styles that suit your screenshot come first, and "From your shot" builds a palette from the image itself. Save your own tweaks as presets.
+42 one-click styles in eight families (from your shot, fruity, pastel, paper, minimal, deep, wallpaper and device). The Minimal family keeps it quiet: plain white, soft grey, outline, graphite and a design-canvas look. Hover to preview, press <kbd>G</kbd> for the whole Candy Jar, or press <kbd>S</kbd> for Candy Shuffle, which re-rolls background, tilt and frame together. Styles that suit your screenshot come first, and "From your shot" builds a palette from the image itself. Save your own tweaks as presets.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/gallery-dark.webp">
@@ -79,7 +79,7 @@ Turn a landscape screenshot into a tall post in one step. Pick a 9:16 story, a 4
 
 ### Frames
 
-A macOS window, a browser (light or dark), and drawn phone, tablet and laptop frames. All vector, all drawn by us, no vendor artwork.
+A macOS window, a browser (light or dark), drawn phone, tablet and laptop frames, and a design canvas frame that shows your shot the way a design tool shows a selected frame: its name above, blue selection handles, and its pixel size below. All vector, all drawn by us, no vendor artwork.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/media/feature-frames-dark.webp">

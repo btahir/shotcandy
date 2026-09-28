@@ -1280,8 +1280,8 @@
   /* Frame tiles */
   .frames {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 6px;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
   }
   .tile {
     aspect-ratio: 1;

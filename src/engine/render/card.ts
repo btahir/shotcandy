@@ -52,6 +52,7 @@ export function drawCard(ctx: Ctx2D, scene: Scene, layout: SceneLayout, deps: Ca
         content: { width: card.content.width, height: card.content.height },
         onePx: 1 / layout.k,
         fontFamily: fontStack(UI_FONT_ID),
+        pixels: layout.contentPixels,
       }
     : null;
   if (frame && card.frame && frameInput) {

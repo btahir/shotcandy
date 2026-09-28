@@ -98,13 +98,14 @@ describe("input sniffing", () => {
 });
 
 describe("frame registry", () => {
-  it("lists the five built-in frames", () => {
+  it("lists the six built-in frames", () => {
     expect(listFrames().map((f) => f.id)).toEqual([
       "macos",
       "browser",
       "phone",
       "tablet",
       "laptop",
+      "canvas",
     ]);
     expect(resolveFrame("none")).toBeNull();
     expect(resolveFrame("macos")!.kind.kind).toBe("window");

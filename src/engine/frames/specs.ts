@@ -5,7 +5,14 @@
  * restyles the frames; a schema change there fails the typecheck here.
  */
 import frames from "../../../brand/frames/frames.json";
-import type { BrowserSpec, DeviceSpec, FrameSpec, LaptopSpec, WindowSpec } from "./types";
+import type {
+  BrowserSpec,
+  CanvasFrameSpec,
+  DeviceSpec,
+  FrameSpec,
+  LaptopSpec,
+  WindowSpec,
+} from "./types";
 
 type Side = "left" | "right" | "top";
 const buttons = (list: { side: string; from: number; to: number }[]) =>
@@ -94,10 +101,24 @@ export const LAPTOP: LaptopSpec = {
   themes: frames.laptop.themes,
 };
 
+export const CANVAS_FRAME: CanvasFrameSpec = {
+  kind: "canvas",
+  id: "canvas",
+  label: "Design canvas",
+  labelSize: frames.canvas.labelSize,
+  labelGap: frames.canvas.labelGap,
+  stroke: frames.canvas.stroke,
+  handle: frames.canvas.handle,
+  handleStroke: frames.canvas.handleStroke,
+  tag: frames.canvas.tag,
+  themes: frames.canvas.themes,
+};
+
 export const BUILTIN_FRAMES: readonly FrameSpec[] = [
   MACOS_WINDOW,
   BROWSER_WINDOW,
   PHONE,
   TABLET,
   LAPTOP,
+  CANVAS_FRAME,
 ];

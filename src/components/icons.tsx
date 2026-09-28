@@ -366,6 +366,58 @@ const S: Record<string, Def> = {
       </>
     ),
   },
+  frameCanvas: {
+    raw: true,
+    viewBox: "0 0 26 22",
+    d: (
+      <>
+        <path
+          d="M3 3.2h7"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          opacity=".55"
+        />
+        <rect x="4" y="6.5" width="18" height="11.5" stroke="#0D99FF" strokeWidth="1.5" />
+        <rect
+          x="2.6"
+          y="5.1"
+          width="2.8"
+          height="2.8"
+          fill="#fff"
+          stroke="#0D99FF"
+          strokeWidth="1.1"
+        />
+        <rect
+          x="20.6"
+          y="5.1"
+          width="2.8"
+          height="2.8"
+          fill="#fff"
+          stroke="#0D99FF"
+          strokeWidth="1.1"
+        />
+        <rect
+          x="2.6"
+          y="16.6"
+          width="2.8"
+          height="2.8"
+          fill="#fff"
+          stroke="#0D99FF"
+          strokeWidth="1.1"
+        />
+        <rect
+          x="20.6"
+          y="16.6"
+          width="2.8"
+          height="2.8"
+          fill="#fff"
+          stroke="#0D99FF"
+          strokeWidth="1.1"
+        />
+      </>
+    ),
+  },
   frameLaptop: {
     raw: true,
     viewBox: "0 0 26 22",

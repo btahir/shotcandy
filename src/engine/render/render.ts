@@ -34,7 +34,8 @@ import {
 import { perspectiveMagnification } from "./magnification";
 import { warpPerspective } from "./perspective";
 import { affinePath, drawShadows } from "./shadow";
-import { mixColors, toCss } from "../math/color";
+import { isDark, mixColors, toCss } from "../math/color";
+import { resolveFrame } from "../frames/registry";
 // Content kinds beyond images register themselves with the content registry.
 import "../code/render";
 import "../post/render";
@@ -94,6 +95,10 @@ export function resolveFrameTheme(
   let theme: "light" | "dark" = "light";
   if (frame.id === "phone" || frame.id === "tablet" || frame.id === "laptop") {
     theme = "dark";
+  } else if (resolveFrame(frame.id)?.spec.kind === "canvas") {
+    // A canvas frame's label sits on the background: match its lightness.
+    const palette = scenePalette(scene, assets, env, cache);
+    theme = isDark(fillTone(scene.background.fill, palette, assets)) ? "dark" : "light";
   } else if (scene.content.kind === "image" && scene.content.assetId) {
     const src = assets.get(scene.content.assetId);
     if (src) {

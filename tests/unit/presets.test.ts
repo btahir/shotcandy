@@ -136,7 +136,7 @@ describe("style presets", () => {
     const shadowIds = new Set(SHADOW_PRESETS.map((s) => s.id));
     for (const s of STYLE_PRESETS) {
       expect(shadowIds.has(s.patch.card!.shadow!.preset!), s.id).toBe(true);
-      expect(["none", "macos", "browser", "phone", "tablet", "laptop"]).toContain(
+      expect(["none", "macos", "browser", "phone", "tablet", "laptop", "canvas"]).toContain(
         s.patch.card!.frame!.id,
       );
     }

@@ -512,6 +512,7 @@ function card(c: Ctx, v: unknown): CardStyle {
         ? { lights: oneOf(c, "card.frame.lights", fr.lights, ["color", "mono"] as const, "color") }
         : {}),
       ...(typeof fr.camera === "boolean" ? { camera: fr.camera } : {}),
+      ...(typeof fr.sizeTag === "boolean" ? { sizeTag: fr.sizeTag } : {}),
     },
     radius: num(c, "card.radius", o.radius, d.radius, 0, 500),
     smoothing: num(c, "card.smoothing", o.smoothing, d.smoothing, 0, 1),

@@ -81,5 +81,18 @@
       "dark":  { "rim": "#2E2F33", "bezel": "#0C0C0E", "camera": "#1E2026", "hinge": "#141518", "deckTop": "#55565C", "deckBottom": "#26272B", "deckHighlight": "#FFFFFF2E", "notch": "#1F2023" },
       "light": { "rim": "#C3C6CB", "bezel": "#0C0C0E", "camera": "#1E2026", "hinge": "#8E9197", "deckTop": "#EBEDF0", "deckBottom": "#B3B6BC", "deckHighlight": "#FFFFFFB3", "notch": "#A3A6AC" }
     }
+  },
+  "canvas": {
+    "$note": "Design-tool canvas frame: name label above, selection outline, corner handles, size tag below. Lengths in card units (the content's reference side is 1000 cu).",
+    "labelSize": 17,
+    "labelGap": 9,
+    "stroke": 2.4,
+    "handle": 10,
+    "handleStroke": 1.8,
+    "tag": { "size": 15, "padX": 8, "padY": 4.5, "gap": 10, "radius": 4 },
+    "themes": {
+      "light": { "label": "#6E6E73", "accent": "#0D99FF", "handleFill": "#FFFFFF", "tagText": "#FFFFFF" },
+      "dark": { "label": "#B4B4BB", "accent": "#0D99FF", "handleFill": "#FFFFFF", "tagText": "#FFFFFF" }
+    }
   }
 }

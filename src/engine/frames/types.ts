@@ -61,6 +61,8 @@ export interface FrameDrawInput {
   /** Length of one output pixel at 1x, in card units (for hairlines). */
   onePx: number;
   fontFamily: string;
+  /** Natural pixel size of the content (the canvas frame's size tag shows it). */
+  pixels?: Size;
 }
 
 // ----------------------------------------------------------------------------
@@ -222,7 +224,32 @@ export interface LaptopSpec {
   themes: Record<FrameTheme, LaptopTheme>;
 }
 
-export type FrameSpec = WindowSpec | BrowserSpec | DeviceSpec | LaptopSpec;
+export interface CanvasFrameTheme {
+  label: string;
+  accent: string;
+  handleFill: string;
+  tagText: string;
+}
+
+/**
+ * A design-tool canvas frame (as in Figma): the frame's name above it, a
+ * selection outline with corner handles, and its pixel size below. Lengths
+ * are card units (the content's reference side is 1000 cu).
+ */
+export interface CanvasFrameSpec {
+  kind: "canvas";
+  id: string;
+  label: string;
+  labelSize: number;
+  labelGap: number;
+  stroke: number;
+  handle: number;
+  handleStroke: number;
+  tag: { size: number; padX: number; padY: number; gap: number; radius: number };
+  themes: Record<FrameTheme, CanvasFrameTheme>;
+}
+
+export type FrameSpec = WindowSpec | BrowserSpec | DeviceSpec | LaptopSpec | CanvasFrameSpec;
 
 /** Implementation of one frame family. */
 export interface FrameKind<S extends FrameSpec = FrameSpec> {

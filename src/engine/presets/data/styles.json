@@ -18,6 +18,10 @@
       "label": "Paper & print"
     },
     {
+      "id": "minimal",
+      "label": "Minimal"
+    },
+    {
       "id": "deep",
       "label": "Deep"
     },
@@ -738,6 +742,252 @@
             "rotate": 3.5,
             "shrink": 0,
             "color": "#FFFFFF"
+          }
+        }
+      }
+    },
+    {
+      "id": "plain-white",
+      "name": "Plain White",
+      "family": "minimal",
+      "description": "White, a hairline edge and a whisper of shadow. Nothing else.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 120
+        },
+        "background": {
+          "fill": "@snow"
+        },
+        "card": {
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 12,
+          "shadow": {
+            "preset": "hug",
+            "strength": 0.7,
+            "color": "#1A1A1A"
+          },
+          "border": {
+            "width": 1,
+            "color": "#0000001A"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "soft-grey",
+      "name": "Soft Grey",
+      "family": "minimal",
+      "description": "Neutral grey with a soft, even lift.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 110
+        },
+        "background": {
+          "fill": "@fog"
+        },
+        "card": {
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 14,
+          "shadow": {
+            "preset": "soft",
+            "strength": 0.8,
+            "color": "#1A1A1A"
+          },
+          "border": {
+            "width": 0,
+            "color": "#00000000"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "outline",
+      "name": "Outline",
+      "family": "minimal",
+      "description": "Flat on white: a crisp outline, no shadow.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 100
+        },
+        "background": {
+          "fill": "@snow"
+        },
+        "card": {
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 10,
+          "shadow": {
+            "preset": "none",
+            "strength": 1,
+            "color": "#1A1A1A"
+          },
+          "border": {
+            "width": 1.5,
+            "color": "#00000029"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "quiet-float",
+      "name": "Quiet Float",
+      "family": "minimal",
+      "description": "Lots of air and one long, soft shadow.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 150
+        },
+        "background": {
+          "fill": "@fog"
+        },
+        "card": {
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 16,
+          "shadow": {
+            "preset": "lifted",
+            "strength": 0.55,
+            "color": "#1A1A1A"
+          },
+          "border": {
+            "width": 0,
+            "color": "#00000000"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "graphite",
+      "name": "Graphite",
+      "family": "minimal",
+      "description": "Near-black, a faint light edge, quiet shadow.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 110
+        },
+        "background": {
+          "fill": "@graphite"
+        },
+        "card": {
+          "frame": {
+            "id": "none",
+            "theme": "auto"
+          },
+          "radius": 12,
+          "shadow": {
+            "preset": "ambient",
+            "strength": 0.8,
+            "color": "#000000"
+          },
+          "border": {
+            "width": 1,
+            "color": "#FFFFFF1F"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "design-canvas",
+      "name": "Design Canvas",
+      "family": "minimal",
+      "description": "Your shot as a frame on a design tool's canvas: name, handles and size.",
+      "suits": "any",
+      "patch": {
+        "canvas": {
+          "padding": 130
+        },
+        "background": {
+          "fill": "@canvas-grey"
+        },
+        "card": {
+          "frame": {
+            "id": "canvas",
+            "theme": "auto"
+          },
+          "radius": 0,
+          "shadow": {
+            "preset": "none",
+            "strength": 1,
+            "color": "#1A1A1A"
+          },
+          "border": {
+            "width": 0,
+            "color": "#00000000"
+          },
+          "inset": {
+            "width": 0,
+            "color": "auto"
+          },
+          "tilt": {
+            "rotateX": 0,
+            "rotateY": 0,
+            "rotateZ": 0,
+            "perspective": 3
           }
         }
       }

@@ -148,6 +148,51 @@
       }
     },
     {
+      "id": "fog",
+      "name": "Fog",
+      "group": "solid",
+      "tone": "light",
+      "fill": {
+        "kind": "solid",
+        "color": "#F2F2F4"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "canvas-grey",
+      "name": "Canvas Grey",
+      "group": "solid",
+      "tone": "light",
+      "fill": {
+        "kind": "solid",
+        "color": "#E5E5E5"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
+      "id": "graphite",
+      "name": "Graphite",
+      "group": "solid",
+      "tone": "dark",
+      "fill": {
+        "kind": "solid",
+        "color": "#1C1C1F"
+      },
+      "grain": {
+        "amount": 0,
+        "size": 1,
+        "seed": 7
+      }
+    },
+    {
       "id": "blush",
       "name": "Blush",
       "group": "solid",

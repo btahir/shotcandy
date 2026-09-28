@@ -1181,6 +1181,12 @@ export const FRAMES: { id: string; label: string; short: string; icon: IconName 
   { id: "phone", label: "Phone", short: "Phone", icon: "framePhone" },
   { id: "tablet", label: "Tablet", short: "Tablet", icon: "frameTablet" },
   { id: "laptop", label: "Laptop", short: "Laptop", icon: "frameLaptop" },
+  {
+    id: "canvas",
+    label: "Design canvas",
+    short: "Canvas",
+    icon: "frameCanvas",
+  },
 ];
 
 export const FrameTray = memo(function FrameTray({ bare = false }: { bare?: boolean }) {
@@ -1272,6 +1278,17 @@ export const FrameTray = memo(function FrameTray({ bare = false }: { bare?: bool
               />
             </label>
           )}
+          {frame.id === "canvas" && (
+            <label className="input">
+              <span className="sr-only">Frame name</span>
+              <input
+                placeholder="Frame 1"
+                value={frame.title}
+                onChange={(e) => app.set(["card", "frame", "title"], e.target.value)}
+                onKeyDown={(e) => e.stopPropagation()}
+              />
+            </label>
+          )}
           {frame.id === "browser" && (
             <label className="input">
               <span className="sr-only">Address bar URL</span>
@@ -1294,6 +1311,16 @@ export const FrameTray = memo(function FrameTray({ bare = false }: { bare?: bool
               ]}
             />
           )}
+        </div>
+      )}
+      {frame.id === "canvas" && (
+        <div className="toggle-row" style={{ marginTop: 4 }}>
+          <span className="label">Show pixel size</span>
+          <Switch
+            checked={frame.sizeTag !== false}
+            label="Show pixel size"
+            onChange={(v) => app.set(["card", "frame", "sizeTag"], v)}
+          />
         </div>
       )}
       {frame.id === "macos" && (

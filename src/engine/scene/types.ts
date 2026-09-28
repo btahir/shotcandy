@@ -374,6 +374,8 @@ export interface FrameRef {
   lights?: "color" | "mono";
   /** Device camera dot (default true). */
   camera?: boolean;
+  /** Design canvas frame: show the pixel size under it (default true). `title` is its name. */
+  sizeTag?: boolean;
 }
 
 export interface BorderSpec {

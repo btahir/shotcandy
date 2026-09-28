@@ -17,6 +17,7 @@ import {
 import type { Ctx2D } from "../render/env";
 import type {
   BrowserSpec,
+  CanvasFrameSpec,
   DeviceButton,
   DeviceSpec,
   FrameDrawInput,
@@ -643,4 +644,98 @@ export const laptopKind: FrameKind<LaptopSpec> = {
   },
 };
 
-export const BUILTIN_KINDS = [windowKind, browserKind, deviceKind, laptopKind] as const;
+// ----------------------------------------------------------------------------
+// Canvas frame (design-tool selection: name, outline, handles, size)
+// ----------------------------------------------------------------------------
+
+/** Default name shown above a canvas frame until the user renames it. */
+export const CANVAS_FRAME_NAME = "Frame 1";
+
+function canvasBands(spec: CanvasFrameSpec) {
+  const top = spec.labelSize * 1.25 + spec.labelGap;
+  const bottom = spec.tag.gap + spec.tag.size + 2 * spec.tag.padY;
+  // Room for the corner handles to overhang the screenshot.
+  const side = spec.handle / 2 + spec.handleStroke;
+  return { top, bottom, side };
+}
+
+export const canvasKind: FrameKind<CanvasFrameSpec> = {
+  kind: "canvas",
+  supportsInset: true,
+  usesCardRadius: true,
+  layout(spec, input) {
+    const { top, bottom, side } = canvasBands(spec);
+    const w = input.plate.width;
+    const h = input.plate.height;
+    const r = Math.max(0, Math.min(input.radius, w / 2, h / 2));
+    const screen: Rect = { x: side, y: top, width: w, height: h };
+    const radii: Radii = [r, r, r, r];
+    return {
+      size: { width: w + 2 * side, height: top + h + bottom },
+      screen,
+      screenRadii: radii,
+      screenSmoothing: input.smoothing,
+      // Shadows and borders hug the screenshot, not the label or the tag.
+      outline: [{ rect: screen, radii, smoothing: input.smoothing }],
+    };
+  },
+  drawBack(ctx, spec, { ref, geometry, fontFamily }) {
+    const t = spec.themes[ref.theme];
+    const s = geometry.screen;
+    withState(ctx, () => {
+      ctx.font = `500 ${spec.labelSize}px ${fontFamily}`;
+      ctx.fillStyle = toCss(t.label);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      const name = ref.title.trim() || CANVAS_FRAME_NAME;
+      ctx.fillText(fitText(ctx, name, s.width), s.x, s.y - spec.labelGap);
+    });
+  },
+  drawFront(ctx, spec, { ref, geometry, onePx, fontFamily, pixels }) {
+    const t = spec.themes[ref.theme];
+    const s = geometry.screen;
+    const line = Math.max(onePx, spec.stroke);
+    // Selection outline, straddling the screenshot's edge.
+    strokePath(
+      ctx,
+      roundedRectPath(s, geometry.screenRadii, geometry.screenSmoothing),
+      t.accent,
+      line,
+    );
+    // Corner handles.
+    const hs = spec.handle;
+    const hw = Math.max(onePx, spec.handleStroke);
+    for (const [x, y] of [
+      [s.x, s.y],
+      [s.x + s.width, s.y],
+      [s.x + s.width, s.y + s.height],
+      [s.x, s.y + s.height],
+    ] as const) {
+      const box: Rect = { x: x - hs / 2, y: y - hs / 2, width: hs, height: hs };
+      fillRoundedRect(ctx, box, 0, t.handleFill);
+      strokePath(ctx, roundedRectPath(box, 0), t.accent, hw);
+    }
+    // Size tag under the frame.
+    if (ref.sizeTag === false || !pixels) return;
+    withState(ctx, () => {
+      const text = `${Math.round(pixels.width)} × ${Math.round(pixels.height)}`;
+      ctx.font = `600 ${spec.tag.size}px ${fontFamily}`;
+      const tw = ctx.measureText(text).width;
+      const w = tw + 2 * spec.tag.padX;
+      const h = spec.tag.size + 2 * spec.tag.padY;
+      const box: Rect = {
+        x: s.x + s.width / 2 - w / 2,
+        y: s.y + s.height + spec.tag.gap,
+        width: w,
+        height: h,
+      };
+      fillRoundedRect(ctx, box, spec.tag.radius, t.accent);
+      ctx.fillStyle = toCss(t.tagText);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, box.x + w / 2, box.y + h / 2 + spec.tag.size * 0.04);
+    });
+  },
+};
+
+export const BUILTIN_KINDS = [windowKind, browserKind, deviceKind, laptopKind, canvasKind] as const;
