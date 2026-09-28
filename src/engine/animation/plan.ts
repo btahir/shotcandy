@@ -6,6 +6,7 @@ import type { AssetResolver } from "../assets/types";
 import { outputSize } from "../layout/layout";
 import { layoutScene } from "../render/render";
 import type { Scene } from "../scene/types";
+import { timelineDuration } from "../video/clip";
 import { evaluateScene, frameCount } from "./timeline";
 import type { MotionContext } from "./types";
 
@@ -48,6 +49,8 @@ export interface AnimationExportResult extends AnimationPlan {
   codec: string;
   renderMs: number;
   via: "main" | "worker";
+  /** Things the user should know about the file (e.g. sound left out). */
+  warnings?: string[];
 }
 
 export interface AnimationHooks {
@@ -83,7 +86,7 @@ export function planAnimation(
   const spec = scene.animation;
   let fps = Math.round(options.fps ?? spec?.fps ?? 30);
   if (options.format === "gif") fps = Math.min(GIF_MAX_FPS, fps);
-  const frames = frameCount(spec?.duration ?? 3, fps);
+  const frames = frameCount(timelineDuration(scene), fps);
   const pose = evaluateScene(scene, 0, { assets, palette: palette ?? null });
   const size = outputSize(layoutScene(pose, assets), options.scale);
   let { width, height } = size;
@@ -157,13 +160,24 @@ const VIDEO_SHARE: Record<string, number> = {
  */
 export function roughAnimationBytes(
   plan: AnimationPlan,
-  o: { format: AnimationFormat; quality: AnimationQuality; preset: string; gifColors?: GifColors; dither?: boolean },
+  o: {
+    format: AnimationFormat;
+    quality: AnimationQuality;
+    preset: string;
+    gifColors?: GifColors;
+    dither?: boolean;
+  },
 ): [number, number] {
   let mid: number;
   if (o.format === "gif") {
     const area = plan.width * plan.height;
-    const colours = o.gifColors === 256 ? 1.12 : o.gifColors === 64 ? 0.86 : o.gifColors === 32 ? 0.74 : 1;
-    const g = 0.2 * (area / (640 * 400)) ** (GIF_AREA_EXPONENT - 1) * colours * (o.dither === false ? 0.78 : 1);
+    const colours =
+      o.gifColors === 256 ? 1.12 : o.gifColors === 64 ? 0.86 : o.gifColors === 32 ? 0.74 : 1;
+    const g =
+      0.2 *
+      (area / (640 * 400)) ** (GIF_AREA_EXPONENT - 1) *
+      colours *
+      (o.dither === false ? 0.78 : 1);
     mid = area * plan.frames * g;
   } else {
     const target = (videoBitrate(o.quality, plan.width, plan.height, plan.fps) * plan.duration) / 8;

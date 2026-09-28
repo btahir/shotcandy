@@ -11,6 +11,7 @@ import { setIn } from "../scene/patch";
 import type { BackgroundFill, Scene } from "../scene/types";
 import { layoutScene } from "../render/render";
 import { contentToCanvas } from "../layout/layout";
+import { STILL_MOTION_ID } from "../video/clip";
 import { lerp } from "./easing";
 import type { MotionContext, MotionFrame, MotionPreset } from "./types";
 
@@ -317,6 +318,21 @@ registerMotionPreset({
       shadow: { ...c.shadow, strength: c.shadow.strength * lerp(0.2, 1, Math.min(1, f.u)) },
     }));
   },
+});
+
+/**
+ * No motion, for screen recordings: the card holds still while the recording
+ * plays (see video/clip.ts). Not offered as a tile; "None" maps to it.
+ */
+registerMotionPreset({
+  id: STILL_MOTION_ID,
+  label: "None",
+  description: "The recording plays; the design holds still.",
+  periodic: true,
+  annotationWindow: [0, 0.0001],
+  drawsAnnotations: false,
+  defaults: { duration: 3, easing: "smooth", loop: "once" },
+  apply: (scene) => scene,
 });
 
 export type { MotionFrame };

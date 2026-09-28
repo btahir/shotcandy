@@ -9,7 +9,7 @@
 
 ### Paste a screenshot. Get something lovely.
 
-Shotcandy turns a plain screenshot into a share-ready image or video in seconds.<br>
+Shotcandy turns a plain screenshot or screen recording into a share-ready image or video in seconds.<br>
 Free, open source, and it runs entirely in your browser. No account, no upload.
 
 <p>
@@ -110,6 +110,10 @@ Eight motion presets (zoom in, focus, scroll, 3D sweep, float, drift, draw on, f
     <td width="50%"><img src="docs/media/motion-example.webp" alt="An animated export: a project board on the Strawberry Satin wallpaper zooming in"></td>
   </tr>
 </table>
+
+### Screen recordings
+
+Drop in an MP4, MOV or WebM screen recording and it gets the same treatment as a screenshot: background, frame, tilt, shadow, caption and blur boxes. Trim it, keep or drop the sound, add a motion on top, and export MP4, WebM or GIF. Everything happens in your browser, and the recording is never uploaded. Recordings up to 10 minutes and 1 GB open. Your browser must be able to play the recording: HEVC files open in Safari, or you can re-save them as H.264.
 
 ### Code images
 
@@ -215,6 +219,7 @@ flowchart LR
 - **Layout and render** (`engine/layout`, `engine/render`, `engine/frames`): layers drawn onto an HTML canvas, including our own vector frames and shadows.
 - **Export** (`engine/export`): renders off the main thread in a worker, with size presets, scale factors and per-destination size limits.
 - **Animation** (`engine/animation`): motion presets are functions of time over the same scene, encoded with WebCodecs plus `mp4-muxer` / `webm-muxer`, or `gifenc` for GIFs.
+- **Screen recordings** (`engine/video`): a recording is a screenshot whose pixels change over time. Each output frame is the normal renderer drawing the scene with the recording's frame in place of the screenshot. [Mediabunny](https://mediabunny.dev) reads the file, decodes the trimmed clip at the output frame rate, and copies the sound across (or re-encodes it when the container needs to).
 - **Modes** (`engine/code`, `engine/post`, `engine/appstore`): code images, post cards and App Store sets build ordinary scenes, so they get every style, frame and export for free.
 - **UI** (`src/components`, `src/state`): a Next.js static export with Tailwind. The editor store drives the engine; the engine never knows about React.
 
@@ -247,6 +252,7 @@ Issues and pull requests are welcome.
 
 - Fonts: [Bricolage Grotesque](https://github.com/ateliertriay/bricolage), [Figtree](https://github.com/erikdkennedy/figtree) and [Geist Mono](https://github.com/vercel/geist-font), all under the SIL Open Font License 1.1, bundled via [Fontsource](https://fontsource.org).
 - [Shiki](https://shiki.style) (MIT) for syntax highlighting.
+- [Mediabunny](https://github.com/Vanilagy/mediabunny) (MPL-2.0, used unmodified) for reading and converting screen recordings.
 - [mp4-muxer](https://github.com/Vanilagy/mp4-muxer) and [webm-muxer](https://github.com/Vanilagy/webm-muxer) (MIT), [gifenc](https://github.com/mattdesl/gifenc) (MIT), [fflate](https://github.com/101arrowz/fflate) (MIT) and [idb](https://github.com/jakearchibald/idb) (ISC).
 - Built with [Next.js](https://nextjs.org), [React](https://react.dev) and [Tailwind CSS](https://tailwindcss.com) (all MIT).
 - The logo, wallpapers, frames, sample screenshots and launch media are original work, released under this project's MIT license. The sample apps and people in them are made up.

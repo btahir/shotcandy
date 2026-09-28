@@ -1,7 +1,7 @@
 "use client";
 /** Keyboard shortcuts (docs/design/system/shortcuts.md). */
 import { useEffect } from "react";
-import { type Annotation, layoutScene } from "@/engine";
+import { ACCEPT_ATTRIBUTE, type Annotation, layoutScene } from "@/engine";
 import { isTypingTarget } from "@/lib/platform";
 import type { EditorApp, Tool } from "./app";
 import { stepZoom } from "./Dock";
@@ -60,7 +60,7 @@ export function useShortcuts(app: EditorApp) {
           else void app.download(document.querySelector("[data-testid=export]"));
         } else if (key === "o") {
           e.preventDefault();
-          openFilePicker((f) => void app.loadBlob(f, { source: "file" }));
+          openFilePicker((f) => void app.loadBlob(f, { source: "file" }), ACCEPT_ATTRIBUTE);
         } else if (key === "d" && app.store.getState().selection) {
           e.preventDefault();
           app.duplicateAnnotation(app.store.getState().selection!);

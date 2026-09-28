@@ -9,6 +9,7 @@ import { RenderCache } from "../render/cache";
 import { type RenderEnvironment, defaultEnvironment, get2d } from "../render/env";
 import { renderScene, scenePalette } from "../render/render";
 import type { Scene } from "../scene/types";
+import { isVideoScene } from "../video/clip";
 import { GifWriter, PaletteSampler } from "./encode/gif";
 import { VideoWriter, videoBitrate } from "./encode/video";
 import {
@@ -35,6 +36,10 @@ export async function renderAnimation(
   hooks: AnimationHooks = {},
 ): Promise<AnimationExportResult> {
   if (!scene.animation) throw new Error("This design has no motion");
+  if (isVideoScene(scene)) {
+    const { renderVideoAnimation } = await import("../video/export");
+    return renderVideoAnimation(scene, assets, options, env, hooks);
+  }
   const t0 = typeof performance !== "undefined" ? performance.now() : 0;
   const cache = new RenderCache(384 * 1024 * 1024);
   const palette = scenePalette(scene, assets, env, cache);

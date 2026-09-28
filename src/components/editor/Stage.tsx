@@ -160,7 +160,8 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
       const t = app.playback.get().t ?? app.restTime(renderScene_.animation);
       frame = evaluateScene(renderScene_, t, app.motionContext());
     }
-    renderScene(ctx, frame, app.library, { scale: s, cache: app.cache });
+    // Recordings draw their current preview frame in place of the poster.
+    renderScene(ctx, frame, app.frameAssets(), { scale: s, cache: app.cache });
     const ms = performance.now() - t0;
     (window as unknown as { __shotcandyRenderMs?: number }).__shotcandyRenderMs = ms;
     app.emit("rendered", ms);

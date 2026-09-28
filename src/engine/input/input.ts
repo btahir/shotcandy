@@ -2,17 +2,35 @@
  * Getting images in: paste, drop, file picker and the async clipboard API.
  * Formats are sniffed from magic bytes (clipboard MIME types are unreliable).
  * PNG, JPEG and WebP are accepted; HEIC/HEIF is rejected with a helpful error.
+ * Screen recordings (MP4, MOV, WebM) come in the same ways and are opened by
+ * video/import.ts.
  */
 
 export type ImageKind = "png" | "jpeg" | "webp" | "gif" | "heic" | "avif" | "bmp" | "unknown";
 
 export const ACCEPTED_KINDS: readonly ImageKind[] = ["png", "jpeg", "webp"];
 export const ACCEPTED_MIME = ["image/png", "image/jpeg", "image/webp"] as const;
-/** For `<input type="file" accept>`. */
-export const ACCEPT_ATTRIBUTE = ACCEPTED_MIME.join(",");
+/** Screen recordings: MP4, QuickTime MOV and WebM. */
+export const ACCEPTED_VIDEO_MIME = ["video/mp4", "video/quicktime", "video/webm"] as const;
+/** For `<input type="file" accept>`: screenshots and screen recordings. */
+export const ACCEPT_ATTRIBUTE = [
+  ...ACCEPTED_MIME,
+  ...ACCEPTED_VIDEO_MIME,
+  ".mov",
+  ".mp4",
+  ".webm",
+].join(",");
+/** Screenshots only (App Store slides). */
+export const ACCEPT_IMAGES = ACCEPTED_MIME.join(",");
 
 export type ImportErrorCode =
-  "unsupported-format" | "heic" | "too-large" | "decode-failed" | "empty";
+  | "unsupported-format"
+  | "heic"
+  | "too-large"
+  | "too-long"
+  | "decode-failed"
+  | "video-codec"
+  | "empty";
 
 export class ImportError extends Error {
   constructor(
@@ -53,6 +71,37 @@ export function sniffImageKind(bytes: Uint8Array): ImageKind {
   return "unknown";
 }
 
+export type VideoKind = "mp4" | "mov" | "webm";
+
+/** ISO-BMFF top-level boxes a QuickTime or MP4 file can open with. */
+const BMFF_BOXES = ["ftyp", "moov", "mdat", "wide", "free", "skip"];
+
+/** Container of a screen recording, from its first bytes, or null. */
+export function sniffVideoKind(bytes: Uint8Array): VideoKind | null {
+  const b = bytes;
+  if (b.length >= 4 && b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3)
+    return "webm";
+  if (b.length < 12) return null;
+  const box = String.fromCharCode(b[4]!, b[5]!, b[6]!, b[7]!);
+  if (!BMFF_BOXES.includes(box)) return null;
+  if (box !== "ftyp") return "mov";
+  const kind = sniffImageKind(b);
+  if (kind === "heic" || kind === "avif") return null;
+  const brand = String.fromCharCode(b[8]!, b[9]!, b[10]!, b[11]!);
+  return brand === "qt  " ? "mov" : "mp4";
+}
+
+export const MIME_FOR_VIDEO: Record<VideoKind, string> = {
+  mp4: "video/mp4",
+  mov: "video/quicktime",
+  webm: "video/webm",
+};
+
+/** Whether a file looks like a screen recording (by MIME type or extension). */
+export function isVideoFile(f: { type: string; name?: string }): boolean {
+  return f.type.startsWith("video/") || /\.(mp4|m4v|mov|webm)$/i.test(f.name ?? "");
+}
+
 export const MIME_FOR_KIND: Partial<Record<ImageKind, string>> = {
   png: "image/png",
   jpeg: "image/jpeg",
@@ -71,7 +120,10 @@ export function validateImageBytes(bytes: Uint8Array): string {
   }
   const mime = MIME_FOR_KIND[kind];
   if (!mime) {
-    throw new ImportError("unsupported-format", "Unsupported image format. Use PNG, JPEG or WebP.");
+    throw new ImportError(
+      "unsupported-format",
+      "Unsupported format. Use a PNG, JPEG or WebP screenshot, or an MP4, MOV or WebM recording.",
+    );
   }
   return mime;
 }
@@ -80,7 +132,7 @@ function firstImageFile(files: ArrayLike<File> | null | undefined): File | null 
   if (!files) return null;
   for (let i = 0; i < files.length; i++) {
     const f = files[i]!;
-    if (f.type.startsWith("image/") || f.type === "") return f;
+    if (f.type.startsWith("image/") || f.type === "" || isVideoFile(f)) return f;
   }
   return null;
 }
@@ -98,7 +150,10 @@ export function imageFromDataTransfer(dt: DataTransfer): File | null {
   if (fromFiles) return fromFiles;
   for (let i = 0; i < (dt.items?.length ?? 0); i++) {
     const item = dt.items[i]!;
-    if (item.kind === "file" && item.type.startsWith("image/")) {
+    if (
+      item.kind === "file" &&
+      (item.type.startsWith("image/") || item.type.startsWith("video/"))
+    ) {
       const f = item.getAsFile();
       if (f) return f;
     }

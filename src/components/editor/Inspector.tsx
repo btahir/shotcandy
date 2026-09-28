@@ -16,6 +16,7 @@ import {
   getBackgroundPreset,
   getStylePreset,
   importImage,
+  isVideoScene,
   resolveFrame,
 } from "@/engine";
 import { SUPPORT_URL } from "@/config/site";
@@ -1315,6 +1316,7 @@ export const FrameTray = memo(function FrameTray({ bare = false }: { bare?: bool
 
 function ModeTrays() {
   const mode = useUi((s) => s.mode);
+  const video = useScene((s) => isVideoScene(s.scene));
   if (mode === "code")
     return (
       <>
@@ -1347,6 +1349,17 @@ function ModeTrays() {
         <BackgroundTray />
         <LayoutTray />
         <MotionTray />
+      </>
+    );
+  // A recording's trim and sound come first: they're what you reach for first.
+  if (video)
+    return (
+      <>
+        <MotionTray />
+        <StylesTray />
+        <BackgroundTray />
+        <LayoutTray />
+        <FrameTray />
       </>
     );
   return (

@@ -11,6 +11,7 @@ import { contentToCanvas } from "../layout/layout";
 import { layoutScene } from "../render/render";
 import { setIn } from "../scene/patch";
 import type { Annotation, AnimationSpec, Scene } from "../scene/types";
+import { isVideoScene, motionTimeInClip } from "../video/clip";
 import { getEasing, window01 } from "./easing";
 import { getMotionPreset } from "./presets";
 import type { MotionContext, MotionFrame, MotionPreset } from "./types";
@@ -129,7 +130,9 @@ export function evaluateScene(scene: Scene, t: number, ctx: MotionContext): Scen
   const preset = spec ? getMotionPreset(spec.preset) : undefined;
   if (!spec || !preset) return scene;
   const reference = motionReference(scene, ctx);
-  const frame = motionFrame(spec, preset, t);
+  // A recording runs longer than one motion (see motionTimeInClip).
+  const tm = isVideoScene(scene) ? motionTimeInClip(spec, preset.periodic, t) : t;
+  const frame = motionFrame(spec, preset, tm);
   let pose = preset.apply(reference, frame, ctx, scene);
   if (spec.annotations && pose.annotations.length) {
     const [a, b] = preset.annotationWindow;

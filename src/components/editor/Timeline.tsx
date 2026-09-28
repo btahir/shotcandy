@@ -5,7 +5,7 @@
  * Still button that returns to the editable design.
  */
 import { type KeyboardEvent, type PointerEvent, useRef } from "react";
-import { getMotionPreset } from "@/engine";
+import { clipLength, getMotionPreset, sceneClip } from "@/engine";
 import { useStore } from "@/lib/store";
 import { Icon } from "../icons";
 import { useApp, useScene, useUi } from "./context";
@@ -29,19 +29,22 @@ function segments(preset: ReturnType<typeof getMotionPreset>, loop: "once" | "bo
 export function Timeline({ narrow = false }: { narrow?: boolean }) {
   const app = useApp();
   const spec = useScene((s) => s.scene.animation);
+  const clip = useScene((s) => sceneClip(s.scene));
   const busy = useUi((s) => !!s.motionExport);
   const playing = useStore(app.playback, (s) => s.playing);
   const t = useStore(app.playback, (s) => s.t);
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   if (!spec) return null;
-  const D = spec.duration;
+  // A recording's timeline is the trimmed clip; a still's is one motion loop.
+  const D = clip ? clipLength(clip) : spec.duration;
   const preset = getMotionPreset(spec.preset);
   const at = t ?? app.restTime(spec);
   const pct = Math.max(0, Math.min(1, at / D));
   const fps = spec.fps;
-  const segs = segments(preset, spec.loop);
-  const ticks = Math.floor(D);
+  const segs = clip ? [{ from: 0, to: 1, kind: "move" }] : segments(preset, spec.loop);
+  const tickStep = D > 120 ? 30 : D > 40 ? 10 : D > 15 ? 5 : 1;
+  const ticks = Math.floor(D / tickStep);
 
   const seekAt = (clientX: number) => {
     const r = trackRef.current!.getBoundingClientRect();
@@ -85,7 +88,7 @@ export function Timeline({ narrow = false }: { narrow?: boolean }) {
     <div
       className={`timeline${narrow ? " narrow" : ""}`}
       role="group"
-      aria-label="Motion preview"
+      aria-label={clip ? "Recording playback" : "Motion preview"}
       data-testid="timeline"
       onPointerDown={(e) => e.stopPropagation()}
     >
@@ -128,7 +131,7 @@ export function Timeline({ narrow = false }: { narrow?: boolean }) {
           <i className="tl-fill" style={{ width: `${pct * 100}%` }} />
         </div>
         {Array.from({ length: ticks + 1 }, (_, i) => (
-          <b key={i} className="tl-tick" style={{ left: `${(i / D) * 100}%` }} />
+          <b key={i} className="tl-tick" style={{ left: `${((i * tickStep) / D) * 100}%` }} />
         ))}
         <span className="tl-knob" style={{ left: `${pct * 100}%` }} />
       </div>

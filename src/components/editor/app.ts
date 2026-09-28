@@ -66,7 +66,23 @@ import {
   getSizePreset,
   getStylePreset,
   importImage,
+  importVideo,
   isBuiltinAssetId,
+  isVideoFile,
+  isVideoScene,
+  sceneClip,
+  sniffVideoKind,
+  sourceTime,
+  timelineDuration,
+  trimClip,
+  createClip,
+  clipLength,
+  formatClipTime,
+  roughAnimationBytes,
+  withVideoFrame,
+  STILL_MOTION_ID,
+  MAX_STORED_VIDEO_BYTES,
+  type VideoClip,
   layoutScene,
   setCanvasSize,
   maxExportScale,
@@ -89,6 +105,7 @@ import { createStore, type Store } from "@/lib/store";
 import { ThumbService } from "@/lib/thumbs/service";
 import { sprinkle } from "@/lib/sprinkles";
 import { prefersReducedMotion } from "@/lib/platform";
+import { VideoPreview } from "./video-preview";
 import { type Mode, initialCodeScene, initialPostScene, modeForScene } from "./modes";
 import { SetController } from "./appstore";
 import { orientationOf, shuffleComposition, suitedStyles } from "./shuffle";
@@ -172,6 +189,8 @@ export interface PlaybackState {
   playing: boolean;
   /** Playhead in seconds, or null for the rest pose (the still design). */
   t: number | null;
+  /** Bumped when a recording's preview frame changes without the playhead moving. */
+  frame: number;
 }
 
 export interface Toast {
@@ -324,6 +343,19 @@ function downloadBlob(blob: Blob, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
+/** Whether a dropped, pasted or stored file is a screen recording. */
+async function isVideoBlob(blob: Blob): Promise<boolean> {
+  if (isVideoFile({ type: blob.type, name: (blob as File).name })) return true;
+  if (blob.type && blob.type.startsWith("image/")) return false;
+  const head = new Uint8Array(await blob.slice(0, 64).arrayBuffer());
+  return sniffVideoKind(head) !== null;
+}
+
+/** Open a stored or project asset: a screenshot or a screen recording. */
+async function importMedia(blob: Blob): Promise<ImportedImage> {
+  return (await isVideoBlob(blob)) ? importVideo(blob) : importImage(blob);
+}
+
 function importMessage(e: unknown): { title: string; detail: string } {
   if (e instanceof ImportError) {
     switch (e.code) {
@@ -334,18 +366,24 @@ function importMessage(e: unknown): { title: string; detail: string } {
             "Save it as PNG or JPEG and try again. On iPhone: Settings › Camera › Formats › Most Compatible.",
         };
       case "too-large":
-        return { title: "That image is too big to edit", detail: e.message };
+        return { title: "That file is too big to edit", detail: e.message };
+      case "too-long":
+        return { title: "That recording is too long", detail: e.message };
+      case "video-codec":
+        return { title: "Your browser can't play that recording", detail: e.message };
       case "empty":
         return { title: "That file is empty", detail: "Try exporting the screenshot again." };
       case "decode-failed":
-        return {
-          title: "Couldn't read that image",
-          detail: "It may be corrupt. Try PNG, JPEG or WebP.",
-        };
+        return e.message.includes("recording") || e.message.includes("video")
+          ? { title: "Couldn't read that recording", detail: e.message }
+          : {
+              title: "Couldn't read that image",
+              detail: "It may be corrupt. Try PNG, JPEG or WebP.",
+            };
       default:
         return {
           title: "Couldn't read that file",
-          detail: "Try PNG, JPEG or WebP.",
+          detail: e.message,
         };
     }
   }
@@ -382,7 +420,13 @@ export class EditorApp {
   readonly exporter = new Exporter({ createWorker: createExportWorker });
   readonly animator = new AnimationExporter({ createWorker: createAnimationWorker });
   readonly ui: Store<UiState>;
-  readonly playback: Store<PlaybackState> = createStore<PlaybackState>({ playing: false, t: null });
+  readonly playback: Store<PlaybackState> = createStore<PlaybackState>({
+    playing: false,
+    t: null,
+    frame: 0,
+  });
+  /** Live preview of a screen recording (the export decodes frames itself). */
+  readonly video = new VideoPreview(() => this.playback.set((s) => ({ frame: s.frame + 1 })));
   /** Hover-to-preview: a scene shown on the stage instead of the real one (never in history). */
   readonly preview: Store<{ scene: Scene | null; label: string | null }> = createStore<{
     scene: Scene | null;
@@ -416,6 +460,9 @@ export class EditorApp {
   private disposed = false;
   private listeners = new Map<string, Set<(arg?: unknown) => void>>();
   private builtinLoads = new Map<string, Promise<void>>();
+  private lastFrameKey: string | null = null;
+  /** Recordings too big to store: designs using them aren't autosaved. */
+  private readonly unstored = new Set<string>();
   private initDone = false;
 
   constructor() {
@@ -566,6 +613,7 @@ export class EditorApp {
 
   dispose(): void {
     this.disposed = true;
+    this.video.detach();
     this.motionAbort?.abort();
     this.exporter.dispose();
     this.thumbs?.dispose();
@@ -604,11 +652,12 @@ export class EditorApp {
 
   // ------------------------------------------------------------------- input
   async loadBlob(blob: Blob, opts: { source?: string } = {}): Promise<boolean> {
+    if (await isVideoBlob(blob)) return this.loadVideo(blob, opts);
     if (blob.type && !/^image\//.test(blob.type) && blob.type !== "application/octet-stream") {
       this.toast({
         kind: "error",
         title: "Couldn't read that file",
-        detail: "Shotcandy opens PNG, JPEG or WebP images.",
+        detail: "Shotcandy opens PNG, JPEG or WebP screenshots and MP4, MOV or WebM recordings.",
         prose: true,
       });
       return false;
@@ -636,9 +685,14 @@ export class EditorApp {
     void this.thumbs?.setAsset(img.id, img.proxy, img.width, img.height, img.palette);
     const first = !this.ui.get().hasContent;
     const portrait = img.height / img.width >= 1.6;
+    const wasRecording = isVideoScene(this.scene);
     this.store.update((s) => {
+      // A recording's "no motion" timeline doesn't carry over to a screenshot.
+      const { animation, ...rest } = s;
+      const base: Scene =
+        animation?.preset === STILL_MOTION_ID ? (rest as Scene) : ({ ...rest, animation } as Scene);
       let next: Scene = withAutoCaption(
-        { ...s, content: { kind: "image", assetId: img.id } },
+        { ...base, content: { kind: "image", assetId: img.id } },
         { width: img.width, height: img.height },
       );
       if (first && !this.userPickedStyle) {
@@ -648,6 +702,10 @@ export class EditorApp {
       }
       return next;
     });
+    if (wasRecording) {
+      this.stopPreview();
+      if (!this.scene.animation) this.setExportSettings({ kind: "image" });
+    }
     // A new screenshot starts a new recent design.
     this.designId = newId("d");
     this.designCreated = Date.now();
@@ -678,6 +736,105 @@ export class EditorApp {
     this.emit("loaded", opts.source ?? "unknown");
     this.announce(
       `Screenshot added (${img.width} × ${img.height}). Style: ${styleName(this.scene.meta.stylePresetId, this.ui.get().customPresets)}. Press ${mod}C to copy.`,
+    );
+    return true;
+  }
+
+  /** Open a screen recording: it lands styled, with a timeline, ready to export as video. */
+  async loadVideo(blob: Blob, opts: { source?: string } = {}): Promise<boolean> {
+    if (this.ui.get().mode === "appstore") {
+      this.toast({
+        kind: "info",
+        title: "App Store slides take screenshots",
+        detail: "Switch to Screenshot to style a screen recording.",
+        prose: true,
+      });
+      return false;
+    }
+    const m = this.ui.get().mode;
+    if (m === "code" || m === "post") this.setMode("screenshot");
+    this.ui.set({ importing: true });
+    let img: ImportedImage;
+    try {
+      img = await importVideo(blob);
+    } catch (e) {
+      this.ui.set({ importing: false });
+      const msg = importMessage(e);
+      this.toast({
+        kind: "error",
+        title: msg.title,
+        detail: msg.detail,
+        prose: true,
+        duration: 8000,
+      });
+      return false;
+    }
+    if (this.disposed || !img.video) return false;
+    this.stopPreview();
+    this.library.add(img);
+    void this.thumbs?.setAsset(img.id, img.proxy, img.width, img.height, img.palette);
+    const info = img.video.info;
+    const first = !this.ui.get().hasContent;
+    const portrait = img.height / img.width >= 1.6;
+    const clip = createClip(info.duration, !!info.audioCodec);
+    this.store.update((s) => {
+      let next: Scene = withAutoCaption(
+        { ...s, content: { kind: "image", assetId: img.id, clip } },
+        { width: img.width, height: img.height },
+      );
+      if (first && !this.userPickedStyle) {
+        const id = portrait ? "phone-sorbet" : DEFAULT_STYLE_ID;
+        const p = getStylePreset(id);
+        if (p) next = applyStylePatch(next, p.patch, id);
+      }
+      // Recordings always have a timeline; keep a motion the design already has.
+      const prev = next.animation;
+      const keep = prev && getMotionPreset(prev.preset) ? prev.preset : STILL_MOTION_ID;
+      const animation = createAnimation(keep, prev);
+      animation.fps = info.fps && info.fps > 45 ? 60 : 30;
+      return { ...next, animation };
+    });
+    this.setExportSettings({ kind: "motion" });
+    this.designId = newId("d");
+    this.designCreated = Date.now();
+    this.ui.set((s) => ({
+      hasContent: true,
+      importing: false,
+      landing: first ? s.landing + 1 : s.landing,
+      xfade: first ? s.xfade : s.xfade + 1,
+      zoom: null,
+      pan: { x: 0, y: 0 },
+      stageFocus: s.stageFocus + 1,
+    }));
+    this.bumpAssets();
+    this.syncVideo();
+    const storable = img.blob.size <= MAX_STORED_VIDEO_BYTES;
+    if (!storable) {
+      this.unstored.add(img.id);
+      this.toast({
+        kind: "info",
+        title: "This recording won't be kept in Recent designs",
+        detail: `Recordings over ${MAX_STORED_VIDEO_BYTES / 1024 / 1024} MB are too big to store in the browser. Export your video before you close the tab.`,
+        prose: true,
+        duration: 7000,
+      });
+    }
+    if (this.db && storable) {
+      void this.db.assets
+        .put({
+          id: img.id,
+          blob: img.blob,
+          mime: img.mime,
+          width: img.width,
+          height: img.height,
+          role: "content",
+          createdAt: Date.now(),
+        })
+        .catch(() => undefined);
+    }
+    this.emit("loaded", opts.source ?? "unknown");
+    this.announce(
+      `Recording added (${img.width} × ${img.height}, ${formatClipTime(info.duration)}). Press M to play it.`,
     );
     return true;
   }
@@ -789,7 +946,7 @@ export class EditorApp {
     const rec = await this.db?.assets.get(id).catch(() => undefined);
     if (!rec) return false;
     try {
-      const img = await importImage(rec.blob);
+      const img = await importMedia(rec.blob);
       this.library.add(img);
       void this.thumbs?.setAsset(img.id, img.proxy, img.width, img.height, img.palette);
       this.bumpAssets();
@@ -1331,11 +1488,76 @@ export class EditorApp {
     return { assets: this.resolver, palette: palette ?? null };
   }
 
+  /**
+   * Assets for drawing the stage right now: for a screen recording, the
+   * library with the recording's current preview frame in place of its poster.
+   */
+  frameAssets(): AssetResolver {
+    const c = this.scene.content;
+    if (c.kind !== "image" || !c.clip || !c.assetId || this.video.current !== c.assetId)
+      return this.resolver;
+    const f = this.video.frame();
+    if (!f) return this.resolver;
+    // Live frames are shown once: drop the previous frame's cached canvases.
+    if (this.lastFrameKey && this.lastFrameKey !== f.key)
+      this.cache.invalidate(`${c.assetId}@${this.lastFrameKey}:`);
+    this.lastFrameKey = f.key;
+    return withVideoFrame(this.resolver, c.assetId, f, f.key);
+  }
+
+  /** Length of the timeline: the trimmed recording, or one motion loop. */
+  timelineLength(): number {
+    return timelineDuration(this.scene);
+  }
+
+  /** Keep the preview player on the current recording and playhead. */
+  private syncVideo(): void {
+    const c = this.scene.content;
+    const entry = c.kind === "image" && c.clip && c.assetId ? this.library.entry(c.assetId) : null;
+    if (!entry?.video || c.kind !== "image" || !c.clip) {
+      if (this.video.current) this.video.detach();
+      return;
+    }
+    if (this.video.current !== entry.id) {
+      this.video.attach(entry.id, entry.blob, entry.width, entry.height);
+      // A recording exports as video by default (a still is one click away).
+      if (this.ui.get().exportSettings.kind !== "motion")
+        this.setExportSettings({ kind: "motion" });
+    }
+    const p = this.playback.get();
+    if (p.playing) {
+      // A new recording, an undone trim or a stalled element: resume in range.
+      const at = sourceTime(c.clip, p.t ?? 0);
+      const inRange = this.video.time >= c.clip.start - 0.05 && this.video.time <= c.clip.end;
+      if (this.video.paused || !inRange) this.video.play(at, c.clip.muted);
+      else this.video.setMuted(c.clip.muted);
+    } else this.video.seek(sourceTime(c.clip, p.t ?? this.restTime()));
+  }
+
+  /** Trim the recording or turn its sound off (one undo step per drag). */
+  updateClip(patch: Partial<Pick<VideoClip, "start" | "end" | "muted">>, coalesce?: string): void {
+    const clip = sceneClip(this.scene);
+    if (!clip) return;
+    const next = trimClip({ ...clip, muted: patch.muted ?? clip.muted }, patch);
+    this.store.update(
+      (s) =>
+        s.content.kind === "image" && s.content.clip
+          ? { ...s, content: { ...s.content, clip: next } }
+          : s,
+      { coalesce: coalesce ?? `clip:${Object.keys(patch).join(",")}` },
+    );
+    if (patch.start !== undefined) this.seek(0);
+    else if (patch.end !== undefined) this.seek(clipLength(next));
+    if (patch.muted !== undefined) this.announce(patch.muted ? "Sound off" : "Sound on");
+  }
+
   /** Where the playhead rests when paused: the end pose, or phase 0 for loops. */
   restTime(spec: AnimationSpec | undefined = this.scene.animation): number {
     if (!spec) return 0;
     const p = getMotionPreset(spec.preset);
     if (!p || p.periodic) return 0;
+    // A recording rests on its first frame, where a motion hasn't started.
+    if (isVideoScene(this.scene)) return 0;
     if (spec.loop === "boomerang") return spec.duration * 0.5;
     return spec.duration * ((p.onceWindow?.[1] ?? 0.72) + 1) * 0.5;
   }
@@ -1343,6 +1565,12 @@ export class EditorApp {
   /** Pick a motion preset (null turns motion off). */
   setMotion(id: string | null): void {
     const prev = this.scene.animation;
+    // A recording always keeps its timeline: "no motion" holds the card still.
+    if (!id && isVideoScene(this.scene)) {
+      this.store.update((s) => ({ ...s, animation: createAnimation(STILL_MOTION_ID, prev) }));
+      this.announce("Motion off");
+      return;
+    }
     if (!id) {
       this.store.update((s) => {
         const { animation: _a, ...rest } = s;
@@ -1359,7 +1587,7 @@ export class EditorApp {
     this.store.update((s) => ({ ...s, animation: spec }));
     this.setExportSettings({ kind: "motion" });
     this.announce(`Motion: ${preset.label}. ${preset.description}`);
-    if (prefersReducedMotion()) this.playback.set({ playing: false, t: null });
+    if (prefersReducedMotion()) this.stopPreview();
     else this.play(0);
   }
 
@@ -1370,15 +1598,18 @@ export class EditorApp {
       { coalesce: coalesce ?? `motion:${Object.keys(patch).join(",")}` },
     );
     const t = this.playback.get().t;
-    const d = this.scene.animation?.duration ?? 1;
+    const d = this.timelineLength();
     if (t !== null && t > d) this.playback.set({ t: t % d });
   }
 
   play(from?: number): void {
     if (!this.scene.animation) return;
     const cur = this.playback.get().t;
-    const d = this.scene.animation.duration;
-    this.playback.set({ playing: true, t: from ?? (cur === null || cur >= d - 1e-3 ? 0 : cur) });
+    const d = this.timelineLength();
+    const t = from ?? (cur === null || cur >= d - 1e-3 ? 0 : cur);
+    this.playback.set({ playing: true, t });
+    const clip = sceneClip(this.scene);
+    if (clip) this.video.play(sourceTime(clip, t), clip.muted);
     this.store.select(null);
     this.ui.set({ editingText: null, tool: "select" });
     if (!this.tickRaf) {
@@ -1397,12 +1628,26 @@ export class EditorApp {
     }
     const dt = this.lastTick ? Math.min(0.1, (now - this.lastTick) / 1000) : 0;
     this.lastTick = now;
-    this.playback.set({ t: ((p.t ?? 0) + dt) % spec.duration });
+    const clip = sceneClip(this.scene);
+    if (clip && this.video.current && !this.video.failed) {
+      // Follow the recording's own clock, so picture and sound stay in sync.
+      const len = clipLength(clip);
+      const t = this.video.time - clip.start;
+      if (this.video.ended || t >= len - 0.5 / spec.fps) {
+        this.video.play(clip.start, clip.muted);
+        this.playback.set({ t: 0 });
+      } else {
+        this.playback.set({ t: Math.max(0, t) });
+      }
+    } else {
+      this.playback.set({ t: ((p.t ?? 0) + dt) % timelineDuration(this.scene) });
+    }
     this.tickRaf = requestAnimationFrame(this.tick);
   };
 
   pause(): void {
     if (this.playback.get().playing) this.playback.set({ playing: false });
+    this.video.pause();
   }
 
   togglePlay(): void {
@@ -1411,14 +1656,19 @@ export class EditorApp {
   }
 
   seek(t: number): void {
-    const d = this.scene.animation?.duration ?? 0;
-    this.playback.set({ playing: false, t: Math.max(0, Math.min(d, t)) });
+    const d = this.scene.animation ? this.timelineLength() : 0;
+    const at = Math.max(0, Math.min(d, t));
+    this.playback.set({ playing: false, t: at });
+    const clip = sceneClip(this.scene);
+    if (clip) this.video.seek(sourceTime(clip, at));
   }
 
   /** Back to the still design (so annotations can be edited in place). */
   stopPreview(): void {
     const p = this.playback.get();
     if (p.playing || p.t !== null) this.playback.set({ playing: false, t: null });
+    const clip = sceneClip(this.scene);
+    if (clip) this.video.seek(sourceTime(clip, this.restTime()));
   }
 
   /** Output size and timing of the motion export with the current settings. */
@@ -1482,7 +1732,10 @@ export class EditorApp {
       );
       const name = formatFilename("{name}-{style}-{w}x{h}", {
         name: scene.meta.name,
-        style: scene.animation.preset,
+        style:
+          scene.animation.preset === STILL_MOTION_ID
+            ? (scene.meta.stylePresetId ?? "recording")
+            : scene.animation.preset,
         width: r.width,
         height: r.height,
         scale: 1,
@@ -1495,7 +1748,7 @@ export class EditorApp {
       this.toast({
         kind: "wrap",
         title: `Saved ${name}`,
-        detail: `${r.duration.toFixed(1)} s · ${r.width} × ${r.height} · ${r.fps} fps · ${formatBytes(r.blob.size)}`,
+        detail: `${r.duration.toFixed(1)} s · ${r.width} × ${r.height} · ${r.fps} fps · ${formatBytes(r.blob.size)}${r.warnings?.length ? `. ${r.warnings.join(" ")}` : ""}`,
         thumb: await this.posterUrl(scene),
         duration: 4200,
       });
@@ -1538,6 +1791,22 @@ export class EditorApp {
     this.motionEstimateAbort = ac;
     const plan = this.motionPlan(settings);
     if (!plan || !scene.animation) return Promise.reject(new Error("No motion"));
+    if (isVideoScene(scene)) {
+      // A sample encode would render the whole recording; the model is instant.
+      const [lo, hi] = roughAnimationBytes(plan, {
+        format: settings.format,
+        quality: settings.quality,
+        preset: "recording",
+        gifColors: settings.gifColors,
+        dither: settings.dither,
+      });
+      const clip = sceneClip(scene)!;
+      const sound =
+        clip.audio && !clip.muted && settings.format !== "gif" ? (160_000 * plan.duration) / 8 : 0;
+      const result = Promise.resolve(Math.round((lo + hi) / 2 + sound));
+      this.motionEstimate = { key, scene, result };
+      return result;
+    }
     const gif = settings.format === "gif";
     const long = Math.max(plan.width, plan.height);
     const short = Math.min(plan.width, plan.height);
@@ -1658,7 +1927,12 @@ export class EditorApp {
 
   runExport(format: ExportFormat, scale: number, quality?: number): Promise<ExportResult> {
     const scene = this.exportTarget();
-    return this.exporter.export(scene, this.exportAssets(scene), {
+    // A recording's still is its frame at the trim start, at full size.
+    const clip = sceneClip(scene);
+    const assets = this.exportAssets(scene).map((a) =>
+      clip && a.poster ? { ...a, stillAt: clip.start } : a,
+    );
+    return this.exporter.export(scene, assets, {
       format,
       scale,
       ...(quality !== undefined ? { quality } : {}),
@@ -1975,6 +2249,16 @@ export class EditorApp {
   async saveProject(): Promise<void> {
     if (!this.ui.get().hasContent) return;
     const scene = this.scene;
+    if (this.exportAssets(scene).some((a) => a.blob.size > MAX_STORED_VIDEO_BYTES)) {
+      this.toast({
+        kind: "error",
+        title: "This recording is too big for a project file",
+        detail: `Project files hold recordings up to ${MAX_STORED_VIDEO_BYTES / 1024 / 1024} MB. Trim the recording first, or export the video.`,
+        prose: true,
+        duration: 7000,
+      });
+      return;
+    }
     const file = await createProjectFile(
       scene,
       this.exportAssets(scene)
@@ -1991,7 +2275,7 @@ export class EditorApp {
     try {
       const p = await parseProject(file);
       for (const a of p.assets) {
-        const img = await importImage(a.blob);
+        const img = await importMedia(a.blob);
         this.library.add(img);
         void this.thumbs?.setAsset(img.id, img.proxy, img.width, img.height, img.palette);
       }
@@ -2095,6 +2379,7 @@ export class EditorApp {
   }
 
   private onSceneChange() {
+    this.syncVideo();
     if (this.ui.get().mode === "appstore") {
       this.sets.scheduleSave();
       return;
@@ -2108,6 +2393,7 @@ export class EditorApp {
   async autosave(): Promise<void> {
     if (!this.db || !this.ui.get().hasContent) return;
     const scene = this.scene;
+    if (sceneAssetIds(scene).some((id) => this.unstored.has(id))) return;
     if (!this.designId) {
       this.designId = newId("d");
       this.designCreated = Date.now();
@@ -2169,7 +2455,7 @@ export class EditorApp {
       if (this.library.has(assetId) || isBuiltinAssetId(assetId)) continue;
       const rec = await this.db.assets.get(assetId);
       if (rec) {
-        const img = await importImage(rec.blob);
+        const img = await importMedia(rec.blob);
         this.library.add(img);
         void this.thumbs?.setAsset(img.id, img.proxy, img.width, img.height, img.palette);
       }

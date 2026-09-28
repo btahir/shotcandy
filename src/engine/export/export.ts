@@ -5,7 +5,7 @@
 import { type AssetResolver, type AssetSource, MapAssetResolver } from "../assets/types";
 import type { Palette } from "../palette/extract";
 import { RenderCache } from "../render/cache";
-import { type RenderEnvironment, defaultEnvironment } from "../render/env";
+import { type RenderEnvironment, defaultEnvironment, imageSize } from "../render/env";
 import { renderToCanvas } from "../render/render";
 import type { Scene } from "../scene/types";
 import { type ExportOptions, MIME_TYPES, canEncode, canvasToBlob } from "./formats";
@@ -17,6 +17,13 @@ export interface ExportAsset {
   height: number;
   blob: Blob;
   palette?: Palette;
+  /** Screen recordings: `blob` is the video, this its first frame (PNG). */
+  poster?: Blob;
+  /**
+   * Screen recordings in still exports: decode the frame at this time (the
+   * trim start) at full size instead of using the poster.
+   */
+  stillAt?: number;
 }
 
 export interface ExportResult {
@@ -43,13 +50,22 @@ export async function decodeAssets(
 ): Promise<{ resolver: AssetResolver; release: () => void }> {
   const decoded = await Promise.all(
     assets.map(async (a) => {
-      const image = await decode(a.blob);
+      // A recording decodes its poster (or, for stills, the frame at the trim
+      // start); motion exports take frames from the video while rendering.
+      const still =
+        a.poster && a.stillAt !== undefined
+          ? await import("../video/still").then((m) => m.decodeStill(a.blob, a.stillAt!))
+          : null;
+      const image: CanvasImageSource & { close?: () => void } =
+        still?.image ?? (await decode(a.poster ?? a.blob));
+      const size = still ?? (a.poster ? imageSize(image) : { width: a.width, height: a.height });
       const source: AssetSource = {
         id: a.id,
         width: a.width,
         height: a.height,
-        images: [{ image, width: a.width, height: a.height }],
+        images: [{ image, width: size.width, height: size.height }],
         ...(a.palette ? { palette: a.palette } : {}),
+        ...(a.poster ? { video: { blob: a.blob } } : {}),
       };
       return { source, image };
     }),

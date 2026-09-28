@@ -1,7 +1,7 @@
 "use client";
 /** The paste card (desktop) and the "Make a screenshot lovely" card (narrow). */
 import { useEffect, useState } from "react";
-import { ACCEPT_ATTRIBUTE } from "@/engine";
+import { ACCEPT_ATTRIBUTE, ACCEPT_IMAGES } from "@/engine";
 import { isApple } from "@/lib/platform";
 import { Icon } from "../icons";
 import { useApp, useUi } from "./context";
@@ -52,7 +52,8 @@ export const SAMPLES = [
   { id: "sample-terminal-code", label: "Try the code sample", pos: "left top" },
 ] as const;
 
-export function openFilePicker(onFile: (f: File) => void, accept = ACCEPT_ATTRIBUTE) {
+/** File picker; defaults to screenshots only (pass ACCEPT_ATTRIBUTE to allow recordings). */
+export function openFilePicker(onFile: (f: File) => void, accept = ACCEPT_IMAGES) {
   const input = document.createElement("input");
   input.type = "file";
   input.accept = accept;
@@ -97,7 +98,8 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
   const importing = useUi((s) => s.importing);
   const recents = useUi((s) => s.recents.length);
   const mod = useMod();
-  const choose = () => openFilePicker((f) => void app.loadBlob(f, { source: "file" }));
+  const choose = () =>
+    openFilePicker((f) => void app.loadBlob(f, { source: "file" }), ACCEPT_ATTRIBUTE);
 
   if (narrow)
     return (
@@ -200,7 +202,7 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
           <div className="keys">
             <kbd className="kbd kbd-lg">{mod}</kbd>
             <kbd className="kbd kbd-lg">V</kbd>
-            <span className="or">or drop an image anywhere</span>
+            <span className="or">or drop an image or screen recording anywhere</span>
           </div>
           <div className="row">
             <button type="button" className="btn btn-secondary btn-sm" onClick={choose}>

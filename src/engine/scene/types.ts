@@ -271,6 +271,24 @@ export interface ImageContent {
   fade?: number;
   /** Upscaling filter: "auto" keeps small sources crisp (nearest neighbour) when magnified 2x or more. */
   sampling?: "auto" | "smooth" | "pixel";
+  /** Present when the asset is a screen recording: the part of it the design plays. */
+  clip?: VideoClip;
+}
+
+/**
+ * The playing range of a screen recording, in seconds of the source file.
+ * A design with a clip always exports as video; its timeline is the clip.
+ */
+export interface VideoClip {
+  /** Length of the whole recording. */
+  duration: number;
+  /** Trim in and out points, 0 <= start < end <= duration. */
+  start: number;
+  end: number;
+  /** Whether the recording has a sound track. */
+  audio: boolean;
+  /** Leave the sound out of the preview and the export. */
+  muted: boolean;
 }
 
 /**

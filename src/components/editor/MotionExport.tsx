@@ -1,7 +1,13 @@
 "use client";
 /** Export options for the motion clip: MP4 / WebM / GIF, size, frame rate and quality. */
 import { useEffect, useMemo, useState } from "react";
-import { type AnimationFormat, canEncodeFormat, roughAnimationBytes } from "@/engine";
+import {
+  type AnimationFormat,
+  GIF_CLIP_WARN_SECONDS,
+  canEncodeFormat,
+  isVideoScene,
+  roughAnimationBytes,
+} from "@/engine";
 import { useModKey } from "@/lib/platform";
 import { Icon } from "../icons";
 import { Segmented, Switch } from "../ui/controls";
@@ -108,6 +114,7 @@ export function MotionExportPanel({ onDone }: { onDone?: () => void }) {
     );
   }
   const plan = app.motionPlan(settings);
+  const recording = isVideoScene(app.scene);
   const gif = settings.format === "gif";
   const video = !gif;
   // An instant range from the calibrated models; the sample encode refines it.
@@ -240,6 +247,12 @@ export function MotionExportPanel({ onDone }: { onDone?: () => void }) {
           </>
         )}
       </div>
+      {gif && recording && plan && plan.duration > GIF_CLIP_WARN_SECONDS && (
+        <p className="note" data-testid="gif-long">
+          GIFs of long recordings get very large. Trim the clip, or use MP4 (it plays everywhere
+          too, with sound).
+        </p>
+      )}
       {gif && est !== null && (
         <div className="motion-fit">
           {est <= GIF_TARGET ? (

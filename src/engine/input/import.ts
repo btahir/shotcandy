@@ -11,6 +11,7 @@ import { extractPalette, type Palette } from "../palette/extract";
 import { stepDown } from "../render/content";
 import { type ImageLike, type RenderEnvironment, defaultEnvironment, get2d } from "../render/env";
 import { ImportError, validateImageBytes } from "./input";
+import type { VideoInfo } from "../video/import";
 
 /** Reject inputs beyond this many pixels (decoding would exhaust memory). */
 export const MAX_INPUT_PIXELS = 120_000_000;
@@ -31,6 +32,11 @@ export interface ImportedImage {
   /** Full-resolution decode, kept only when it is the proxy. */
   original: ImageLike | null;
   palette: Palette;
+  /**
+   * Screen recordings (video/import.ts): `blob` is the video file, `proxy`
+   * its first frame, and `poster` that frame as a PNG for exports.
+   */
+  video?: { poster: Blob; info: VideoInfo };
 }
 
 export interface ImportOptions {

@@ -114,8 +114,9 @@ export function scenePalette(
   cache: RenderCache,
 ): Palette | null {
   if (scene.content.kind !== "image" || !scene.content.assetId) return null;
-  const src = assets.get(scene.content.assetId);
-  if (!src) return null;
+  const found = assets.get(scene.content.assetId);
+  if (!found) return null;
+  const src = found.still ?? found;
   if (src.palette) return src.palette;
   const img = pickImage(src, Infinity);
   if (!img) return null;

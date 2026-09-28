@@ -14,10 +14,11 @@
  * The wrapper and the scene are versioned independently and both pass through
  * migrations on load. Asset ids are content hashes and are verified on import.
  */
-import { validateImageBytes } from "../input/input";
+import { MIME_FOR_VIDEO, sniffVideoKind, validateImageBytes } from "../input/input";
 import { assetIdForBytes } from "../input/import";
 import { createMigrator, loadScene, type MigrationStep } from "../scene/migrate";
 import { sceneAssetIds } from "../scene/patch";
+import { videoIdForBytes } from "../video/id";
 import type { Scene } from "../scene/types";
 
 export const PROJECT_FORMAT = "shotcandy.project";
@@ -160,8 +161,9 @@ export async function parseProject(input: string | Blob): Promise<LoadedProject>
       issues.push(`asset ${id}: invalid base64`);
       continue;
     }
-    const mime = validateImageBytes(bytes);
-    const realId = assetIdForBytes(bytes);
+    const video = sniffVideoKind(bytes);
+    const mime = video ? MIME_FOR_VIDEO[video] : validateImageBytes(bytes);
+    const realId = video ? videoIdForBytes(bytes) : assetIdForBytes(bytes);
     if (realId !== id) {
       issues.push(`asset ${id}: content hash mismatch, re-identified as ${realId}`);
       remap.set(id, realId);

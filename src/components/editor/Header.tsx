@@ -34,7 +34,7 @@ import {
   ratioOk,
 } from "./export-plan";
 import { ModeSwitch } from "./ModeSwitch";
-import { APPSTORE_SIZES, setCanvasSize } from "@/engine";
+import { ACCEPT_ATTRIBUTE, APPSTORE_SIZES, setCanvasSize } from "@/engine";
 import { useStore } from "@/lib/store";
 
 const RATIO_HINT: Record<string, string> = {
@@ -857,7 +857,9 @@ function MoreMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
             type="button"
             role="menuitem"
             className="menu-item"
-            onClick={run(() => openFilePicker((f) => void app.loadBlob(f, { source: "file" })))}
+            onClick={run(() =>
+              openFilePicker((f) => void app.loadBlob(f, { source: "file" }), ACCEPT_ATTRIBUTE),
+            )}
           >
             <Icon name="image" size="sm" /> Open image… <span className="meta mono">⌘O</span>
           </button>

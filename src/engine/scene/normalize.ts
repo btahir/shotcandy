@@ -32,6 +32,7 @@ import type {
   CanvasSpec,
 } from "./types";
 import { SCENE_VERSION } from "./types";
+import { MAX_CLIP_SECONDS, MIN_CLIP_SECONDS } from "../video/clip";
 
 export interface NormalizeResult {
   scene: Scene;
@@ -364,6 +365,22 @@ function content(c: Ctx, v: unknown): Content {
       ["auto", "smooth", "pixel"] as const,
       "auto",
     );
+  if (o.clip !== undefined && o.clip !== null) {
+    const cl = obj(c, "content.clip", o.clip);
+    const duration = num(c, "content.clip.duration", cl.duration, 0, 0, MAX_CLIP_SECONDS);
+    if (duration >= MIN_CLIP_SECONDS) {
+      const start = num(c, "content.clip.start", cl.start, 0, 0, duration - MIN_CLIP_SECONDS);
+      out.clip = {
+        duration,
+        start,
+        end: num(c, "content.clip.end", cl.end, duration, start + MIN_CLIP_SECONDS, duration),
+        audio: cl.audio === true,
+        muted: cl.muted === true,
+      };
+    } else {
+      c.warn("content.clip.duration", "recording without a length; clip dropped");
+    }
+  }
   if (o.crop !== undefined) {
     const cr = obj(c, "content.crop", o.crop);
     const x = num(c, "content.crop.x", cr.x, 0, 0, 1);

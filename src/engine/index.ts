@@ -173,6 +173,7 @@ export {
   MapAssetResolver,
   EMPTY_ASSETS,
   pickImage,
+  withVideoFrame,
   type AssetResolver,
   type AssetSource,
   type AssetImage,
@@ -186,7 +187,11 @@ export {
 } from "./assets/builtin";
 export {
   ACCEPT_ATTRIBUTE,
+  ACCEPT_IMAGES,
   ACCEPTED_MIME,
+  ACCEPTED_VIDEO_MIME,
+  isVideoFile,
+  sniffVideoKind,
   ImportError,
   type ImportErrorCode,
   imageFromClipboardEvent,
@@ -204,6 +209,38 @@ export {
   MAX_INPUT_PIXELS,
   type ImportedImage,
 } from "./input/import";
+
+// Screen recordings (the importer and exporter load Mediabunny on demand)
+export {
+  AUDIO_ENCODE_BITRATE,
+  GIF_CLIP_WARN_SECONDS,
+  MAX_CLIP_SECONDS,
+  MAX_STORED_VIDEO_BYTES,
+  MAX_VIDEO_BYTES,
+  MIN_CLIP_SECONDS,
+  STILL_MOTION_ID,
+  audioPlan,
+  clipLength,
+  createClip,
+  formatClipTime,
+  isVideoScene,
+  motionTimeInClip,
+  sceneClip,
+  sourceTime,
+  timelineDuration,
+  trimClip,
+  type AudioPlan,
+} from "./video/clip";
+export { videoAssetId, videoIdForBytes } from "./video/id";
+export type { VideoInfo } from "./video/import";
+import type { importVideo as ImportVideo } from "./video/import";
+
+/** Open a screen recording (loads the demuxer on first use). */
+export async function importVideo(
+  ...args: Parameters<typeof ImportVideo>
+): ReturnType<typeof ImportVideo> {
+  return (await import("./video/import")).importVideo(...args);
+}
 
 // Palette
 export { extractPalette, type Palette, type Swatch } from "./palette/extract";

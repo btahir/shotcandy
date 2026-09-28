@@ -35,7 +35,14 @@ export class AssetLibrary implements AssetResolver {
     const images = [{ image: it.proxy, width: it.proxyWidth, height: it.proxyHeight }];
     if (it.original && it.original !== it.proxy)
       images.push({ image: it.original, width: it.width, height: it.height });
-    return { id, width: it.width, height: it.height, images, palette: it.palette };
+    return {
+      id,
+      width: it.width,
+      height: it.height,
+      images,
+      palette: it.palette,
+      ...(it.video ? { video: { blob: it.blob } } : {}),
+    };
   }
 
   /** Assets needed to export (original files), for the given ids. */
@@ -49,6 +56,7 @@ export class AssetLibrary implements AssetResolver {
         height: it.height,
         blob: it.blob,
         palette: it.palette,
+        ...(it.video ? { poster: it.video.poster } : {}),
       }));
   }
 

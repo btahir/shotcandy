@@ -5,7 +5,17 @@
  * draw-on. The stage shows a live preview with a timeline scrubber.
  */
 import { memo } from "react";
-import { type MotionEasing, getMotionPreset, listMotionPresets, scrollViewport } from "@/engine";
+import {
+  type MotionEasing,
+  type VideoClip,
+  STILL_MOTION_ID,
+  clipLength,
+  formatClipTime,
+  getMotionPreset,
+  listMotionPresets,
+  sceneClip,
+  scrollViewport,
+} from "@/engine";
 import { Icon } from "../icons";
 import { Segmented, Switch } from "../ui/controls";
 import { Slider } from "../ui/Slider";
@@ -53,16 +63,61 @@ const EASE_OPTIONS: { value: MotionEasing; label: string }[] = [
 
 const FOCUS = [0.2, 0.5, 0.8];
 
+/** Trim and sound for a screen recording. */
+function ClipControls({ clip }: { clip: VideoClip }) {
+  const app = useApp();
+  const step = clip.duration > 60 ? 0.5 : 0.1;
+  const fmt = (v: number) => formatClipTime(v);
+  return (
+    <div className="clip-controls" data-testid="clip-controls">
+      <Slider
+        label="Start"
+        value={clip.start}
+        min={0}
+        max={clip.duration}
+        step={step}
+        format={fmt}
+        valueText={(v) => `${v.toFixed(1)} seconds`}
+        onChange={(v) => app.updateClip({ start: v }, "clip:start")}
+      />
+      <Slider
+        label="End"
+        value={clip.end}
+        min={0}
+        max={clip.duration}
+        step={step}
+        format={fmt}
+        valueText={(v) => `${v.toFixed(1)} seconds`}
+        onChange={(v) => app.updateClip({ end: v }, "clip:end")}
+      />
+      <div className="toggle-row">
+        <span className="label">
+          Sound
+          {!clip.audio && <small>This recording has no sound</small>}
+        </span>
+        <Switch
+          checked={clip.audio && !clip.muted}
+          disabled={!clip.audio}
+          label="Sound"
+          onChange={(v) => app.updateClip({ muted: !v })}
+        />
+      </div>
+    </div>
+  );
+}
+
 export const MotionTray = memo(function MotionTray({ bare = false }: { bare?: boolean }) {
   const app = useApp();
   const spec = useScene((s) => s.scene.animation);
+  const clip = useScene((s) => sceneClip(s.scene));
   const annotations = useScene(
     (s) => s.scene.annotations.filter((a) => a.kind !== "redact").length,
   );
   const hasContent = useUi((s) => s.hasContent);
   useUi((s) => s.assetsVersion);
-  const preset = spec ? getMotionPreset(spec.preset) : undefined;
-  const current = spec?.preset ?? "none";
+  const still = !spec || spec.preset === STILL_MOTION_ID;
+  const preset = spec && !still ? getMotionPreset(spec.preset) : undefined;
+  const current = still ? "none" : spec.preset;
   const presets = new Map(listMotionPresets().map((p) => [p.id, p]));
   const shortPage = hasContent && scrollViewport(app.scene, app.motionContext()) >= 0.98;
   const scrollNote = preset?.id === "scroll" && shortPage;
@@ -86,6 +141,12 @@ export const MotionTray = memo(function MotionTray({ bare = false }: { bare?: bo
 
   const body = (
     <>
+      {clip && <ClipControls clip={clip} />}
+      {clip && (
+        <p className="note" style={{ margin: "4px 0 12px" }}>
+          Add a motion to move the design while the recording plays.
+        </p>
+      )}
       <div className="mtiles" onKeyDown={onKey} role="group" aria-label="Motion presets">
         {MOTION_TILES.map((id) => {
           const p = presets.get(id);
@@ -100,7 +161,11 @@ export const MotionTray = memo(function MotionTray({ bare = false }: { bare?: bo
               className={`mtile${on ? " on" : ""}${hint ? " weak" : ""}`}
               aria-pressed={on}
               aria-label={
-                p ? `${label} motion: ${hint ?? p.description}` : "No motion (still image)"
+                p
+                  ? `${label} motion: ${hint ?? p.description}`
+                  : clip
+                    ? "No motion (the recording plays, the design holds still)"
+                    : "No motion (still image)"
               }
               title={hint ?? p?.description ?? "A still image"}
               data-motion={id}
@@ -134,7 +199,7 @@ export const MotionTray = memo(function MotionTray({ bare = false }: { bare?: bo
             </div>
           )}
           <Slider
-            label="Length"
+            label={clip ? "Motion length" : "Length"}
             value={spec.duration}
             min={1}
             max={12}
@@ -163,7 +228,8 @@ export const MotionTray = memo(function MotionTray({ bare = false }: { bare?: bo
           />
           {preset.periodic ? (
             <div className="loop-note">
-              <Icon name="loop" size="sm" /> Loops seamlessly, forever
+              <Icon name="loop" size="sm" />{" "}
+              {clip ? "Repeats while the recording plays" : "Loops seamlessly, forever"}
             </div>
           ) : (
             <>
@@ -247,8 +313,10 @@ export const MotionTray = memo(function MotionTray({ bare = false }: { bare?: bo
   return (
     <section className="tray" aria-labelledby="t-motion" data-testid="motion-tray">
       <div className="tray-head">
-        <h2 id="t-motion">Motion</h2>
-        {spec ? (
+        <h2 id="t-motion">{clip ? "Recording" : "Motion"}</h2>
+        {clip ? (
+          <span className="meta">Recording · {formatClipTime(clipLength(clip))}</span>
+        ) : spec ? (
           <span className="meta">
             {spec.duration.toFixed(1)}s ·{" "}
             {preset?.periodic ? "loop" : spec.loop === "boomerang" ? "there & back" : "once"}

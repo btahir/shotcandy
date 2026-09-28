@@ -22,6 +22,8 @@ export function topBandLightness(
   src: AssetSource,
   crop: CropRect,
 ): number | null {
+  // Recordings read their poster, so the chrome theme can't flicker per frame.
+  src = src.still ?? src;
   const img = pickImage(src, 0);
   if (!img) return null;
   const key = `tone:${src.id}:${img.width}:${crop.x},${crop.y},${crop.width},${crop.height}`;
