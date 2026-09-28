@@ -6,7 +6,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Shotcandy",
     short_name: "Shotcandy",
-    description: "Make your screenshots look lovely. Free, open source, in your browser.",
+    description:
+      "Make your screenshots and screen recordings look lovely. Free, open source, in your browser.",
     start_url: "/",
     display: "standalone",
     background_color: "#FBF5EC",

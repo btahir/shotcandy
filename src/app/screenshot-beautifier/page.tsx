@@ -90,6 +90,10 @@ const d: ToolPageData = {
       "No. Everything happens in your browser tab. There is no server and no account.",
     ],
     [
+      "Does it work with screen recordings?",
+      "Yes. Drop in an MP4, MOV or WebM recording and it gets the same styles. Trim it, keep or drop the sound, and export MP4, WebM or GIF, all in your browser.",
+    ],
+    [
       "Which sizes can I export?",
       "Auto (your screenshot's own resolution), common ratios, Open Graph, X, LinkedIn, Instagram posts and stories, and App Store screenshot sizes, at 1× to 4×.",
     ],

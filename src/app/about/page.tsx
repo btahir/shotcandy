@@ -7,7 +7,7 @@ import { STYLE_PRESETS } from "@/engine/presets/styles";
 
 const TITLE = "About Shotcandy — sweet screenshots, free forever";
 const DESC =
-  "Shotcandy is a free, open-source screenshot beautifier that runs entirely in your browser: no account, no upload, no watermark, no paywall.";
+  "Shotcandy is a free, open-source screenshot and screen recording beautifier that runs entirely in your browser: no account, no upload, no watermark, no paywall.";
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
@@ -28,13 +28,15 @@ export const metadata: Metadata = {
 };
 
 const FEATURES: [string, string][] = [
-  ["Paste, drop or pick", "PNG, JPEG and WebP"],
+  ["Paste, drop or pick", "PNG, JPEG and WebP screenshots"],
+  ["Screen recordings", "MP4, MOV or WebM: trim, keep or drop the sound, export as video"],
   [`${STYLE_PRESETS.length} one-click styles`, "tilts, peeks, stacks and prints, on your own shot"],
   ["Gradients, mesh and wallpapers", "plus colours picked from your image"],
   ["Frames", "macOS window, browser, phone, tablet, laptop"],
   ["Annotations", "text, arrows, highlights, blur"],
+  ["Motion", "zoom, float, 3D sweep and more, exported as MP4, WebM or GIF"],
   ["Every social size", "Open Graph, X, LinkedIn, Instagram, App Store"],
-  ["Export 1× to 4×", "PNG, JPEG, WebP, or copy to clipboard"],
+  ["Export 1× to 4×", "PNG, JPEG, WebP, MP4, WebM or GIF, or copy to clipboard"],
   ["Save your own styles", "and back up projects as a file"],
   ["Keyboard friendly", "every control reachable, shortcuts for the rest"],
   ["Light and dark", "follows your system"],
@@ -44,6 +46,10 @@ const FAQ: [string, string][] = [
   [
     "Does my screenshot leave my computer?",
     "No. Shotcandy is a static website. Your image is decoded and drawn with the canvas API inside your browser tab, and exports are generated there too. There is no server to send it to.",
+  ],
+  [
+    "Can I style a screen recording?",
+    "Yes. Drop in an MP4, MOV or WebM recording (up to 10 minutes) and it gets the same backgrounds, frames, tilt and blur as a screenshot. Trim it, keep or drop the sound, add a motion, and export MP4, WebM or GIF. Like screenshots, recordings never leave your browser. If your browser can't play a file (HEVC outside Safari, for example), re-save it as H.264.",
   ],
   [
     "Can I use the images commercially?",
@@ -73,8 +79,9 @@ export default function AboutPage() {
               Sweet screenshots, <em>free forever.</em>
             </h1>
             <p className="lede" style={{ marginTop: 16, maxWidth: 500 }}>
-              Shotcandy turns a plain screenshot into a share-ready image in a few seconds. It runs
-              entirely in your browser: no account, no upload, no watermark, no paywall.
+              Shotcandy turns a plain screenshot or screen recording into a share-ready image or
+              video in a few seconds. It runs entirely in your browser: no account, no upload, no
+              watermark, no paywall.
             </p>
             <div style={{ display: "flex", gap: 10, marginTop: 28, flexWrap: "wrap" }}>
               <Link className="btn btn-primary btn-xl" href="/">
@@ -220,7 +227,8 @@ export default function AboutPage() {
             <div>
               <h2 className="h2">What’s inside</h2>
               <p className="body-copy" style={{ marginTop: 12 }}>
-                Everything you need to make a screenshot look good, and nothing you have to pay for.
+                Everything you need to make a screenshot or recording look good, and nothing you
+                have to pay for.
               </p>
             </div>
             <ul className="feature-list">
@@ -274,6 +282,10 @@ export default function AboutPage() {
               <tr>
                 <th scope="row">Frames</th>
                 <td>Our own vector drawings; not affiliated with any device maker</td>
+              </tr>
+              <tr>
+                <th scope="row">Video</th>
+                <td>Mediabunny (MPL-2.0) reads and converts screen recordings in your browser</td>
               </tr>
               <tr>
                 <th scope="row">Sample screenshots</th>
