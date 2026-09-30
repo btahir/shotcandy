@@ -2682,7 +2682,7 @@
     opacity: 0;
     transform: scale(0.96);
   }
-  .m-empty h1 {
+  .m-empty .m-title {
     font:
       800 27px/31px var(--sc-font-display),
       sans-serif;
@@ -2723,6 +2723,58 @@
     font-size: 12.5px;
     color: var(--sc-ink-3);
     font-weight: 600;
+  }
+  /* Links to the tool pages: a quiet footer line under the empty state. */
+  .empty-links {
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 2px;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--sc-ink-3);
+  }
+  .empty-links .sep {
+    margin: 0 7px;
+  }
+  .empty-links a {
+    color: var(--sc-ink-3);
+    text-decoration: none;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .empty-links a:hover {
+    color: var(--sc-ink-2);
+    text-decoration: underline;
+  }
+  .empty-links a:focus-visible {
+    outline: none;
+    box-shadow: var(--sc-focus-ring);
+  }
+  /* On phones it follows the card (the page scrolls there anyway). */
+  .empty-links.narrow {
+    position: static;
+    margin: 20px auto 4px;
+    max-width: 320px;
+    column-gap: 16px;
+    row-gap: 6px;
+  }
+  .empty-links.narrow .sep {
+    display: none;
+  }
+  /* The row follows the card on phones: keep the fan above the card clear of the top edge. */
+  .empty-wrap:has(> .empty-links.narrow) {
+    padding-top: 48px;
+  }
+  /* Too short to keep it clear of the paste card: leave it out. */
+  @media (max-height: 700px) and (min-width: 768px) {
+    .empty-links:not(.narrow) {
+      display: none;
+    }
   }
   .m-empty .privacy-line {
     margin-top: 16px;

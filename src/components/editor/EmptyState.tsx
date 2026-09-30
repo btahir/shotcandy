@@ -53,6 +53,33 @@ function ModePicks({ narrow }: { narrow?: boolean }) {
   );
 }
 
+/** The site's tool pages as plain links, quietly at the foot of the empty state. */
+const TOOL_LINKS: [string, string][] = [
+  ["/batch-screenshot-editor/", "Batch editor"],
+  ["/screenshot-mockup/", "Mockups"],
+  ["/code-screenshot/", "Code images"],
+  ["/redact-screenshot/", "Redact"],
+  ["/app-store-screenshots/", "App Store"],
+  ["/tools/", "All tools"],
+];
+
+function ToolLinks({ narrow }: { narrow?: boolean }) {
+  return (
+    <nav className={`empty-links${narrow ? " narrow" : ""}`} aria-label="Tools">
+      {TOOL_LINKS.map(([href, label], i) => (
+        <span key={href}>
+          {i > 0 && (
+            <span className="sep" aria-hidden="true">
+              ·
+            </span>
+          )}
+          <a href={href}>{label}</a>
+        </span>
+      ))}
+    </nav>
+  );
+}
+
 export const SAMPLES = [
   { id: "sample-dashboard-light", label: "Try the dashboard sample", pos: "left top" },
   { id: "sample-mobile-habits", label: "Try the phone sample", pos: "center top" },
@@ -184,7 +211,8 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
               />
             </div>
           </div>
-          <h1>Make a screenshot lovely</h1>
+          {/* Not an h1: the static page ships both layouts, and the desktop heading is the h1. */}
+          <h2 className="m-title">Make a screenshot lovely</h2>
           <p>Pick one from your photos, or paste one you copied.</p>
           <button type="button" className="btn btn-primary btn-block" onClick={choose}>
             <Icon name="image" /> Choose a screenshot
@@ -211,10 +239,12 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
             </button>
           )}
           <div className="privacy-line">
-            <Icon name="lock" size="sm" /> Stays on your phone. No upload.
+            <Icon name="lock" size="sm" /> Free, open-source screenshot beautifier. Stays on your
+            phone.
           </div>
           <ModePicks narrow />
         </div>
+        <ToolLinks narrow />
       </div>
     );
 
@@ -267,8 +297,8 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
             <SampleButtons order={SAMPLES} />
           </div>
           <div className="privacy">
-            <Icon name="lock" size="sm" /> Your image never leaves this browser. No account, no
-            upload.
+            <Icon name="lock" size="sm" /> Free, open-source screenshot beautifier. Your image never
+            leaves this browser.
           </div>
           {recents > 0 && (
             <button
@@ -283,6 +313,7 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
         </div>
         <ModePicks />
       </div>
+      <ToolLinks />
     </div>
   );
 }
