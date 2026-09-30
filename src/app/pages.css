@@ -752,6 +752,257 @@
   }
 }
 
+/* Deeper tool pages: breadcrumbs, use cases, prose sections, comparison tables, hub. */
+@layer components {
+  .crumbs .crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ex-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--sc-accent-text);
+    text-decoration: none;
+    border-radius: 4px;
+  }
+  .ex-link:hover {
+    text-decoration: underline;
+  }
+  .ex-link:focus-visible,
+  .prose a:focus-visible,
+  .compare a:focus-visible,
+  .hub-list a:focus-visible,
+  .compare-scroll:focus-visible {
+    outline: none;
+    box-shadow: var(--sc-focus-ring);
+  }
+  .examples {
+    row-gap: 28px;
+  }
+  .uses {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 32px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+  .uses li {
+    border-top: 1px solid var(--sc-line);
+    padding: 16px 0 18px;
+  }
+  .uses h3 {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 22px;
+  }
+  .uses p {
+    margin-top: 6px;
+    color: var(--sc-ink-2);
+    font-size: 15px;
+    line-height: 23px;
+  }
+  .prose-section + .prose-section {
+    padding-top: 0;
+  }
+  .split-2.tight > * {
+    min-width: 0;
+  }
+  .prose {
+    max-width: 680px;
+    color: var(--sc-ink-2);
+    font-size: 15.5px;
+    line-height: 25px;
+  }
+  .prose > * + * {
+    margin-top: 14px;
+  }
+  .prose h3 {
+    color: var(--sc-ink);
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 22px;
+    margin-top: 22px;
+  }
+  .prose b,
+  .prose strong {
+    color: var(--sc-ink);
+    font-weight: 600;
+  }
+  .prose a,
+  .fine a {
+    color: var(--sc-accent-text);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    border-radius: 3px;
+  }
+  .prose ul {
+    padding-left: 20px;
+  }
+  .prose code {
+    font-family: var(--sc-font-mono);
+    font-size: 0.88em;
+    overflow-wrap: anywhere;
+  }
+  .prose li + li {
+    margin-top: 6px;
+  }
+  .prose figure {
+    margin: 22px 0 0;
+  }
+  .prose figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 14px;
+    box-shadow:
+      0 1px 2px rgba(74, 45, 20, 0.12),
+      0 16px 32px -18px rgba(74, 45, 20, 0.4);
+  }
+  .prose figcaption {
+    margin-top: 8px;
+    font-size: 13.5px;
+    color: var(--sc-ink-3);
+  }
+  .prose .pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .prose .trio {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .prose .pair figure,
+  .prose .trio figure {
+    margin: 0;
+  }
+  .compare-scroll {
+    margin-top: 24px;
+    overflow-x: auto;
+    border-radius: var(--sc-radius-xl);
+    background: var(--sc-surface);
+    box-shadow: var(--sc-shadow-tray);
+  }
+  .compare {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 640px;
+    font-size: 14.5px;
+    line-height: 20px;
+  }
+  .compare th,
+  .compare td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--sc-line);
+    text-align: left;
+    vertical-align: top;
+    color: var(--sc-ink-2);
+    font-weight: 400;
+  }
+  .compare tr:last-child th,
+  .compare tr:last-child td {
+    border-bottom: 0;
+  }
+  .compare thead th {
+    color: var(--sc-ink);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .compare thead a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--sc-line-strong);
+    text-underline-offset: 3px;
+    border-radius: 3px;
+  }
+  .compare tbody th {
+    color: var(--sc-ink);
+    font-weight: 600;
+    min-width: 150px;
+  }
+  .compare .ours {
+    background: color-mix(in srgb, var(--sc-accent) 6%, transparent);
+    color: var(--sc-ink);
+  }
+  .prose .compare-scroll {
+    margin-top: 18px;
+  }
+  .prose .compare {
+    min-width: 0;
+  }
+  .fine {
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--sc-ink-3);
+    max-width: 760px;
+  }
+  /* /tools/ and /alternatives/ hubs */
+  .hub-hero {
+    padding-block: 40px 40px;
+  }
+  .hub-hero > * {
+    max-width: 760px;
+  }
+  .hub-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 40px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+  .hub-list li {
+    border-top: 1px solid var(--sc-line);
+    padding: 20px 0 22px;
+  }
+  .hub-list a {
+    font:
+      700 20px/26px var(--sc-font-display),
+      sans-serif;
+    letter-spacing: var(--sc-tracking-tight);
+    color: var(--sc-ink);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 6px;
+  }
+  .hub-list a:hover {
+    color: var(--sc-accent-text);
+  }
+  .hub-list p {
+    margin-top: 6px;
+    color: var(--sc-ink-2);
+    font-size: 15px;
+    line-height: 23px;
+  }
+  @media (max-width: 900px) {
+    .split-2.tight {
+      gap: 18px;
+    }
+  }
+  @media (max-width: 760px) {
+    .uses,
+    .hub-list,
+    .prose .pair {
+      grid-template-columns: 1fr;
+    }
+    .prose .trio {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}
+
 /* The paste-your-code box on the /code-screenshot landing page. */
 @layer components {
   /* Code screenshot landing page: paste box */

@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESC,
   alternates: { canonical: "/support/" },
+  // Kept out of search so the site's topic stays on the tools; still linked in the footer.
+  robots: { index: false, follow: true },
   openGraph: {
     title: TITLE,
     description: DESC,
