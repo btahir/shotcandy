@@ -36,6 +36,22 @@ export function anchorUnit(g: Geo, anchor: AnnotationAnchor): number {
   return anchor === "content" ? 1 : g.layout.k;
 }
 
+/**
+ * The part of the content anchor space that is on screen: 0..1, except in a
+ * grid cell, which shows only part of its image (marks are anchored to the
+ * whole image there).
+ */
+export function shownContent(g: Geo): { u0: number; u1: number; v0: number; v1: number } {
+  const n = notesRect(g.layout.card);
+  const c = g.layout.card.content;
+  return {
+    u0: (c.x - n.x) / n.width,
+    u1: (c.x + c.width - n.x) / n.width,
+    v0: (c.y - n.y) / n.height,
+    v1: (c.y + c.height - n.y) / n.height,
+  };
+}
+
 /** Normalized anchor coords -> screen px relative to the composition's top-left. */
 export function toScreen(g: Geo, anchor: AnnotationAnchor, u: number, v: number): Point {
   if (anchor === "content") {

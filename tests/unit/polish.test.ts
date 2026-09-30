@@ -20,6 +20,7 @@ import { DESKTOP_LIMITS, SAFARI_LIMITS } from "@/engine/export/formats";
 import { type Batch, addItems, combineItems, itemScreen, selectItems } from "@/engine/batch/batch";
 import { exportTag, getDestination, planExport } from "@/components/editor/export-plan";
 import { createEditorStore } from "@/state/editor-store";
+import { shownContent } from "@/components/editor/geometry";
 
 const src = (id: string, width: number, height: number) => ({ id, width, height, images: [] });
 const assets = new MapAssetResolver([
@@ -162,5 +163,33 @@ describe("screen names", () => {
     const c = combineItems(b, ["h", "l"], "c");
     const combined = c.items.find((x) => x.id === "c")!;
     expect(combined.slots).toEqual([{ assetId: "l", name: "login.png" }]);
+  });
+});
+
+describe("marks in grid cells", () => {
+  it("new marks start on the part of the image a grid cell shows", () => {
+    const res = new MapAssetResolver([
+      src("ph", 1170, 2532),
+      src("d1", 2880, 1800),
+      src("d2", 2880, 1800),
+      src("d3", 2880, 1800),
+    ]);
+    const single = createScene({ content: { kind: "image", assetId: "ph" } });
+    expect(shownContent({ layout: layoutScene(single, res), zoom: 1 })).toEqual({
+      u0: 0,
+      u1: 1,
+      v0: 0,
+      v1: 1,
+    });
+    const grid: Scene = {
+      ...single,
+      layout: { id: "grid", count: 4 },
+      slots: [{ assetId: "d1" }, { assetId: "d2" }, { assetId: "d3" }],
+    };
+    const b = shownContent({ layout: layoutScene(grid, res), zoom: 1 });
+    expect(b.v0).toBeCloseTo(0);
+    expect(b.v1).toBeLessThan(0.5);
+    expect(b.u0).toBeCloseTo(0);
+    expect(b.u1).toBeCloseTo(1);
   });
 });

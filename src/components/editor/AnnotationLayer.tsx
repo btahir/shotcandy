@@ -30,6 +30,7 @@ import {
   arrowPoints,
   curveFromMid,
   fromScreen,
+  shownContent,
   quad,
   textBox,
   toScreen,
@@ -147,15 +148,16 @@ export function AnnotationLayer({
     e.stopPropagation();
     const p = local(e);
     const c = fromScreen(geo, "content", p.x, p.y);
-    const inside = !!c && c.x >= 0 && c.x <= 1 && c.y >= 0 && c.y <= 1;
+    // What's on screen of the content (all of it, unless a grid cell shows part).
+    const b = shownContent(geo);
+    const inside = !!c && c.x >= b.u0 && c.x <= b.u1 && c.y >= b.v0 && c.y <= b.v1;
     let anchor: AnnotationAnchor = "content";
     if (!inside && (tool === "text" || tool === "arrow")) anchor = "canvas";
     const n = fromScreen(geo, anchor, p.x, p.y);
     if (!n) return;
-    const clampC = (v: number) =>
-      anchor === "content" && tool !== "text" && tool !== "arrow" ? Math.min(1, Math.max(0, v)) : v;
-    const x = clampC(n.x);
-    const y = clampC(n.y);
+    const boxed = anchor === "content" && tool !== "text" && tool !== "arrow";
+    const x = boxed ? Math.min(b.u1, Math.max(b.u0, n.x)) : n.x;
+    const y = boxed ? Math.min(b.v1, Math.max(b.v0, n.y)) : n.y;
     let id: string;
     if (tool === "text") {
       id = app.addAnnotation("text", { anchor, x, y } as Partial<Annotation>);
