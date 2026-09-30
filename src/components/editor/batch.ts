@@ -1361,7 +1361,17 @@ export class BatchController {
       }
       app.announce(`Exported ${plural(names.length, "image")}`);
     } finally {
+      // The progress pill goes away: if its Cancel had the keyboard, hand it to Export.
+      const had = typeof document !== "undefined" ? document.activeElement : null;
       this.ui.set({ exporting: null });
+      if (had && had !== document.body)
+        requestAnimationFrame(() => {
+          const now = document.activeElement;
+          if (!had.isConnected && (!now || now === document.body))
+            Array.from(document.querySelectorAll<HTMLElement>("[data-testid=export]"))
+              .find((b) => b.offsetParent !== null)
+              ?.focus();
+        });
     }
   }
 

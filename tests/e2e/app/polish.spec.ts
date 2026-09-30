@@ -4,7 +4,7 @@
  */
 import { type Page, expect, test } from "@playwright/test";
 import { loadSample, open } from "./helpers";
-import { SHOTS, b64, dropFiles, info, waitForCount } from "./batch-helpers";
+import { SHOTS, b64, dropFiles, info, thumbsReady, waitForCount } from "./batch-helpers";
 import { design, pickLayout, screenPoint } from "./screens-helpers";
 
 type App = {
@@ -393,5 +393,375 @@ test.describe("restoring a batch", () => {
     await expect(page.getByTestId("toast")).toContainText(
       "Your browser's storage is full, so they won't come back after a reload.",
     );
+  });
+});
+
+const file = (name: string, from: string) => ({
+  name,
+  mimeType: "image/png",
+  buffer: Buffer.from(b64(from), "base64"),
+});
+
+test.describe("keyboard only", () => {
+  test.setTimeout(120_000);
+  test("import, rail, scope, screens, combine and export all without a pointer", async ({
+    page,
+  }) => {
+    await open(page);
+    const status = page.getByTestId("status");
+    // Import through the More menu.
+    await page.getByRole("button", { name: "More", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("add-images")).toBeVisible();
+    await page.getByTestId("add-images").focus();
+    const [chooser] = await Promise.all([
+      page.waitForEvent("filechooser"),
+      page.keyboard.press("Enter"),
+    ]);
+    await chooser.setFiles([
+      file("a.png", SHOTS[0]),
+      file("b.png", SHOTS[1]),
+      file("c.png", SHOTS[2]),
+    ]);
+    await waitForCount(page, 3);
+
+    // The rail is reachable with Tab.
+    const list = page.getByTestId("batch-list");
+    await page.getByTestId("stage").focus();
+    for (let i = 0; i < 40 && !(await list.evaluate((el) => el === document.activeElement)); i++)
+      await page.keyboard.press("Shift+Tab");
+    await expect(list).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(status).toHaveText(/Image 2 of 3, b\.png/);
+    await page.keyboard.press("Alt+ArrowDown");
+    expect((await info(page)).names).toEqual(["a.png", "c.png", "b.png"]);
+    await page.keyboard.press("ControlOrMeta+z");
+    expect((await info(page)).names).toEqual(["a.png", "b.png", "c.png"]);
+    await page.keyboard.press("Delete");
+    expect((await info(page)).names).toEqual(["a.png", "c.png"]);
+    await expect(list).toBeFocused();
+    await page.keyboard.press("ControlOrMeta+z");
+    expect((await info(page)).names).toEqual(["a.png", "b.png", "c.png"]);
+
+    // All / This image.
+    const scope = page.getByTestId("batch-scope");
+    await scope.getByRole("radio", { name: /All 3/ }).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(scope.getByRole("radio", { name: "This image" })).toBeChecked();
+    await expect(status).toHaveText(/Changes apply to this image only/);
+
+    // Screens: pick a layout with arrows, fill the empty screen with Enter.
+    const tray = page.getByTestId("screens-tray");
+    await tray.getByRole("radio", { name: "Single" }).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(tray.getByRole("radio", { name: "Side by side" })).toBeChecked();
+    const scr = page.getByTestId("screen");
+    await page.getByTestId("stage").focus();
+    const path: string[] = [];
+    for (
+      let i = 0;
+      i < 4 && !(await scr.nth(1).evaluate((el) => el === document.activeElement));
+      i++
+    ) {
+      await page.keyboard.press("Tab");
+      path.push(
+        await page.evaluate(() => {
+          const a = document.activeElement as HTMLElement | null;
+          return `${a?.tagName}.${a?.className}[${a?.getAttribute("aria-label") ?? a?.textContent?.slice(0, 20)}]`;
+        }),
+      );
+    }
+    expect(await scr.nth(1).evaluate((el) => el === document.activeElement), path.join(" > ")).toBe(
+      true,
+    );
+    await expect(scr.nth(1)).toHaveAccessibleName(/empty/);
+    const [pick] = await Promise.all([
+      page.waitForEvent("filechooser"),
+      page.keyboard.press("Enter"),
+    ]);
+    await pick.setFiles([file("d.png", SHOTS[3])]);
+    await expect(scr.nth(1)).toHaveAccessibleName("Screen 2 of 2, d.png");
+    await page.keyboard.press("Alt+ArrowLeft");
+    await expect(scr.nth(0)).toBeFocused();
+    await expect(scr.nth(0)).toHaveAccessibleName("Screen 1 of 2, d.png");
+    await scr.nth(1).focus();
+    await page.keyboard.press("Delete");
+    await expect(scr.nth(1)).toHaveAccessibleName(/empty/);
+    await expect(scr.nth(1)).toBeFocused();
+
+    // Combine two images from the rail menu.
+    await list.focus();
+    await page.keyboard.press("Home");
+    await page.keyboard.press("Shift+ArrowDown");
+    await page.keyboard.press("Shift+F10");
+    const combine = page.getByTestId("combine");
+    await expect(combine).toBeVisible();
+    await combine.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("batch-tile")).toHaveCount(4);
+    await expect(status).toHaveText(/Combined 2 images into one design/);
+    await expect(list).toBeFocused();
+
+    // Export all, then cancel it from the keyboard.
+    await page.evaluate(() => {
+      const a = (
+        window as unknown as {
+          __shotcandy: { app: { runPlan: (...x: unknown[]) => Promise<unknown> } };
+        }
+      ).__shotcandy.app;
+      const orig = a.runPlan.bind(a);
+      a.runPlan = async (...x: unknown[]) => {
+        await new Promise((r) => setTimeout(r, 800));
+        return orig(...x);
+      };
+    });
+    await page.keyboard.press("ControlOrMeta+s");
+    const cancel = page.getByTestId("cancel-batch-export");
+    await expect(cancel).toBeVisible();
+    await expect(status).toHaveText(/Exporting 4 images/);
+    await cancel.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("toast")).toContainText("Export cancelled");
+    await expect(page.locator("[data-layout=wide] [data-testid=export]")).toBeFocused();
+  });
+});
+
+test.describe("accessibility gaps", () => {
+  test.skip(({ browserName }) => browserName !== "chromium", "axe runs once, in Chromium");
+  for (const scheme of ["light", "dark"] as const)
+    test(`axe: collapsed rail, export progress, image picker, combined grid (${scheme})`, async ({
+      page,
+    }) => {
+      const { default: AxeBuilder } = await import("@axe-core/playwright");
+      const check = async (label: string) => {
+        const r = await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+          .analyze();
+        const bad = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+        expect(
+          bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(" | ")}`),
+          label,
+        ).toEqual([]);
+      };
+      await page.emulateMedia({ colorScheme: scheme });
+      await open(page);
+      await dropFiles(page, [
+        { name: "a.png", from: SHOTS[0] },
+        { name: "b.png", from: SHOTS[1] },
+        { name: "c.png", from: SHOTS[2] },
+        { name: "d.png", from: SHOTS[3] },
+      ]);
+      await waitForCount(page, 4);
+      await thumbsReady(page);
+      // Combine all four into a grid.
+      await page.getByTestId("batch-list").focus();
+      await page.keyboard.press("ControlOrMeta+a");
+      await page.getByTestId("batch-tile").nth(0).click({ button: "right" });
+      await page.getByTestId("combine").click();
+      await expect(page.getByTestId("batch-tile")).toHaveCount(5);
+      await page.waitForTimeout(400);
+      await check("combined grid");
+      // A screen's "From your images…" list.
+      await page.getByTestId("screen").nth(1).focus();
+      await page.keyboard.press("Shift+F10");
+      await page.getByRole("menuitem", { name: /From your images/ }).click();
+      await expect(page.getByTestId("screen-pick")).toBeVisible();
+      await page.waitForTimeout(400);
+      await check("image picker");
+      await page.keyboard.press("Escape");
+      // Collapsed rail.
+      await page.getByTestId("rail-collapse").click();
+      await page.waitForTimeout(400);
+      await check("collapsed rail");
+      // Export progress.
+      await page.evaluate(() => {
+        const a = (
+          window as unknown as {
+            __shotcandy: { app: { runPlan: (...x: unknown[]) => Promise<unknown> } };
+          }
+        ).__shotcandy.app;
+        const orig = a.runPlan.bind(a);
+        a.runPlan = async (...x: unknown[]) => {
+          await new Promise((r) => setTimeout(r, 1500));
+          return orig(...x);
+        };
+      });
+      await page.getByTestId("export").click();
+      await expect(page.getByTestId("batch-progress")).toBeVisible();
+      await page.waitForTimeout(300);
+      await check("export progress");
+      await page.getByTestId("cancel-batch-export").click();
+    });
+
+  test("axe: phone export sheet and Layout tab in a batch", async ({ page }) => {
+    const { default: AxeBuilder } = await import("@axe-core/playwright");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page);
+    await three(page, "batch-strip-tile");
+    await page.getByRole("tab", { name: /Layout/ }).click();
+    await page.getByTestId("screens-tray").getByRole("radio", { name: "Fan" }).click();
+    await page.waitForTimeout(400);
+    let r = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+      .analyze();
+    let bad = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+    expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(" | ")}`)).toEqual([]);
+    await page.getByTestId("export").click();
+    await expect(page.getByTestId("m-export-all")).toBeVisible();
+    await page.waitForTimeout(400);
+    r = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+      .analyze();
+    bad = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+    expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(" | ")}`)).toEqual([]);
+  });
+});
+
+type PerfApp = {
+  on(e: string, f: (x?: unknown) => void): () => void;
+  batch: { memoryStats(): { full: number; thumbs: number }; step(dir: -1 | 1): void };
+  screens: { setLayout(id: string): void; setCount(n: number): void };
+  scene: unknown;
+  runExport(format: string, scale: number, q?: number, scene?: unknown): Promise<{ width: number }>;
+};
+
+test.describe("performance at 4K", () => {
+  test.skip(({ browserName }) => browserName !== "chromium", "measured once, in Chromium");
+  test.setTimeout(240_000);
+
+  test("50 screenshots of 3840 × 2160 import and switch smoothly, memory stays flat", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.evaluate(() => {
+      const w = window as unknown as { __long: number[] };
+      w.__long = [];
+      new PerformanceObserver((l) => {
+        for (const e of l.getEntries()) w.__long.push(e.duration);
+      }).observe({ type: "longtask", buffered: false });
+    });
+    const result = await page.evaluate(async () => {
+      const files: File[] = [];
+      for (let i = 0; i < 50; i++) {
+        const c = new OffscreenCanvas(3840, 2160);
+        const g = c.getContext("2d")!;
+        g.fillStyle = `hsl(${(i * 37) % 360} 60% 94%)`;
+        g.fillRect(0, 0, 3840, 2160);
+        g.fillStyle = `hsl(${(i * 37) % 360} 45% 35%)`;
+        for (let r = 0; r < 40; r++)
+          g.fillRect(160, 120 + r * 50, 2400 - ((r * 131 + i * 17) % 1400), 22);
+        g.font = "bold 120px sans-serif";
+        g.fillText(`Screen ${i + 1}`, 2600, 400);
+        const blob = await c.convertToBlob({ type: "image/png" });
+        files.push(new File([blob], `4k-${i + 1}.png`, { type: "image/png" }));
+      }
+      const app = (
+        window as unknown as {
+          __shotcandy: { app: { on(e: string, f: (x?: unknown) => void): void } };
+        }
+      ).__shotcandy.app;
+      const done = new Promise<{ added: number; ms: number }>((res) =>
+        app.on("batch-imported", (x) => res(x as { added: number; ms: number })),
+      );
+      const dt = new DataTransfer();
+      for (const f of files) dt.items.add(f);
+      (window as unknown as { __long: number[] }).__long.length = 0;
+      document.body.dispatchEvent(
+        new DragEvent("drop", { dataTransfer: dt, bubbles: true, cancelable: true }),
+      );
+      return done;
+    });
+    await waitForCount(page, 50);
+    const long = await page.evaluate(() => (window as unknown as { __long: number[] }).__long);
+    const longSum = long.reduce((a, b) => a + b, 0);
+    await page.waitForTimeout(500);
+    // Switching images: key press to the stage redrawn, ten times.
+    const switches = await page.evaluate(async () => {
+      const app = (window as unknown as { __shotcandy: { app: PerfApp } }).__shotcandy.app;
+      const out: number[] = [];
+      for (let i = 0; i < 10; i++) {
+        const t0 = performance.now();
+        const drawn = new Promise<number>((res) => {
+          const off = app.on("rendered", () => {
+            off();
+            res(performance.now() - t0);
+          });
+        });
+        app.batch.step(1);
+        out.push(await drawn);
+        await new Promise((r) => setTimeout(r, 120));
+      }
+      return out;
+    });
+    await page.waitForTimeout(800);
+    const stats = await page.evaluate(() =>
+      (window as unknown as { __shotcandy: { app: PerfApp } }).__shotcandy.app.batch.memoryStats(),
+    );
+    const sorted = switches.slice().sort((a, b) => a - b);
+    console.log(
+      `4K: ${result.added} images in ${result.ms} ms (${Math.round(result.ms / result.added)} ms each); long tasks ${long.length}, longest ${Math.round(Math.max(0, ...long))} ms, total ${Math.round(longSum)} ms (${Math.round((100 * longSum) / result.ms)} % of the import); switch median ${Math.round(sorted[5]!)} ms, worst ${Math.round(sorted[9]!)} ms; full decodes ${stats.full}, thumbnails ${stats.thumbs}`,
+    );
+    expect(result.added).toBe(50);
+    expect(Math.max(0, ...long)).toBeLessThan(400);
+    expect(longSum / result.ms).toBeLessThan(0.25);
+    expect(stats.full).toBeLessThanOrEqual(3);
+    expect(sorted[5]!).toBeLessThan(150);
+  });
+
+  test("a five-screen cascade of 4K shots: preview and 2x export time", async ({ page }) => {
+    await open(page);
+    await loadSample(page);
+    await pickLayout(page, "Cascade");
+    await page.evaluate(() =>
+      (window as unknown as { __shotcandy: { app: PerfApp } }).__shotcandy.app.screens.setCount(5),
+    );
+    // Four 4K screenshots fill the empty screens.
+    await page.evaluate(async () => {
+      const dt = new DataTransfer();
+      for (let i = 0; i < 4; i++) {
+        const c = new OffscreenCanvas(3840, 2160);
+        const g = c.getContext("2d")!;
+        g.fillStyle = `hsl(${i * 70} 50% 90%)`;
+        g.fillRect(0, 0, 3840, 2160);
+        g.fillStyle = "#333";
+        for (let r = 0; r < 30; r++) g.fillRect(200, 150 + r * 60, 3000 - r * 50, 24);
+        const blob = await c.convertToBlob({ type: "image/png" });
+        dt.items.add(new File([blob], `k${i}.png`, { type: "image/png" }));
+      }
+      document.body.dispatchEvent(
+        new DragEvent("drop", { dataTransfer: dt, bubbles: true, cancelable: true }),
+      );
+    });
+    await expect
+      .poll(async () => (await design(page)).screens.filter(Boolean).length, {
+        timeout: 30_000,
+      })
+      .toBe(5);
+    await page.waitForTimeout(1000);
+    const timing = await page.evaluate(async () => {
+      const app = (window as unknown as { __shotcandy: { app: PerfApp } }).__shotcandy.app;
+      const renders: number[] = [];
+      for (let i = 0; i < 6; i++) {
+        const drawn = new Promise<number>((res) => {
+          const off = app.on("rendered", (ms) => {
+            off();
+            res(ms as number);
+          });
+        });
+        app.screens.setLayout(i % 2 ? "cascade" : "fan");
+        renders.push(await drawn);
+      }
+      app.screens.setLayout("cascade");
+      await new Promise((r) => setTimeout(r, 300));
+      const t0 = performance.now();
+      const r = await app.runExport("png", 2, undefined, app.scene);
+      return { renders, exportMs: performance.now() - t0, width: r.width };
+    });
+    const r = timing.renders.slice().sort((a, b) => a - b);
+    console.log(
+      `cascade x5 (4K): preview render median ${Math.round(r[3]!)} ms, worst ${Math.round(r[5]!)} ms; 2x PNG ${timing.width} px wide in ${Math.round(timing.exportMs)} ms`,
+    );
+    expect(r[3]!).toBeLessThan(120);
+    expect(timing.exportMs).toBeLessThan(15_000);
   });
 });
