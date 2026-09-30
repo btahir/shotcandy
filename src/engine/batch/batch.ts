@@ -486,7 +486,9 @@ export function selectItems(
       active = id === b.active ? selected[selected.length - 1]! : b.active;
     } else selected = orderSel(b.items, [...b.selected, id]);
   } else if (mode === "range") {
-    const from = b.items.findIndex((x) => x.id === (anchor ?? b.active));
+    // An anchor that is gone (removed, undone) counts from the image on stage.
+    let from = b.items.findIndex((x) => x.id === anchor);
+    if (from < 0) from = b.items.findIndex((x) => x.id === b.active);
     const to = b.items.findIndex((x) => x.id === id);
     const [lo, hi] = from < to ? [from, to] : [to, from];
     selected = b.items.slice(Math.max(0, lo), hi + 1).map((x) => x.id);

@@ -737,6 +737,7 @@ export class BatchController {
     const label = n === 1 ? "Remove image" : `Remove ${n} images`;
     this.app.store.updateDoc((d) => (isBatch(d) ? removeItems(d, ids) : d), { label });
     const after = this.doc;
+    this.anchor = isBatch(after) ? after.active : null;
     // The rail is gone with the batch: keep the keyboard on the canvas.
     if (!isBatch(after)) this.app.ui.set((s) => ({ stageFocus: s.stageFocus + 1 }));
     this.scheduleMemory();
@@ -819,6 +820,7 @@ export class BatchController {
     const use = ids.slice(0, room);
     const label = use.length === 1 ? "Duplicate image" : `Duplicate ${use.length} images`;
     this.app.store.updateDoc((d) => (isBatch(d) ? duplicateItems(d, use) : d), { label });
+    this.anchor = this.batch?.active ?? null;
     this.afterSelect(this.batch!, false);
     this.app.announce(use.length === 1 ? "Image duplicated" : `${use.length} images duplicated`);
   }
@@ -851,6 +853,7 @@ export class BatchController {
     });
     const next = this.batch;
     if (!next || next === b) return;
+    this.anchor = next.active;
     this.afterSelect(next, false);
     const i = activeIndex(next);
     const title = `Combined ${n} images into one design`;

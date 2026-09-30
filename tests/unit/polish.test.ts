@@ -13,6 +13,7 @@ import {
   type Scene,
 } from "@/engine";
 import { DESKTOP_LIMITS, SAFARI_LIMITS } from "@/engine/export/formats";
+import { type Batch, addItems, selectItems } from "@/engine/batch/batch";
 import { exportTag, getDestination, planExport } from "@/components/editor/export-plan";
 
 const src = (id: string, width: number, height: number) => ({ id, width, height, images: [] });
@@ -74,5 +75,21 @@ describe("export size limits", () => {
     );
     expect(p.width * p.height).toBeLessThanOrEqual(SAFARI_LIMITS.maxArea);
     expect(Math.max(p.width, p.height)).toBeLessThanOrEqual(SAFARI_LIMITS.maxSide);
+  });
+});
+
+describe("range selection", () => {
+  const items = ["a", "b", "c", "d", "e", "f"].map((n) => ({
+    name: `${n}.png`,
+    content: { kind: "image" as const, assetId: n },
+    id: n,
+  }));
+  const batch = () =>
+    addItems(createScene({ content: { kind: "image", assetId: null } }), items) as Batch;
+
+  it("starts from the image on stage when the anchor is gone (removed or undone)", () => {
+    let b = selectItems(batch(), "d");
+    b = selectItems(b, "e", "range", "gone");
+    expect(b.selected).toEqual(["d", "e"]);
   });
 });
