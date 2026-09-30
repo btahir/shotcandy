@@ -30,6 +30,11 @@ export const metadata: Metadata = {
 const FEATURES: [string, string][] = [
   ["Paste, drop or pick", "PNG, JPEG and WebP screenshots"],
   ["Screen recordings", "MP4, MOV or WebM: trim, keep or drop the sound, export as video"],
+  ["Many screenshots at once", "up to 100 in one style, with changes per image, saved as a ZIP"],
+  [
+    "Multi-screen designs",
+    "2 to 6 screenshots in one image, in six layouts from side by side to grid",
+  ],
   [`${STYLE_PRESETS.length} one-click styles`, "tilts, peeks, stacks and prints, on your own shot"],
   ["Gradients, mesh and wallpapers", "plus colours picked from your image"],
   ["Minimal styles", "plain white, soft grey, outline, graphite and a design-canvas look"],
@@ -51,6 +56,14 @@ const FAQ: [string, string][] = [
   [
     "Can I style a screen recording?",
     "Yes. Drop in an MP4, MOV or WebM recording (up to 10 minutes) and it gets the same backgrounds, frames, tilt and blur as a screenshot. Trim it, keep or drop the sound, add a motion, and export MP4, WebM or GIF. Like screenshots, recordings never leave your browser. If your browser can't play a file (HEVC outside Safari, for example), re-save it as H.264.",
+  ],
+  [
+    "Can I style lots of screenshots at once?",
+    "Yes. In Screenshot mode, drop, paste or add several images, or a whole folder: up to 100 on a computer, 30 on a phone. They share one style, and the All / This image switch lets you change a single image. Export them all as a ZIP, straight into a folder in Chrome or Edge on a computer, or to the share sheet on a phone. Each file keeps its original name, and nothing is uploaded.",
+  ],
+  [
+    "Can I put several screenshots in one image?",
+    "Yes. Under Screens, pick a layout (Side by side, Overlap, Hero, Cascade, Fan or Grid) and add 2 to 6 screenshots. Every style works with it. In a batch, select 2 to 6 images and choose Combine into one design. Screen recordings stay single.",
   ],
   [
     "Can I use the images commercially?",

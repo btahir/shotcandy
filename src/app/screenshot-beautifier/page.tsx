@@ -94,6 +94,14 @@ const d: ToolPageData = {
       "Yes. Drop in an MP4, MOV or WebM recording and it gets the same styles. Trim it, keep or drop the sound, and export MP4, WebM or GIF, all in your browser.",
     ],
     [
+      "Can I style a whole folder of screenshots?",
+      "Yes. Drop in up to 100 screenshots (30 on a phone) or a whole folder. They share one style, you can still change any single image, and you export them all as a ZIP with their original file names.",
+    ],
+    [
+      "Can I show several screens in one image?",
+      "Yes. Put 2 to 6 screenshots in one design as Side by side, Overlap, Hero, Cascade, Fan or Grid, with any style.",
+    ],
+    [
       "Which sizes can I export?",
       "Auto (your screenshot's own resolution), common ratios, Open Graph, X, LinkedIn, Instagram posts and stories, and App Store screenshot sizes, at 1× to 4×.",
     ],

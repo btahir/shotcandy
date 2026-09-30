@@ -115,6 +115,14 @@ Eight motion presets (zoom in, focus, scroll, 3D sweep, float, drift, draw on, f
 
 Drop in an MP4, MOV or WebM screen recording and it gets the same treatment as a screenshot: background, frame, tilt, shadow, caption and blur boxes. Trim it, keep or drop the sound, add a motion on top, and export MP4, WebM or GIF. Everything happens in your browser, and the recording is never uploaded. Recordings up to 10 minutes and 1 GB open. Your browser must be able to play the recording: HEVC files open in Safari, or you can re-save them as H.264.
 
+### Many screenshots at once
+
+Drop, paste or add several screenshots, or a whole folder, and style them together: up to 100 on a computer, 30 on a phone. They share one style, and the All / This image switch lets you change one image without touching the rest. Export them all as a ZIP, straight into a folder in Chrome or Edge on a computer, or to the share sheet on a phone. Every file keeps its original name. Batches work in Screenshot mode.
+
+### Multi-screen designs
+
+Put 2 to 6 screenshots in one design with six layouts: Side by side, Overlap, Hero, Cascade, Fan and Grid. Every style works with them. In a batch, select 2 to 6 images and choose Combine into one design. Screen recordings, code and post cards stay single.
+
 ### Code images
 
 Paste code, pick one of 8 themes with a matching background, highlight lines and set a filename. Syntax highlighting by Shiki across 27 languages, with auto-detect.
@@ -220,6 +228,7 @@ flowchart LR
 - **Export** (`engine/export`): renders off the main thread in a worker, with size presets, scale factors and per-destination size limits.
 - **Animation** (`engine/animation`): motion presets are functions of time over the same scene, encoded with WebCodecs plus `mp4-muxer` / `webm-muxer`, or `gifenc` for GIFs.
 - **Screen recordings** (`engine/video`): a recording is a screenshot whose pixels change over time. Each output frame is the normal renderer drawing the scene with the recording's frame in place of the screenshot. [Mediabunny](https://mediabunny.dev) reads the file, decodes the trimmed clip at the output frame rate, and copies the sound across (or re-encodes it when the container needs to).
+- **Batches** (`engine/batch`): a batch is one shared style plus each image's own changes. Export renders the images one at a time and streams them into a ZIP with [fflate](https://github.com/101arrowz/fflate), or writes them into a new Shotcandy folder inside one you pick.
 - **Modes** (`engine/code`, `engine/post`, `engine/appstore`): code images, post cards and App Store sets build ordinary scenes, so they get every style, frame and export for free.
 - **UI** (`src/components`, `src/state`): a Next.js static export with Tailwind. The editor store drives the engine; the engine never knows about React.
 
