@@ -7,6 +7,7 @@
 import {
   SIZE_PRESETS,
   applyStylePatch,
+  createAnnotation,
   createScene,
   getStylePreset,
   setIn,
@@ -94,6 +95,24 @@ test.describe("parity and determinism", () => {
     [
       "tilt",
       () => sceneFor("kanban", { kind: "fixed", width: 1600, height: 1000 }, "tilted-taffy"),
+    ],
+    [
+      "solid redactions",
+      () => ({
+        ...sceneFor("dashboard", { kind: "fixed", width: 1600, height: 1000 }, "tilted-taffy"),
+        annotations: [
+          { ...createAnnotation("redact", "s1"), mode: "solid", x: 0.3, y: 0.2, w: 0.25, h: 0.06 },
+          {
+            ...createAnnotation("redact", "s2"),
+            mode: "solid",
+            fill: "#ff4f7b",
+            x: 0.1,
+            y: 0.6,
+            w: 0.3,
+            h: 0.1,
+          },
+        ],
+      }),
     ],
   ];
   for (const [name, make] of scenes) {
