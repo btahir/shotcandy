@@ -331,6 +331,8 @@ export class BatchController {
     // Adding to a batch shows the first new image; a design growing into one keeps its image.
     let firstNew = isBatch(this.doc);
     const t0 = performance.now();
+    const puts: Promise<boolean>[] = [];
+    let stored = true;
     try {
       for (let i = 0; i < todo.length; i++) {
         const p = todo[i]!;
@@ -362,7 +364,7 @@ export class BatchController {
         app.screens.names.set(d.id, p.file.name);
         const blob =
           p.file.type === d.mime ? (p.file as Blob) : new Blob([p.file], { type: d.mime });
-        this.adopt(d, blob);
+        puts.push(this.adopt(d, blob));
         const content: ImageContent = { kind: "image", assetId: d.id };
         const item: NewItem = {
           name: p.file.name,
@@ -389,6 +391,8 @@ export class BatchController {
         app.bumpAssetsVersion();
         await tick();
       }
+      // The images are kept for the next visit; say so in the summary when they can't be.
+      stored = (await Promise.all(puts)).every(Boolean);
     } finally {
       this.importing--;
       this.ui.set((s) => ({
@@ -401,6 +405,10 @@ export class BatchController {
     if (!isBatch(this.doc)) app.afterImport();
     const b = this.batch;
     const said = [opts.note, skipped.length ? `Skipped ${summarizeSkipped(skipped)}.` : ""];
+    if (!stored && added && !this.warnedStorage) {
+      this.warnedStorage = true;
+      said.push("Your browser's storage is full, so they won't come back after a reload.");
+    }
     const detail = said.filter(Boolean).join(" ") || undefined;
     if (added) {
       const title =
@@ -454,7 +462,7 @@ export class BatchController {
           // Already here (the same image twice): make sure it's full, drop the new decode.
           this.closeDecoded(d);
           if (this.stored.has(d.id)) await this.ensureFull(d.id);
-        } else this.adopt(d, blob);
+        } else void this.adopt(d, blob);
         added.push({ id: d.id, name: f.name });
       } catch (e) {
         skipped.push({ name: f.name, reason: reasonOf(e) });
@@ -497,7 +505,11 @@ export class BatchController {
   // ------------------------------------------------------------------ memory
 
   /** Put a decoded image in the library: full when its proxy came along, else its thumbnail. */
-  private adopt(d: Decoded, blob: Blob) {
+  /**
+   * Put a decoded image in the library (and in storage, unless it came from
+   * there). Resolves to whether storage kept it.
+   */
+  private adopt(d: Decoded, blob: Blob, opts: { store?: boolean } = {}): Promise<boolean> {
     const app = this.app;
     const palette = d.palette ?? this.stored.get(d.id)?.palette;
     if (!palette) throw new Error("no palette");
@@ -518,18 +530,40 @@ export class BatchController {
     if (!app.library.has(d.id)) app.library.add(this.entry(d.id));
     void app.thumbs?.setAsset(d.id, d.proxy ?? thumb, d.width, d.height, palette);
     if (full && d.proxy) this.swap(d.id, d.proxy, d.proxyWidth, d.proxyHeight);
-    if (app.db)
-      void app.db.assets
-        .put({
-          id: d.id,
-          blob,
-          mime: d.mime,
-          width: d.width,
-          height: d.height,
-          role: "content",
-          createdAt: Date.now(),
-        })
-        .catch(() => undefined);
+    if (!app.db || opts.store === false) return Promise.resolve(true);
+    return app.db.assets
+      .put({
+        id: d.id,
+        blob,
+        mime: d.mime,
+        width: d.width,
+        height: d.height,
+        role: "content",
+        createdAt: Date.now(),
+      })
+      .then(
+        () => true,
+        () => {
+          // An import says so in its summary; anything else says so here, once.
+          if (!this.importing) this.notStored();
+          return false;
+        },
+      );
+  }
+
+  private warnedStorage = false;
+
+  /** Storage is full (or blocked): say once that this batch won't survive a reload. */
+  private notStored(): void {
+    if (this.warnedStorage) return;
+    this.warnedStorage = true;
+    this.app.toast({
+      kind: "info",
+      title: "Your browser's storage is full",
+      detail: "These images won't come back after a reload. Export them before you close the tab.",
+      prose: true,
+      duration: 9000,
+    });
   }
 
   /** A library entry: the full proxy, or the small thumbnail canvas (closing it is a no-op). */
@@ -633,7 +667,8 @@ export class BatchController {
     if (!rec) return false;
     try {
       const d = await this.decode(rec.blob, full);
-      this.adopt(d, rec.blob);
+      // It came from storage: no need to write it back.
+      void this.adopt(d, rec.blob, { store: false });
       return true;
     } catch {
       return false;
@@ -648,7 +683,7 @@ export class BatchController {
     for (const a of assets) {
       if (this.stored.has(a.id) || this.app.library.has(a.id)) continue;
       try {
-        if (items.has(a.id)) this.adopt(await this.decode(a.blob, active.has(a.id)), a.blob);
+        if (items.has(a.id)) void this.adopt(await this.decode(a.blob, active.has(a.id)), a.blob);
         else this.app.adoptImportedAsset(await importImage(a.blob));
       } catch {
         /* reported as missing when drawn */
@@ -985,6 +1020,8 @@ export class BatchController {
       .slice(1)
       .flatMap(itemAssetIds)
       .filter((id) => !seen.has(id) && (seen.add(id), true));
+    // Screens of the design on stage that came back empty (reported with the rest).
+    let emptied = false;
     const later = (async () => {
       for (const id of rest) {
         if (missing.has(id)) continue;
@@ -993,6 +1030,8 @@ export class BatchController {
         await tick();
       }
       this.scheduleMemory();
+      // Images of other designs that are gone: take them out once the batch is on stage.
+      if (!missing.has(first) && missing.size) this.dropMissing(missing, emptied);
     })();
     this.restoring = later;
     for (const x of doc.items) {
@@ -1004,17 +1043,60 @@ export class BatchController {
       await later;
       const kept = doc.items.filter((x) => !missing.has(x.content.assetId!));
       if (!kept.length) return null;
+      const lost = doc.items.length - kept.length;
       const fixed = removeItems(
         withoutMissingScreens(doc, missing),
         doc.items.filter((x) => missing.has(x.content.assetId!)).map((x) => x.id),
       );
+      this.reportMissing(lost);
       return fixed as Batch | Scene;
     }
     // A lost extra screen of the design on stage shows as empty rather than broken.
+    emptied = missing.size > 0;
     return missing.size ? withoutMissingScreens(doc, missing) : doc;
   }
 
   private restoring: Promise<void> | null = null;
+
+  /**
+   * After a reload, images that couldn't be loaded (no longer in this
+   * browser's storage, or unreadable): designs whose own image is gone leave
+   * the batch, lost extra screens are emptied. Not an undo step.
+   */
+  private dropMissing(missing: ReadonlySet<string>, emptied: boolean): void {
+    const gone = (id: string | null | undefined) =>
+      !!id && missing.has(id) && !this.app.library.has(id);
+    const b = this.batch;
+    if (!b) return;
+    const lost = b.items.filter((x) => gone(x.content.assetId)).map((x) => x.id);
+    const screens = b.items.some((x) => x.slots?.some((sl) => gone(sl.assetId)));
+    if (!lost.length && !screens) {
+      if (emptied) this.reportMissing(0);
+      return;
+    }
+    const still = new Set([...missing].filter((id) => !this.app.library.has(id)));
+    this.app.store.updateDoc(
+      (d) => {
+        if (!isBatch(d)) return d;
+        const fixed = withoutMissingScreens(d, still);
+        return lost.length ? removeItems(fixed, lost) : fixed;
+      },
+      { transient: true },
+    );
+    this.reportMissing(lost.length);
+  }
+
+  private reportMissing(lost: number): void {
+    this.app.toast({
+      kind: "info",
+      title: lost
+        ? `${plural(lost, "image")} couldn't be brought back`
+        : "Some screens couldn't be brought back",
+      detail: "They are no longer in this browser's storage.",
+      prose: true,
+      duration: 7000,
+    });
+  }
 
   /** Wait until every image of the batch (every screen of every design) is in the library. */
   async ready(): Promise<void> {

@@ -20,7 +20,13 @@ type App = {
   setMode(mode: string): void;
   loadBlob(blob: Blob, opts?: { source?: string }): Promise<boolean>;
   autosave(): Promise<void>;
-  db: { assets: { get(id: string): Promise<unknown> } } | null;
+  db: {
+    assets: {
+      get(id: string): Promise<unknown>;
+      delete(id: string): Promise<void>;
+      put(rec: unknown): Promise<void>;
+    };
+  } | null;
   on(evt: string, fn: (arg?: unknown) => void): () => void;
 };
 const screens = (page: Page) => page.getByTestId("screen");
@@ -282,6 +288,37 @@ test.describe("cancelled drags", () => {
 test.describe("phones", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
+  test("the strip's More menu opens above its button; a second tap closes it", async ({ page }) => {
+    await open(page);
+    await three(page, "batch-strip-tile");
+    const btn = page.getByTestId("batch-strip-menu");
+    await btn.click();
+    const menu = page.getByTestId("batch-menu");
+    await expect(menu).toBeVisible();
+    await page.waitForTimeout(200);
+    const m = (await menu.boundingBox())!;
+    const b = (await btn.boundingBox())!;
+    expect(m.y + m.height).toBeLessThanOrEqual(b.y);
+    await btn.click();
+    await expect(menu).toHaveCount(0);
+  });
+
+  test("the strip's buttons are 44 px tap targets", async ({ page }) => {
+    await open(page);
+    await three(page, "batch-strip-tile");
+    for (const id of ["batch-select", "batch-strip-menu"]) {
+      const hit = await page.getByTestId(id).evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const a = getComputedStyle(el, "::after");
+        const t = parseFloat(a.top) || 0;
+        const l = parseFloat(a.left) || 0;
+        return { w: r.width - 2 * l, h: r.height - 2 * t };
+      });
+      expect(hit.w, id).toBeGreaterThanOrEqual(44);
+      expect(hit.h, id).toBeGreaterThanOrEqual(44);
+    }
+  });
+
   test("when the share sheet needs a fresh tap, a Share button offers one", async ({ page }) => {
     await open(page);
     await page.evaluate(() => {
@@ -310,5 +347,51 @@ test.describe("phones", () => {
       .poll(() => page.evaluate(() => (window as unknown as { __files: number }).__files))
       .toBe(3);
     expect(downloads).toBe(0);
+  });
+});
+
+test.describe("screen names", () => {
+  test("a screen's file name survives a reload, and moves with its image", async ({ page }) => {
+    await open(page);
+    await three(page);
+    await pickLayout(page, "Overlap");
+    await dropFiles(page, [{ name: "extra.png", from: SHOTS[4] }]);
+    await expect(screens(page).nth(1)).toHaveAccessibleName("Screen 2 of 2, extra.png");
+    // Swap: screen 1's image (a.png) goes to screen 2 and keeps its name there.
+    await screens(page).nth(1).focus();
+    await page.keyboard.press("Alt+ArrowLeft");
+    await expect(screens(page).nth(0)).toHaveAccessibleName("Screen 1 of 2, extra.png");
+    await expect(screens(page).nth(1)).toHaveAccessibleName("Screen 2 of 2, a.png");
+    await page.waitForTimeout(900);
+    await page.reload();
+    await open(page);
+    await waitForCount(page, 3);
+    await expect(screens(page).nth(1)).toHaveAccessibleName("Screen 2 of 2, a.png");
+  });
+});
+
+test.describe("restoring a batch", () => {
+  test("an image gone from storage leaves the batch with a note", async ({ page }) => {
+    await open(page);
+    await three(page);
+    await page.waitForTimeout(900);
+    await run(page, (a) => a.db!.assets.delete(a.store.getState().doc.items![2]!.content.assetId));
+    await page.reload();
+    await open(page);
+    await waitForCount(page, 2);
+    expect((await info(page)).names).toEqual(["a.png", "b.png"]);
+    await expect(page.getByTestId("toast")).toContainText("1 image couldn't be brought back");
+  });
+
+  test("full storage is said in the import's summary, not silently", async ({ page }) => {
+    await open(page);
+    await run(page, (a) => {
+      a.db!.assets.put = () => Promise.reject(new DOMException("full", "QuotaExceededError"));
+    });
+    await three(page);
+    await expect(page.getByTestId("toast")).toContainText("Added 3 images");
+    await expect(page.getByTestId("toast")).toContainText(
+      "Your browser's storage is full, so they won't come back after a reload.",
+    );
   });
 });
