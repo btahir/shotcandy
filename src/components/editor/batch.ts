@@ -48,7 +48,7 @@ import {
 import { batchArchiveName, batchFileName, dedupeName } from "@/engine/batch/names";
 import { type Skipped, planImport, summarizeSkipped } from "@/engine/batch/plan";
 import { type OverrideGroup, GROUP_LABELS, overrideGroups } from "@/engine/batch/style";
-import type { PickedFile } from "@/engine/input/files";
+import { type PickedFile, fileKind } from "@/engine/input/files";
 import { ImportError, STILL_MOTION_ID, importImage } from "@/engine";
 import { type Decoded, ImportService } from "@/lib/import/service";
 import { createStore, type Store } from "@/lib/store";
@@ -257,7 +257,10 @@ export class BatchController {
    * name order, with placeholder tiles meanwhile; unsupported files and exact
    * duplicates are skipped and reported in one toast. One undo step.
    */
-  async add(picked: readonly PickedFile[], opts: { source?: string } = {}): Promise<number> {
+  async add(
+    picked: readonly PickedFile[],
+    opts: { source?: string; note?: string } = {},
+  ): Promise<number> {
     const app = this.app;
     const doc = this.doc;
     // A recording open on its own can't join a batch: the images start a new one.
@@ -351,6 +354,7 @@ export class BatchController {
           continue;
         }
         known.add(d.id);
+        app.screens.names.set(d.id, p.file.name);
         const blob =
           p.file.type === d.mime ? (p.file as Blob) : new Blob([p.file], { type: d.mime });
         this.adopt(d, blob);
@@ -391,7 +395,8 @@ export class BatchController {
     this.scheduleMemory();
     if (!isBatch(this.doc)) app.afterImport();
     const b = this.batch;
-    const detail = skipped.length ? `Skipped ${summarizeSkipped(skipped)}.` : undefined;
+    const said = [opts.note, skipped.length ? `Skipped ${summarizeSkipped(skipped)}.` : ""];
+    const detail = said.filter(Boolean).join(" ") || undefined;
     if (added) {
       const title =
         b && added === b.items.length
@@ -416,6 +421,42 @@ export class BatchController {
       });
     }
     return added;
+  }
+
+  /**
+   * Decode images for a design's screens (full size: they go on stage) and
+   * put them in the library, thumbnails and storage. Recordings and other
+   * files are skipped with a reason. In order; nothing goes into the document.
+   */
+  async importImages(
+    files: readonly File[],
+  ): Promise<{ added: { id: string; name: string }[]; skipped: Skipped[] }> {
+    const added: { id: string; name: string }[] = [];
+    const skipped: Skipped[] = [];
+    for (const f of files) {
+      const kind = fileKind(f);
+      if (kind !== "image") {
+        skipped.push({
+          name: f.name,
+          reason: kind === "video" ? "recordings can't go in a screen" : "not an image",
+        });
+        continue;
+      }
+      try {
+        const d = await this.decode(f, true);
+        const blob = f.type === d.mime ? (f as Blob) : new Blob([f], { type: d.mime });
+        if (this.stored.has(d.id) || this.app.library.has(d.id)) {
+          // Already here (the same image twice): make sure it's full, drop the new decode.
+          this.closeDecoded(d);
+          if (this.stored.has(d.id)) await this.ensureFull(d.id);
+        } else this.adopt(d, blob);
+        added.push({ id: d.id, name: f.name });
+      } catch (e) {
+        skipped.push({ name: f.name, reason: reasonOf(e) });
+      }
+    }
+    if (added.length) this.app.bumpAssetsVersion();
+    return { added, skipped };
   }
 
   private dropPending(key: string) {

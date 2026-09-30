@@ -122,6 +122,7 @@ import { VideoPreview } from "./video-preview";
 import { type Mode, initialCodeScene, initialPostScene, modeForScene } from "./modes";
 import { APPSTORE_SET_KEY, SetController } from "./appstore";
 import { BATCH_KEY, BatchController } from "./batch";
+import { ScreensController } from "./screens";
 import { orientationOf, shuffleComposition, suitedStyles } from "./shuffle";
 import {
   COPY_MAX_LONG,
@@ -452,6 +453,8 @@ export class EditorApp {
   readonly sets: SetController;
   /** Batches: import, sidebar, memory, persistence and "Export all". */
   readonly batch: BatchController;
+  /** Multi-screen designs: layouts, and filling, swapping and emptying screens. */
+  readonly screens: ScreensController;
   private motionAbort: AbortController | null = null;
   private tickRaf = 0;
   /** Each mode's design while another mode is shown. */
@@ -535,6 +538,7 @@ export class EditorApp {
     };
     this.sets = new SetController(this);
     this.batch = new BatchController(this);
+    this.screens = new ScreensController(this);
   }
 
   // ------------------------------------------------------------------ events
@@ -759,6 +763,7 @@ export class EditorApp {
     this.designId = newId("d");
     this.designCreated = Date.now();
     this.sourceName = blob instanceof File ? blob.name : "";
+    if (this.sourceName) this.screens.names.set(img.id, this.sourceName);
     this.ui.set((s) => ({
       hasContent: true,
       importing: false,
@@ -1019,7 +1024,7 @@ export class EditorApp {
    */
   async importFiles(
     files: readonly (File | PickedFile)[],
-    opts: { source?: string; folder?: boolean; add?: boolean } = {},
+    opts: { source?: string; folder?: boolean; add?: boolean; note?: string } = {},
   ): Promise<void> {
     const picked: PickedFile[] = files.map((f) =>
       f instanceof File ? { file: f, path: f.name } : f,

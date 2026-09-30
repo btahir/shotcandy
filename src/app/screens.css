@@ -1,0 +1,183 @@
+/* Multi-screen designs: the Screens tray's knobs and the screens on the
+   stage (hover, drop and swap highlights along each screen's real outline,
+   the small × and hints). Nothing here applies to a single screen.
+   Confectionery tokens only. */
+@layer components {
+  /* ---------- Tray ---------- */
+  .screens-knobs {
+    margin-top: 12px;
+  }
+  .screens-row .tile-label {
+    letter-spacing: -0.02em;
+  }
+  .screens-count .seg {
+    grid-column: 2 / -1;
+  }
+  .m-body .screens-tray .screens-sub {
+    margin-bottom: 8px;
+  }
+  .m-body .screens-tray .hr {
+    margin: 14px 0 0;
+  }
+
+  /* ---------- Stage ---------- */
+  .screens-layer {
+    position: absolute;
+    inset: 0;
+  }
+  .screens-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .screen-shape {
+    fill: transparent;
+    stroke: transparent;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    transition:
+      fill var(--sc-dur-fast) var(--sc-ease-out),
+      stroke var(--sc-dur-fast) var(--sc-ease-out);
+  }
+  .screen-shape.hover-empty {
+    fill: color-mix(in srgb, var(--sc-accent) 10%, transparent);
+    stroke: var(--sc-accent);
+  }
+  .screen-shape.hover {
+    stroke: color-mix(in srgb, var(--sc-accent) 70%, transparent);
+    stroke-width: 1.5;
+  }
+  .screen-shape.moving {
+    fill: color-mix(in srgb, var(--sc-paper) 50%, transparent);
+    stroke: var(--sc-ink-3);
+    stroke-width: 1.5;
+    stroke-dasharray: 6 5;
+  }
+  .screen-shape.target {
+    fill: color-mix(in srgb, var(--sc-accent) 16%, transparent);
+    stroke: var(--sc-accent);
+    stroke-width: 3;
+  }
+  .screen-shape.focus {
+    stroke: var(--sc-ink);
+    stroke-width: 2.5;
+  }
+  .screen-shape.flash {
+    animation: sc-screen-flash 700ms var(--sc-ease-out) both;
+  }
+  @keyframes sc-screen-flash {
+    from {
+      fill: color-mix(in srgb, var(--sc-accent) 18%, transparent);
+      stroke: var(--sc-accent);
+    }
+  }
+  /* Focus and names only: the pointer is handled by the screens' real shapes. */
+  .screen-hit {
+    position: absolute;
+    pointer-events: none;
+    background: transparent;
+    outline: none;
+  }
+  .screen-hint {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    padding: 4px 10px;
+    border-radius: var(--sc-radius-pill);
+    font:
+      var(--sc-weight-semibold) 12px/16px var(--sc-font-ui),
+      sans-serif;
+    white-space: nowrap;
+    color: var(--sc-ink);
+    background: var(--sc-surface);
+    box-shadow: var(--sc-shadow-raised);
+    animation: sc-fade-in var(--sc-dur-fast) var(--sc-ease-out);
+  }
+  .screen-hint.strong {
+    color: var(--sc-on-ink);
+    background: var(--sc-ink);
+    box-shadow: var(--sc-shadow-float);
+  }
+  .screen-x {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    margin: -13px 0 0 -13px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--sc-ink);
+    background: var(--sc-surface);
+    box-shadow: var(--sc-shadow-float);
+    animation: sc-pop-in var(--sc-dur-fast) var(--sc-ease-pop);
+    transition:
+      background var(--sc-dur-fast),
+      color var(--sc-dur-fast);
+  }
+  .screen-x:hover {
+    color: var(--sc-on-ink);
+    background: var(--sc-ink);
+  }
+
+  /* "From your images…": the batch's other images, as a menu. */
+  .screen-pick {
+    max-height: min(360px, 50vh);
+    overflow-y: auto;
+  }
+  .screen-pick .menu-item {
+    height: 44px;
+  }
+  .screen-pick-thumb {
+    position: relative;
+    flex: none;
+    width: 44px;
+    height: 30px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--sc-well);
+  }
+  .screen-pick-thumb canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .screen-pick-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .screen-pick-name .mono {
+    margin: 0 8px 0 0;
+    color: var(--sc-ink-3);
+  }
+
+  /* The drop veil's message moves down so the screens stay visible. */
+  .drop-veil.screens {
+    place-items: end center;
+    padding-bottom: 36px;
+  }
+  .drop-veil.screens .msg {
+    font-size: 17px;
+    padding: 10px 16px 10px 10px;
+  }
+  .drop-veil.screens .msg img {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-shape,
+  .screen-shape.flash,
+  .screen-hint,
+  .screen-x {
+    animation: none;
+    transition: none;
+  }
+}

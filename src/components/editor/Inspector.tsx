@@ -1,6 +1,6 @@
 "use client";
 /**
- * The inspector: Styles → Background → Layout (+ 3D tilt) → Frame, or the
+ * The inspector: Screens → Styles → Background → Layout (+ 3D tilt) → Frame, or the
  * contextual annotation inspector when a tool or annotation is active.
  * Every control writes the scene directly; the preview re-renders live.
  */
@@ -36,6 +36,7 @@ import { CodeTray, ThemesTray, WindowTray } from "./CodeInspector";
 import { CardTray, PostStylesTray, PostTray } from "./PostInspector";
 import { HeadlineTray, SetStylesTray, SetTray, SlideTray } from "./AppStoreInspector";
 import { BatchScope, OverrideDot, OverrideReset } from "./BatchScope";
+import { ScreensTray } from "./ScreensTray";
 
 const DEFAULT_ROW = ["sherbet", "mint-julep", "grape-soda", "paper", "midnight", "satin"];
 
@@ -1433,6 +1434,8 @@ export function Inspector() {
         </div>
       ) : (
         <div className="inspector-pane" key="style">
+          {/* Per image, like the screenshot itself: above the All / This image switch. */}
+          <ScreensTray />
           <BatchScope />
           <ModeTrays />
           <div className="foot-note">
