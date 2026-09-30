@@ -147,6 +147,8 @@ describe("collectKeepIds", () => {
                 fit: "cover" as const,
                 blur: 0,
                 tint: 0,
+                focusX: 0.5,
+                focusY: 0.5,
               },
             },
           }
@@ -164,7 +166,15 @@ describe("collectKeepIds", () => {
       patches: [
         {
           background: {
-            fill: { kind: "image", assetId: "preset-bg", fit: "cover", blur: 0, tint: 0 },
+            fill: {
+              kind: "image",
+              assetId: "preset-bg",
+              fit: "cover",
+              blur: 0,
+              tint: 0,
+              focusX: 0.5,
+              focusY: 0.5,
+            },
           },
         },
         { canvas: { padding: 10 } },
