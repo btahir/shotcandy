@@ -1,0 +1,21 @@
+name: Style request
+description: A style, background or frame you'd like to see.
+labels: ["style"]
+body:
+  - type: textarea
+    id: style
+    attributes:
+      label: Describe the style
+      description: Colours, background, frame, tilt, shadow. What should it feel like?
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example
+      description: An image of the look you mean helps a lot (made with any tool, or a sketch).
+  - type: textarea
+    id: use
+    attributes:
+      label: Where would you use it?
+      placeholder: Launch posts on X, docs, App Store screenshots…

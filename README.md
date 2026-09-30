@@ -3,14 +3,24 @@
 <a href="https://shotcandy.app">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="brand/logo-dark-bg.svg">
-    <img src="brand/logo.svg" alt="Shotcandy" width="300">
+    <img src="brand/logo.svg" alt="Shotcandy logo" width="300">
   </picture>
 </a>
 
-### Paste a screenshot. Get something lovely.
+# Shotcandy
+
+**A free, open-source screenshot beautifier and mockup maker that runs in your browser.**
 
 Shotcandy turns a plain screenshot or screen recording into a share-ready image or video in seconds.<br>
-Free, open source, and it runs entirely in your browser. No account, no upload.
+Style one screenshot or a hundred, or put several in one mockup. No account, no upload, no watermark.
+
+<p>
+  <a href="https://shotcandy.app"><b>Open the editor</b></a> ·
+  <a href="https://shotcandy.app/batch-screenshot-editor/">Batch</a> ·
+  <a href="https://shotcandy.app/screenshot-mockup/">Multi-screen</a> ·
+  <a href="https://shotcandy.app/code-screenshot/">Code images</a> ·
+  <a href="https://shotcandy.app/app-store-screenshots/">App Store sets</a>
+</p>
 
 <p>
   <a href="https://shotcandy.app"><img src="https://img.shields.io/badge/Try_it-shotcandy.app-e23a66?style=for-the-badge&labelColor=2a1f1a" alt="Try it at shotcandy.app"></a>
@@ -55,6 +65,8 @@ Every "after" below is a real export from Shotcandy's engine, one click from the
 - **Free, for real.** No account, no paywall, no locked styles, no watermark. MIT licensed.
 - **Made for sharing.** Exports are sized and compressed for the place you are posting, and they can move.
 
+It's a free, no-upload alternative to Xnapper, Pika, Shots.so and Carbon that works on any system with a browser. There's an honest comparison at [shotcandy.app/alternatives](https://shotcandy.app/alternatives/).
+
 ## Features
 
 ### Styles
@@ -67,6 +79,24 @@ Every "after" below is a real export from Shotcandy's engine, one click from the
 </picture>
 
 Backgrounds cover solid colours, linear, radial and mesh gradients with an editor, 12 original wallpapers and your own images. Layout controls have named stops for padding, corners and shadow, plus borders, an inset plate, 3D tilt and position.
+
+### Many screenshots at once
+
+Drop, paste or add several screenshots, or a whole folder, and style them together: up to 100 on a computer, 30 on a phone. They share one style, and the All / This image switch lets you change one image without touching the rest. Export them all as a ZIP, straight into a folder in Chrome or Edge on a computer, or to the share sheet on a phone. Every file keeps its original name. Batches work in Screenshot mode.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/feature-batch-dark.webp">
+  <img src="docs/media/feature-batch-light.webp" alt="The editor with eight screenshots in the Images list on the left and the first one styled with Sea Glass Stack">
+</picture>
+
+### Multi-screen designs
+
+Put 2 to 6 screenshots in one design with six layouts: Side by side, Overlap, Hero, Cascade, Fan and Grid. Every style works with them. In a batch, select 2 to 6 images and choose Combine into one design. Screen recordings, code and post cards stay single.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/feature-screens-dark.webp">
+  <img src="docs/media/feature-screens-light.webp" alt="Three screenshots in the Hero layout on a red satin wallpaper: a dashboard in front, a project board and a landing page behind it">
+</picture>
 
 ### Caption card
 
@@ -88,7 +118,7 @@ A macOS window, a browser (light or dark), drawn phone, tablet and laptop frames
 
 ### Annotations
 
-Text, arrows (straight or curved), highlight boxes and blur/pixelate for anything private. Annotations can stick to the screenshot or to the canvas, and every one is editable after the fact.
+Text, arrows (straight or curved), highlight boxes, and blur, pixelate or a solid box for anything private. Annotations can stick to the screenshot or to the canvas, and every one is editable after the fact.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/editor-annotate-dark.webp">
@@ -115,17 +145,9 @@ Eight motion presets (zoom in, focus, scroll, 3D sweep, float, drift, draw on, f
 
 Drop in an MP4, MOV or WebM screen recording and it gets the same treatment as a screenshot: background, frame, tilt, shadow, caption and blur boxes. Trim it, keep or drop the sound, add a motion on top, and export MP4, WebM or GIF. Everything happens in your browser, and the recording is never uploaded. Recordings up to 10 minutes and 1 GB open. Your browser must be able to play the recording: HEVC files open in Safari, or you can re-save them as H.264.
 
-### Many screenshots at once
-
-Drop, paste or add several screenshots, or a whole folder, and style them together: up to 100 on a computer, 30 on a phone. They share one style, and the All / This image switch lets you change one image without touching the rest. Export them all as a ZIP, straight into a folder in Chrome or Edge on a computer, or to the share sheet on a phone. Every file keeps its original name. Batches work in Screenshot mode.
-
-### Multi-screen designs
-
-Put 2 to 6 screenshots in one design with six layouts: Side by side, Overlap, Hero, Cascade, Fan and Grid. Every style works with them. In a batch, select 2 to 6 images and choose Combine into one design. Screen recordings, code and post cards stay single.
-
 ### Code images
 
-Paste code, pick one of 8 themes with a matching background, highlight lines and set a filename. Syntax highlighting by Shiki across 27 languages, with auto-detect.
+Paste code, pick one of 8 themes with a matching background, highlight lines and set a filename. Syntax highlighting by Shiki across 26 languages, with auto-detect. Add a motion to export it as MP4 or GIF.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/editor-code-dark.webp">
@@ -197,7 +219,7 @@ Then open http://localhost:3000.
 
 ## Self-host
 
-The production build is plain files. There is nothing to configure: no environment variables, no database, no API routes.
+Shotcandy is a static site, so you can host your own copy anywhere that serves files. The production build is plain files. There is nothing to configure: no environment variables, no database, no API routes.
 
 ```bash
 pnpm build        # writes a fully static site to out/
@@ -250,7 +272,7 @@ CONTACT=1 pnpm vitest run tests/render/contact-sheet.test.ts
 
 ## Contributing
 
-Issues and pull requests are welcome.
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the short version, [CHANGELOG.md](CHANGELOG.md) for what changed, and [SECURITY.md](SECURITY.md) to report a security problem.
 
 - Keep the engine pure: no DOM or React imports in `src/engine`, and no clocks or unseeded randomness in anything that renders.
 - Add tests alongside changes. Visual changes should update the Playwright baselines on purpose (`pnpm test:e2e:update`) and say so in the PR.
@@ -273,3 +295,7 @@ Shotcandy is free and always will be. If it saves you time, you can [support the
 ## License
 
 [MIT](LICENSE) © 2026 Bilal Tahir
+
+---
+
+<p align="center"><a href="https://shotcandy.app"><b>Try it at shotcandy.app</b></a>, no sign-up needed.</p>

@@ -1,0 +1,20 @@
+name: Feature idea
+description: Something Shotcandy could do that it doesn't yet.
+labels: ["idea"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The job, not the solution. For example, "I post the same screenshot to X and LinkedIn every week".
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+  - type: textarea
+    id: now
+    attributes:
+      label: How do you do it today?
+      description: Another tool, a workaround, or not at all.
