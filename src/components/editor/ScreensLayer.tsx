@@ -341,7 +341,6 @@ export function ScreensLayer({
           />
         );
       })}
-      <ScreenMenu />
     </div>
   );
 }
@@ -421,8 +420,12 @@ function RemoveButton({
   );
 }
 
-/** Replace…, Swap with previous / next, Remove from design. */
-function ScreenMenu() {
+/**
+ * A screen's menu: Replace…, From your images…, Swap with previous / next,
+ * Remove from design. Rendered at the editor's root, outside the stage, so
+ * its clicks never reach the stage's own pointer handling.
+ */
+export function ScreenMenu() {
   const app = useApp();
   const menu = useStore(app.screens.ui, (s) => s.menu);
   const doc = useScene((s) => s.doc);
@@ -466,7 +469,14 @@ function ScreenMenu() {
       <span
         ref={anchor}
         aria-hidden="true"
-        style={{ position: "fixed", left: at.x, top: at.y, width: 1, height: 1 }}
+        style={{
+          position: "fixed",
+          left: at.x,
+          top: at.y,
+          width: 1,
+          height: 1,
+          pointerEvents: "none",
+        }}
       />
       <Popover
         open={!!menu}

@@ -21,6 +21,7 @@ import { Inspector } from "./Inspector";
 import { MobileEditor } from "./Mobile";
 import { useShortcuts } from "./shortcuts";
 import { Stage } from "./Stage";
+import { ScreenMenu } from "./ScreensLayer";
 import { BatchRail } from "./BatchRail";
 import { RAIL_COLLAPSED, useRailCollapsed } from "./batch-ui";
 
@@ -209,6 +210,7 @@ export function Editor() {
       <Gallery narrow={!!narrow} />
       <ShortcutsSheet />
       <RecentsDialog />
+      <ScreenMenu />
       <LiveRegion />
     </AppContext.Provider>
   );
