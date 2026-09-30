@@ -14,6 +14,9 @@
     grid-column: 2 / -1;
   }
   .m-body .screens-tray .screens-sub {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
     margin-bottom: 8px;
   }
   .m-body .screens-tray .hr {

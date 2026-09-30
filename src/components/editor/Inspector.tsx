@@ -1,6 +1,6 @@
 "use client";
 /**
- * The inspector: Screens → Styles → Background → Layout (+ 3D tilt) → Frame, or the
+ * The inspector: Styles → Background → Screens → Layout (+ 3D tilt) → Frame, or the
  * contextual annotation inspector when a tool or annotation is active.
  * Every control writes the scene directly; the preview re-renders live.
  */
@@ -1410,6 +1410,8 @@ function ModeTrays() {
     <>
       <StylesTray />
       <BackgroundTray />
+      {/* How many screens and how they're arranged, then the card's own layout. */}
+      <ScreensTray />
       <LayoutTray />
       <FrameTray />
       {/* Motion is used least often: last, so Background and Layout stay above the fold (REVIEW r2 N9). */}
@@ -1434,8 +1436,6 @@ export function Inspector() {
         </div>
       ) : (
         <div className="inspector-pane" key="style">
-          {/* Per image, like the screenshot itself: above the All / This image switch. */}
-          <ScreensTray />
           <BatchScope />
           <ModeTrays />
           <div className="foot-note">

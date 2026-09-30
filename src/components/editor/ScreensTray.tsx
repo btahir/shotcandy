@@ -18,6 +18,7 @@ import {
 } from "@/engine";
 import { Segmented } from "../ui/controls";
 import { Slider } from "../ui/Slider";
+import { useBatch } from "./batch-ui";
 import { useApp, useScene, useUi } from "./context";
 
 /** Short tile labels (the full names are the accessible names). */
@@ -187,6 +188,7 @@ export const ScreensTray = memo(function ScreensTray({ bare = false }: { bare?: 
   );
   const current = useScene((s) => activeLayout(s.scene)?.id ?? "single");
   const tuned = useScene((s) => !!activeLayout(s.scene) && !!s.scene.layout?.params);
+  const batch = !!useBatch();
   if (mode !== "screenshot" || !hasContent || !image) return null;
   const def = LAYOUTS.find((l) => l.id === current)!;
 
@@ -210,24 +212,42 @@ export const ScreensTray = memo(function ScreensTray({ bare = false }: { bare?: 
     <section className="tray screens-tray" aria-labelledby="t-screens" data-testid="screens-tray">
       {!bare ? (
         <div className="tray-head">
-          <h2 id="t-screens">Screens</h2>
-          {tuned ? (
-            <button
-              type="button"
-              className="link quiet"
-              data-testid="screens-reset"
-              aria-label={`Reset ${def.params.map((p) => p.label.toLowerCase()).join(" and ")}`}
-              onClick={() => app.screens.resetParams()}
-            >
-              Reset
-            </button>
-          ) : (
-            <span className="meta">{def.label}</span>
-          )}
+          <h2 id="t-screens">
+            Screens
+            {batch && <span className="sr-only">, this image only</span>}
+          </h2>
+          <span className="head-links">
+            {/* In a batch, All never changes screens: say whose they are instead of the name. */}
+            {(batch || !tuned) && (
+              <span
+                className="meta"
+                data-testid="screens-meta"
+                title={batch ? "Each image has its own screens" : undefined}
+              >
+                {batch ? "This image" : def.label}
+              </span>
+            )}
+            {tuned && (
+              <button
+                type="button"
+                className="link quiet"
+                data-testid="screens-reset"
+                aria-label={`Reset ${def.params.map((p) => p.label.toLowerCase()).join(" and ")}`}
+                onClick={() => app.screens.resetParams()}
+              >
+                Reset
+              </button>
+            )}
+          </span>
         </div>
       ) : (
         <div className="sub screens-sub" id="t-screens">
           Screens
+          {batch && (
+            <span className="meta-txt" data-testid="screens-meta">
+              <span className="sr-only">, </span>This image
+            </span>
+          )}
         </div>
       )}
       <div
