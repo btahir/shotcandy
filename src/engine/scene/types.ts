@@ -23,7 +23,7 @@
 /** Normalized hex colour: `#rrggbb` or `#rrggbbaa`. */
 export type Color = string;
 
-export const SCENE_VERSION = 2 as const;
+export const SCENE_VERSION = 3 as const;
 
 export interface Scene {
   /** Schema version; see scene/migrate.ts. */
@@ -44,6 +44,56 @@ export interface Scene {
    * with landscape screenshots use it to fill the space). Absent = none.
    */
   caption?: CaptionSpec;
+  /**
+   * Multi-screen arrangement (side by side, fan, grid...). Absent = a single
+   * screen, which is also what "single" means. See scene/layouts.ts.
+   */
+  layout?: LayoutSpec;
+  /**
+   * Extra screens of a multi-screen design: screen 1 is `slots[0]`, screen 2
+   * is `slots[1]`, and so on. Screen 0 is always `content`, so palettes, auto
+   * backgrounds, recordings and content annotations keep working off it. Kept
+   * when the layout goes back to "single" (only screen 0 is drawn then), so
+   * trying layouts never loses work.
+   */
+  slots?: ScreenSlot[];
+}
+
+// ---------------------------------------------------------------------------
+// Multi-screen layouts
+// ---------------------------------------------------------------------------
+
+export type LayoutId = "single" | "side-by-side" | "overlap" | "hero" | "cascade" | "fan" | "grid";
+
+/** Layout knobs. Each layout reads a few of them (scene/layouts.ts lists which). */
+export type LayoutParamKey =
+  "spacing" | "tilt" | "overlap" | "angle" | "size" | "step" | "spread" | "gap";
+
+export interface LayoutSpec {
+  id: LayoutId;
+  /** Screens shown, screen 0 (the content) included; clamped to the layout's range. */
+  count: number;
+  /** Knob values; absent keys use the layout's defaults. */
+  params?: Partial<Record<LayoutParamKey, number>>;
+}
+
+/**
+ * One extra screen: an image (or empty, awaiting one) with its own crop.
+ * Screens are images only; recordings stay single-screen.
+ */
+export interface ScreenSlot {
+  /** Null = an empty slot. */
+  assetId: string | null;
+  crop?: CropRect;
+  tall?: ImageContent["tall"];
+  fade?: number;
+  sampling?: ImageContent["sampling"];
+  /**
+   * Content-anchored annotations and redactions of this screen. Screen 0's
+   * live in `scene.annotations`; swapping screens carries them along so a
+   * redaction always stays on the image it hides.
+   */
+  annotations?: Annotation[];
 }
 
 /** Caption card: text above the screenshot, laid out in the canvas. */

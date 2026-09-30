@@ -29,6 +29,32 @@ export {
   sceneAssetIds,
 } from "./scene/patch";
 
+// Multi-screen layouts (screen 0 is the content; extra screens live in scene.slots)
+export {
+  LAYOUTS,
+  LAYOUT_IDS,
+  MAX_SCREENS,
+  getLayoutDef,
+  resolveParams,
+  activeLayout,
+  screenContent,
+  type LayoutDef,
+  type LayoutParamDef,
+  type ActiveLayout,
+} from "./scene/layouts";
+export {
+  setLayout,
+  setLayoutParam,
+  setScreenCount,
+  fillSlot,
+  fillEmptySlots,
+  swapSlots,
+  clearSlot,
+  screenCount,
+  shownScreens,
+  emptySlots,
+} from "./scene/slots";
+
 // Layout and geometry
 export {
   computeLayout,

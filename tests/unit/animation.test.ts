@@ -25,6 +25,7 @@ import {
   planAnimation,
   revealAnnotations,
   setIn,
+  SCENE_VERSION,
 } from "@/engine";
 
 const shot: AssetSource = { id: "shot", width: 1600, height: 1000, images: [] };
@@ -292,7 +293,7 @@ describe("schema", () => {
     expect(issues.length).toBeGreaterThan(0);
     const v1 = { ...createScene(), version: 1 };
     const loaded = loadScene(v1);
-    expect(loaded.scene.version).toBe(2);
+    expect(loaded.scene.version).toBe(SCENE_VERSION);
     expect(loaded.migratedFrom).toBe(1);
     expect(loaded.scene.animation).toBeUndefined();
   });
