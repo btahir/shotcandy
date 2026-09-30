@@ -486,7 +486,13 @@ function MobileExport() {
         <div className="grab" onClick={close} aria-hidden="true" />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 id="m-export-title">
-            {appstore ? "Export set" : motionTab ? "Save your clip" : "Save your image"}
+            {appstore
+              ? "Export set"
+              : motionTab
+                ? "Save your clip"
+                : batch
+                  ? "Save your images"
+                  : "Save your image"}
           </h2>
           {appstore ? null : scene.animation ? (
             <Segmented

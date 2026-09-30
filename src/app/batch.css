@@ -510,6 +510,17 @@
     height: 32px;
     padding: 0 14px;
   }
+  /* 44 px tap targets without making the bar taller. */
+  .bstrip-bar .bstrip-select,
+  .bstrip-bar .icon-btn {
+    position: relative;
+  }
+  .bstrip-bar .bstrip-select::after,
+  .bstrip-bar .icon-btn::after {
+    content: "";
+    position: absolute;
+    inset: -6px -4px;
+  }
   .m[data-batch] .stage {
     margin-bottom: 0;
   }

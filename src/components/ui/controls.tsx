@@ -180,6 +180,7 @@ export function Popover({
   width,
   arrow = true,
   initialFocus = true,
+  side = "below",
 }: {
   open: boolean;
   anchor: RefObject<HTMLElement | null>;
@@ -193,6 +194,8 @@ export function Popover({
   width?: number;
   arrow?: boolean;
   initialFocus?: boolean;
+  /** Where it opens when it fits there ("above": menus of controls at the bottom). */
+  side?: "below" | "above";
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
@@ -232,7 +235,8 @@ export function Popover({
         align === "center" ? a.left + a.width / 2 - w / 2 : align === "end" ? a.right - w : a.left;
       left = Math.max(12, Math.min(vw - w - 12, left));
       let top = a.bottom + offset;
-      if (top + h > vh - 12 && a.top - offset - h > 12) top = a.top - offset - h;
+      if (side === "above" && a.top - offset - h > 12) top = a.top - offset - h;
+      else if (top + h > vh - 12 && a.top - offset - h > 12) top = a.top - offset - h;
       const arrowX = Math.max(18, Math.min(w - 18, a.left + a.width / 2 - left));
       setPos({ left, top, arrowX });
     };
@@ -244,7 +248,7 @@ export function Popover({
       ro.disconnect();
       window.removeEventListener("resize", place);
     };
-  }, [mounted, anchor, align, offset]);
+  }, [mounted, anchor, align, offset, side]);
 
   useEffect(() => {
     if (!open) return;

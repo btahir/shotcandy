@@ -25,6 +25,10 @@ export function BatchStrip() {
   useUi((s) => s.assetsVersion);
   const [menu, setMenu] = useState<{ x: number; y: number; id: string } | null>(null);
   const menuBtn = useRef<HTMLButtonElement>(null);
+  // A tap on "…" while its menu is open closes it on pointerdown (before the
+  // button hears it); the click that follows mustn't reopen it.
+  const closedAt = useRef(-1);
+  const downAt = useRef(0);
   const active = batch?.active;
 
   useEffect(() => {
@@ -149,9 +153,13 @@ export function BatchStrip() {
           aria-haspopup="menu"
           aria-expanded={!!menu}
           data-testid="batch-strip-menu"
+          onPointerDown={() => (downAt.current = performance.now())}
           onClick={() => {
+            const same = downAt.current - closedAt.current;
+            closedAt.current = -1;
+            if (same >= 0 && same < 80) return;
             const r = menuBtn.current!.getBoundingClientRect();
-            setMenu(menu ? null : { x: r.right - 230, y: r.top - 8, id: batch.active });
+            setMenu(menu ? null : { x: r.right - 1, y: r.top, id: batch.active });
           }}
         >
           <Icon name="more" />
@@ -160,6 +168,7 @@ export function BatchStrip() {
       <BatchMenu
         at={menu}
         onClose={() => {
+          closedAt.current = performance.now();
           setMenu(null);
           menuBtn.current?.focus({ preventScroll: true });
         }}

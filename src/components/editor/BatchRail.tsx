@@ -130,7 +130,7 @@ export function BatchMenu({
 }: {
   at: { x: number; y: number; id: string } | null;
   onClose: () => void;
-  /** Phones: the strip runs left to right. */
+  /** Phones: the strip runs left to right, and the menu opens up from its "…" button. */
   horizontal?: boolean;
 }) {
   const app = useApp();
@@ -169,7 +169,8 @@ export function BatchMenu({
         onClose={onClose}
         label={n > 1 ? `${n} images` : "Image"}
         role="menu"
-        align="start"
+        align={horizontal ? "end" : "start"}
+        side={horizontal ? "above" : "below"}
         arrow={false}
         offset={4}
         className="menu batch-menu"

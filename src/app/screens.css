@@ -23,6 +23,13 @@
     margin: 14px 0 0;
   }
 
+  /* Keyboard hints mean nothing without a keyboard (phones, tablets). */
+  @media (hover: none) {
+    .screen-menu .menu-item .meta {
+      display: none;
+    }
+  }
+
   /* ---------- Stage ---------- */
   .screens-layer {
     position: absolute;
