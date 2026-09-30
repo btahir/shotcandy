@@ -14,6 +14,7 @@ import {
   type SceneLayout,
   type TextAnnotation,
   canvasToContent,
+  notesRect,
   contentToCanvas,
   getFont,
 } from "@/engine";
@@ -24,8 +25,10 @@ export interface Geo {
 }
 
 export function anchorSize(g: Geo, anchor: AnnotationAnchor): { w: number; h: number } {
-  if (anchor === "content")
-    return { w: g.layout.card.content.width, h: g.layout.card.content.height };
+  if (anchor === "content") {
+    const r = notesRect(g.layout.card);
+    return { w: r.width, h: r.height };
+  }
   return { w: g.layout.canvas.width, h: g.layout.canvas.height };
 }
 

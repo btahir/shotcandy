@@ -63,6 +63,18 @@ export interface CardGeometry {
   smoothing: number;
   content: Rect;
   contentRadii: Radii;
+  /**
+   * Where content-anchored annotations live, when it isn't `content`: a grid
+   * cell shows only part of the screenshot (a cover crop), and marks stay on
+   * the image they were placed on, so they are anchored to the whole image as
+   * it would be drawn (partly outside the cell, clipped away). Absent: `content`.
+   */
+  notes?: Rect;
+}
+
+/** The rect content-anchored annotations are placed in (card units). */
+export function notesRect(card: CardGeometry): Rect {
+  return card.notes ?? card.content;
 }
 
 export interface SceneLayout {
@@ -641,24 +653,26 @@ function snap(v: number): number {
 // Coordinate helpers for the editor (hit-testing, placing annotations)
 // ----------------------------------------------------------------------------
 
-/** Normalized content coordinates (0..1) -> canvas px at scale 1. */
+/** Normalized content coordinates (0..1, where content annotations live) -> canvas px at scale 1. */
 export function contentToCanvas(layout: SceneLayout, u: number, v: number): Point {
-  const c = layout.card.content;
+  const c = notesRect(layout.card);
   return applyMat3(layout.cardToCanvas, { x: c.x + u * c.width, y: c.y + v * c.height });
 }
 
-/** Canvas px at scale 1 -> normalized content coordinates (may be outside 0..1). */
+/** Canvas px at scale 1 -> normalized content (annotation) coordinates (may be outside 0..1). */
 export function canvasToContent(layout: SceneLayout, x: number, y: number): Point | null {
   if (!layout.canvasToCard) return null;
   const p = applyMat3(layout.canvasToCard, { x, y });
-  const c = layout.card.content;
+  const c = notesRect(layout.card);
   return { x: (p.x - c.x) / c.width, y: (p.y - c.y) / c.height };
 }
 
-/** Whether a canvas point (scale 1) lies on the card's content. */
+/** Whether a canvas point (scale 1) lies on the card's content (the part shown). */
 export function hitContent(layout: SceneLayout, x: number, y: number): boolean {
-  const p = canvasToContent(layout, x, y);
-  return !!p && p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1;
+  if (!layout.canvasToCard) return false;
+  const p = applyMat3(layout.canvasToCard, { x, y });
+  const c = layout.card.content;
+  return p.x >= c.x && p.x <= c.x + c.width && p.y >= c.y && p.y <= c.y + c.height;
 }
 
 /** Output pixel size for an export scale. Always integers. */

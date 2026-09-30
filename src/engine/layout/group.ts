@@ -125,6 +125,8 @@ interface Screen {
   px: Size;
   /** Whether px comes from a real image (for resolution). */
   known: boolean;
+  /** The crop the screen has on its own, when a grid cell cover-crops it further. */
+  base?: CropRect;
 }
 
 function median(xs: number[]): number {
@@ -172,6 +174,7 @@ function screensOf(scene: Scene, lay: ActiveLayout, sizes: readonly (Size | null
         const base = effectiveCrop(s.content, size, frameId).crop;
         const crop = coverCrop(base, size, a);
         s.content = { ...s.content, crop, tall: "full" };
+        s.base = base;
         s.px = { width: crop.width * size.width, height: crop.height * size.height };
       } else {
         s.px = { width: a * 1000, height: 1000 };
@@ -397,6 +400,29 @@ function placementMatrix(card: CardGeometry, pl: Placement): Mat3 {
   );
 }
 
+/**
+ * A grid cell shows `crop`, part of the screen's own `base` crop. Its marks
+ * were placed on the whole `base` image, so they are anchored to where that
+ * would be drawn: the content rect grown to the base crop (clipped to the cell).
+ */
+function withNotes(card: CardGeometry, base: CropRect, crop: CropRect): CardGeometry {
+  const c = card.content;
+  const sx = c.width / crop.width;
+  const sy = c.height / crop.height;
+  const notes = {
+    x: c.x - (crop.x - base.x) * sx,
+    y: c.y - (crop.y - base.y) * sy,
+    width: base.width * sx,
+    height: base.height * sy,
+  };
+  const same =
+    Math.abs(notes.x - c.x) < 1e-9 &&
+    Math.abs(notes.y - c.y) < 1e-9 &&
+    Math.abs(notes.width - c.width) < 1e-9 &&
+    Math.abs(notes.height - c.height) < 1e-9;
+  return same ? card : { ...card, notes };
+}
+
 function snapAffine(M: Mat3, card: CardGeometry): Mat3 {
   if (!isAffine(M, 1e-12)) return M;
   if (Math.abs(M[1]) < 1e-9 && Math.abs(M[3]) < 1e-9) {
@@ -486,7 +512,7 @@ function groupBase(scene: Scene, lay: ActiveLayout, sizes: readonly (Size | null
   );
 
   const slots = screens.map((s, i): SlotLayout => {
-    const card = cards[i]!;
+    const card = s.base ? withNotes(cards[i]!, s.base, s.content.crop!) : cards[i]!;
     const M = snapAffine(multiply(G, S[i]!), card);
     const perspective = !isAffine(M, 1e-12);
     return {

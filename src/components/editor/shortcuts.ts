@@ -1,7 +1,7 @@
 "use client";
 /** Keyboard shortcuts (docs/design/system/shortcuts.md). */
 import { useEffect } from "react";
-import { ACCEPT_ATTRIBUTE, type Annotation, layoutScene } from "@/engine";
+import { ACCEPT_ATTRIBUTE, type Annotation, layoutScene, notesRect } from "@/engine";
 import { isTypingTarget } from "@/lib/platform";
 import type { EditorApp, Tool } from "./app";
 import { stepZoom } from "./Dock";
@@ -239,10 +239,9 @@ export function useShortcuts(app: EditorApp) {
 
 function nudge(app: EditorApp, a: Annotation, key: string, px: number) {
   const layout = layoutScene(app.scene, app.resolver);
-  const perU =
-    a.anchor === "content" ? 1 / (layout.card.content.width * layout.k) : 1 / layout.canvas.width;
-  const perV =
-    a.anchor === "content" ? 1 / (layout.card.content.height * layout.k) : 1 / layout.canvas.height;
+  const notes = notesRect(layout.card);
+  const perU = a.anchor === "content" ? 1 / (notes.width * layout.k) : 1 / layout.canvas.width;
+  const perV = a.anchor === "content" ? 1 / (notes.height * layout.k) : 1 / layout.canvas.height;
   const du = key === "ArrowLeft" ? -px * perU : key === "ArrowRight" ? px * perU : 0;
   const dv = key === "ArrowUp" ? -px * perV : key === "ArrowDown" ? px * perV : 0;
   const patch =

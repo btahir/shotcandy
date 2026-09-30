@@ -6,7 +6,7 @@
 import type { AssetResolver } from "../assets/types";
 import { resolveFrame } from "../frames/registry";
 import type { ResolvedFrameRef } from "../frames/types";
-import { type SceneLayout, contentFade, effectiveCrop } from "../layout/layout";
+import { type SceneLayout, contentFade, effectiveCrop, notesRect } from "../layout/layout";
 import type { Palette } from "../palette/extract";
 import { roundedRectPath } from "../math/path";
 import type { Scene } from "../scene/types";
@@ -92,6 +92,7 @@ export function drawCard(ctx: Ctx2D, scene: Scene, layout: SceneLayout, deps: Ca
       assets: deps.assets,
       scene,
       rect: card.content,
+      ...(card.notes ? { notes: card.notes } : {}),
       pixelRatio: deps.pixelRatio,
     });
     // A long capture capped to its top fades into its own background.
@@ -126,7 +127,7 @@ export function drawCard(ctx: Ctx2D, scene: Scene, layout: SceneLayout, deps: Ca
   for (const a of scene.annotations) {
     if (a.anchor !== "content" || a.kind === "redact") continue;
     drawAnnotation(ctx, a, {
-      rect: card.content,
+      rect: notesRect(card),
       unit: 1,
       clip: { rect: card.content, radii: card.contentRadii, smoothing: card.smoothing },
     });

@@ -24,6 +24,11 @@ export interface ContentDrawContext {
   scene: Scene;
   /** Target rect in the context's current units (card units). */
   rect: Rect;
+  /**
+   * Where content annotations (redactions) are anchored, when not `rect`: the
+   * whole image of a grid cell that shows only part of it (see CardGeometry.notes).
+   */
+  notes?: Rect;
   /** Device pixels per current unit (for choosing source resolution). */
   pixelRatio: number;
 }
@@ -174,6 +179,27 @@ export function processedImage(
   });
 }
 
+/**
+ * Redactions placed on the whole image (`notes`), in the coordinates of the
+ * part drawn (`rect`), so they cover the same pixels; ones entirely outside
+ * the drawn part are dropped.
+ */
+function inRect(list: RedactAnnotation[], notes: Rect | undefined, rect: Rect): RedactAnnotation[] {
+  if (!notes || !list.length) return list;
+  const out: RedactAnnotation[] = [];
+  for (const r of list) {
+    const x = (notes.x + r.x * notes.width - rect.x) / rect.width;
+    const y = (notes.y + r.y * notes.height - rect.y) / rect.height;
+    const w = (r.w * notes.width) / rect.width;
+    const h = (r.h * notes.height) / rect.height;
+    const [x0, x1] = w < 0 ? [x + w, x] : [x, x + w];
+    const [y0, y1] = h < 0 ? [y + h, y] : [y, y + h];
+    if (x1 <= 0 || y1 <= 0 || x0 >= 1 || y0 >= 1) continue;
+    out.push({ ...r, x, y, w, h });
+  }
+  return out;
+}
+
 function applyRedaction(g: Ctx2D, r: RedactAnnotation, W: number, H: number, unitPx: number): void {
   const x0 = Math.max(0, Math.floor(Math.min(r.x, r.x + r.w) * W));
   const y0 = Math.max(0, Math.floor(Math.min(r.y, r.y + r.h) * H));
@@ -208,8 +234,10 @@ export const imageContent: ContentRenderer<Extract<Content, { kind: "image" }>> 
     return s ? { width: s.width, height: s.height } : null;
   },
   draw(ctx, content, dc) {
-    const redactions = dc.scene.annotations.filter(
-      (a): a is RedactAnnotation => a.kind === "redact",
+    const redactions = inRect(
+      dc.scene.annotations.filter((a): a is RedactAnnotation => a.kind === "redact"),
+      dc.notes,
+      dc.rect,
     );
     const dw = dc.rect.width * dc.pixelRatio;
     const dh = dc.rect.height * dc.pixelRatio;

@@ -65,6 +65,7 @@ export {
   contentToCanvas,
   canvasToContent,
   hitContent,
+  notesRect,
   outputSize,
   referenceSide,
   effectiveCrop,
