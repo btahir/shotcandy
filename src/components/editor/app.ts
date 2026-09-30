@@ -86,6 +86,7 @@ import {
   layoutScene,
   setCanvasSize,
   maxExportScale,
+  exportScaleCap,
   openStore,
   parseProject,
   projectToBlob,
@@ -2153,7 +2154,7 @@ export class EditorApp {
       height: layout.canvas.height,
       drawRatio: drawRatio(layout, scene.content.kind === "image"),
       fixed: scene.canvas.size.kind === "fixed",
-      maxScale: Math.max(1, maxExportScale(layout)),
+      maxScale: exportScaleCap(layout),
     };
   }
 

@@ -65,6 +65,31 @@ export function maxExportScale(
   return 0;
 }
 
+/**
+ * The export scale cap: the largest whole scale that fits the limits, or,
+ * when even 1x doesn't (a wide multi-screen design on iOS, say), the largest
+ * scale below 1 that does, so the export shrinks instead of failing.
+ */
+export function exportScaleCap(
+  layout: SceneLayout,
+  limits: CanvasLimits = detectCanvasLimits(),
+): number {
+  const whole = maxExportScale(layout, limits);
+  if (whole > 0) return whole;
+  const { width: W, height: H } = layout.canvas;
+  const long = Math.max(W, H);
+  const fit = Math.min(1, limits.maxSide / long, Math.sqrt(limits.maxArea / (W * H)));
+  // Whole pixels on the long side, like the export plan snaps them.
+  let L = Math.max(1, Math.floor(long * fit));
+  const fits = (s: number) => {
+    const w = Math.round(W * s);
+    const h = Math.round(H * s);
+    return w <= limits.maxSide && h <= limits.maxSide && w * h <= limits.maxArea;
+  };
+  while (L > 1 && !fits(L / long)) L--;
+  return L / long;
+}
+
 export async function canvasToBlob(
   canvas: CanvasLike,
   mime: string,

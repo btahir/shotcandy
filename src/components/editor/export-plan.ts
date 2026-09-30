@@ -137,7 +137,7 @@ export interface PlanInput {
   drawRatio: number | null;
   /** Fixed canvases are exact sizes: 1x is the requested output. */
   fixed: boolean;
-  /** Largest scale the browser's canvas allows. */
+  /** Largest scale the browser's canvas allows (below 1 when even 1x is too big). */
   maxScale: number;
 }
 
@@ -167,9 +167,14 @@ export function destinationScale(drawRatio: number | null): number {
   return Math.min(2, Math.max(1, 1 / Math.max(0.01, drawRatio)));
 }
 
-/** The whole-number scale "Auto" means for this canvas. */
+/** Largest scale the platform allows: 1x or more, or below 1 when even 1x is too big. */
+function scaleCap(input: PlanInput): number {
+  return input.maxScale > 0 ? input.maxScale : 1;
+}
+
+/** The whole-number scale "Auto" means for this canvas (below 1 only when 1x can't fit). */
 export function autoScale(input: PlanInput): number {
-  const max = Math.max(1, input.maxScale);
+  const max = scaleCap(input);
   let s: number;
   if (input.drawRatio === null)
     s = 2; // code, posts: text wants retina pixels
@@ -192,7 +197,7 @@ export function planExport(
   const dest = getDestination(opts.destination);
   const auto = dest.id === "original" && opts.scale !== 0 ? null : autoScale(input);
   let scale = dest.id === "original" && opts.scale !== 0 ? opts.scale : auto!;
-  scale = Math.min(scale, Math.max(1, input.maxScale));
+  scale = Math.min(scale, scaleCap(input));
   const long = Math.max(input.width, input.height);
   let capped = false;
   if (dest.width) {
@@ -201,7 +206,7 @@ export function planExport(
     // Destinations never go past the screenshot's own pixels: 1x when it is
     // drawn at native size, up to 2x when drawn smaller; 2x for code and posts
     // (text, no source pixels). Then the platform's cap (REVIEW r2 N1).
-    scale = Math.min(destinationScale(input.drawRatio), Math.max(1, input.maxScale));
+    scale = Math.min(destinationScale(input.drawRatio), scaleCap(input));
     if (dest.maxLong && long * scale > dest.maxLong) {
       scale = dest.maxLong / long;
       capped = true;
@@ -285,6 +290,8 @@ export function nextAttempt(
 export function exportTag(plan: ExportPlan, dest: Destination, scaleChoice: ScaleChoice): string {
   const fmt = plan.format === "jpeg" ? "JPG" : plan.format.toUpperCase();
   if (dest.id !== "original") return `${dest.short} · ${fmt}`;
+  // Too big for this browser's canvas even at 1x: say the size it will be.
+  if (plan.scale < 0.995) return `${fmt} · ${plan.width} × ${plan.height}`;
   if (scaleChoice === 0) return `${fmt} · Auto ${plan.autoScale ?? 1}×`;
   return `${fmt} · ${scaleChoice}×`;
 }

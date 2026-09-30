@@ -348,6 +348,7 @@ export {
   MIME_TYPES,
   FILE_EXTENSIONS,
   maxExportScale,
+  exportScaleCap,
   detectCanvasLimits,
   canvasToBlob,
   type ExportFormat,
