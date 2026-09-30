@@ -53,6 +53,24 @@ describe("project files", () => {
     expect(new Uint8Array(await loaded.assets[0]!.blob.arrayBuffer())).toEqual(bytes);
   });
 
+  it("keeps solid redactions and their colour", async () => {
+    const solid = {
+      ...scene,
+      annotations: [
+        { ...createAnnotation("redact", "r1"), mode: "solid" as const, fill: "auto" as const },
+        { ...createAnnotation("redact", "r2"), mode: "solid" as const, fill: "#ffffff" },
+      ],
+    };
+    const file = await createProjectFile(
+      solid,
+      [{ id, blob: new Blob([bytes], { type: "image/png" }), width: 10, height: 20 }],
+      { appVersion: "0.1.0", now },
+    );
+    const loaded = await parseProject(serializeProject(file));
+    expect(loaded.issues).toEqual([]);
+    expect(loaded.scene).toEqual(solid);
+  });
+
   it("parses from a Blob", async () => {
     const file = await createProjectFile(
       scene,

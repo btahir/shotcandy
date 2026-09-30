@@ -14,8 +14,13 @@ const META: Record<Annotation["kind"], { name: string; icon: IconName; desc: str
   text: { name: "Text", icon: "text", desc: "Double-click to edit · drag the corner to resize" },
   arrow: { name: "Arrow", icon: "arrow", desc: "Drag the ends · middle dot bends it" },
   rect: { name: "Highlight", icon: "rect", desc: "Drag the handles · ⇧ for a square" },
-  redact: { name: "Blur", icon: "blur", desc: "Hides what’s underneath for good" },
+  redact: { name: "Blur", icon: "blur", desc: "Solid hides text completely" },
 };
+
+/** Helper line under the heading; a solid redaction says what it does, the others point to it. */
+function helpLine(a: Annotation): string {
+  return a.kind === "redact" && a.mode === "solid" ? "Hides text completely" : META[a.kind].desc;
+}
 
 const TOOL_HINT: Record<string, { name: string; icon: IconName; desc: string }> = {
   text: { name: "Text", icon: "text", desc: "Click anywhere on the canvas to type" },
@@ -38,7 +43,9 @@ function detail(a: Annotation): string {
     case "rect":
       return a.style;
     case "redact":
-      return `${a.mode === "blur" ? "strength" : "pixels"} ${Math.round(a.strength)}`;
+      return a.mode === "solid"
+        ? "solid"
+        : `${a.mode === "blur" ? "strength" : "pixels"} ${Math.round(a.strength)}`;
   }
 }
 
@@ -74,6 +81,53 @@ export function Colours({
   );
 }
 
+const SOLID_COLOURS = [
+  { value: "#000000", label: "Black" },
+  { value: "#ffffff", label: "White" },
+] as const;
+
+/** A solid redaction's colour: auto (dark or light to suit the shot), black, white or any colour. */
+function SolidColours({
+  value,
+  onPick,
+}: {
+  value: string;
+  onPick: (c: string, final: boolean) => void;
+}) {
+  const norm = value.toLowerCase();
+  const isCustom = norm !== "auto" && !SOLID_COLOURS.some((c) => c.value === norm);
+  return (
+    <div className="ann-colours start" role="group" aria-label="Box colour">
+      <button
+        type="button"
+        className={`sw sm auto${norm === "auto" ? " on" : ""}`}
+        aria-label="Auto: dark or light to suit the screenshot"
+        title="Auto"
+        aria-pressed={norm === "auto"}
+        onClick={() => onPick("auto", true)}
+      />
+      {SOLID_COLOURS.map((c) => (
+        <button
+          key={c.value}
+          type="button"
+          className={`sw sm${c.value === norm ? " on" : ""}`}
+          style={{ background: c.value }}
+          aria-label={c.label}
+          title={c.label}
+          aria-pressed={c.value === norm}
+          onClick={() => onPick(c.value, true)}
+        />
+      ))}
+      <ColourButton
+        className={`sw sm add rainbow${isCustom ? " on" : ""}`}
+        value={isCustom ? value : "#2a1f1a"}
+        label="Custom colour"
+        onChange={onPick}
+      />
+    </div>
+  );
+}
+
 /** `quickColours`: the colour row is shown elsewhere (the phone sheet puts it under the tools). */
 export function AnnotationInspector({ quickColours = false }: { quickColours?: boolean }) {
   const app = useApp();
@@ -90,7 +144,7 @@ export function AnnotationInspector({ quickColours = false }: { quickColours?: b
     app.store.select(null);
     app.ui.set({ editingText: null });
   };
-  const head = a ? META[a.kind] : TOOL_HINT[tool]!;
+  const head = a ? { ...META[a.kind], desc: helpLine(a) } : TOOL_HINT[tool]!;
 
   return (
     <>
@@ -324,17 +378,28 @@ export function AnnotationInspector({ quickColours = false }: { quickColours?: b
               options={[
                 { value: "blur", label: "Blur" },
                 { value: "pixelate", label: "Pixelate" },
+                { value: "solid", label: "Solid" },
               ]}
             />
-            <div style={{ marginTop: 12 }}>
-              <Slider
-                label="Strength"
-                value={a.strength}
-                min={2}
-                max={60}
-                onChange={(v) => up({ strength: v })}
-              />
-            </div>
+            {a.mode === "solid" ? (
+              <>
+                <div className="sub">Colour</div>
+                <SolidColours
+                  value={a.fill ?? "auto"}
+                  onPick={(c, f) => up({ fill: c }, f ? undefined : `ann:${a.id}:fill`)}
+                />
+              </>
+            ) : (
+              <div style={{ marginTop: 12 }}>
+                <Slider
+                  label="Strength"
+                  value={a.strength}
+                  min={2}
+                  max={60}
+                  onChange={(v) => up({ strength: v })}
+                />
+              </div>
+            )}
           </>
         )}
 

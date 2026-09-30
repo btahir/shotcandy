@@ -128,6 +128,73 @@ describe("normalizeScene", () => {
     expect(normalizeScene({ annotations: [r] }).scene.annotations[0]!.anchor).toBe("content");
   });
 
+  describe("solid redactions", () => {
+    const redact = (extra: object) => ({ ...createAnnotation("redact", "r"), ...extra });
+    const first = (v: unknown) => normalizeScene({ annotations: [v] });
+
+    it("accepts the solid mode with an auto colour by default", () => {
+      const { scene, issues } = first(redact({ mode: "solid" }));
+      expect(issues).toEqual([]);
+      expect(scene.annotations[0]).toMatchObject({ kind: "redact", mode: "solid", fill: "auto" });
+    });
+
+    it("keeps a chosen colour, opaque and lower-cased", () => {
+      expect(first(redact({ mode: "solid", fill: "#FFFFFF" })).scene.annotations[0]).toMatchObject({
+        fill: "#ffffff",
+      });
+      // Any alpha is dropped: a solid box is never see-through.
+      expect(
+        first(redact({ mode: "solid", fill: "#12345680" })).scene.annotations[0],
+      ).toMatchObject({ fill: "#123456" });
+      expect(first(redact({ mode: "solid", fill: "auto" })).scene.annotations[0]).toMatchObject({
+        fill: "auto",
+      });
+    });
+
+    it("falls back to auto, with an issue, for a bad colour", () => {
+      const { scene, issues } = first(redact({ mode: "solid", fill: "nope" }));
+      expect(scene.annotations[0]).toMatchObject({ fill: "auto" });
+      expect(issues.some((i) => i.includes("fill"))).toBe(true);
+    });
+
+    it("leaves older blur and pixelate redactions exactly as they were", () => {
+      for (const mode of ["blur", "pixelate"] as const) {
+        const a = redact({ mode, strength: 20 });
+        const { scene, issues } = first(a);
+        expect(issues).toEqual([]);
+        expect(scene.annotations[0]).toEqual(a);
+        expect("fill" in scene.annotations[0]!).toBe(false);
+      }
+    });
+
+    it("remembers the colour when switched to another mode", () => {
+      const a = redact({ mode: "blur", fill: "#000000" });
+      expect(first(a).scene.annotations[0]).toEqual(a);
+    });
+
+    it("rejects unknown modes as blur", () => {
+      const { scene, issues } = first(redact({ mode: "shred" }));
+      expect(scene.annotations[0]).toMatchObject({ mode: "blur" });
+      expect(issues.some((i) => i.includes("mode"))).toBe(true);
+    });
+
+    it("is idempotent and survives a JSON round trip", () => {
+      const once = first(redact({ mode: "solid", fill: "#ABCDEF" })).scene;
+      const twice = normalizeScene(JSON.parse(JSON.stringify(once)));
+      expect(twice.issues).toEqual([]);
+      expect(twice.scene).toEqual(once);
+    });
+
+    it("normalizes solid redactions on a screen's own marks", () => {
+      const { scene, issues } = normalizeScene({
+        layout: { id: "grid", count: 2 },
+        slots: [{ assetId: "b", annotations: [redact({ mode: "solid", fill: "#000" })] }],
+      });
+      expect(issues).toEqual([]);
+      expect(scene.slots![0]!.annotations![0]).toMatchObject({ mode: "solid", fill: "#000000" });
+    });
+  });
+
   it("is idempotent", () => {
     const messy = {
       card: { radius: -3, frame: { id: "macos", theme: "sepia", lights: "mono" } },

@@ -15,6 +15,7 @@ import type {
   Annotation,
   CodeTokens,
   PostContent,
+  RedactAnnotation,
   BackgroundFill,
   BackgroundSpec,
   CanvasSize,
@@ -90,6 +91,16 @@ function color(c: Ctx, path: string, v: unknown, def: string): string {
     return def;
   }
   return normalizeColor(v);
+}
+
+/** A solid redaction's colour: "auto" or an opaque colour (any alpha is dropped). */
+function redactFill(c: Ctx, path: string, v: unknown): "auto" | string {
+  if (v === undefined || v === "auto") return "auto";
+  if (!isColor(v)) {
+    c.warn(path, `invalid colour ${JSON.stringify(v)}`);
+    return "auto";
+  }
+  return normalizeColor(v).slice(0, 7);
 }
 
 function oneOf<T extends string>(
@@ -650,8 +661,8 @@ function annotation(c: Ctx, v: unknown, i: number, base = "annotations"): Annota
         width: num(c, `${p}.width`, v.width, 6, 0, 200),
         radius: num(c, `${p}.radius`, v.radius, 8, 0, 500),
       };
-    case "redact":
-      return {
+    case "redact": {
+      const out: RedactAnnotation = {
         id,
         kind: "redact",
         anchor: "content",
@@ -659,9 +670,14 @@ function annotation(c: Ctx, v: unknown, i: number, base = "annotations"): Annota
         y: pos("y", 0.3),
         w: num(c, `${p}.w`, v.w, 0.3, 0, 4),
         h: num(c, `${p}.h`, v.h, 0.1, 0, 4),
-        mode: oneOf(c, `${p}.mode`, v.mode, ["blur", "pixelate"] as const, "blur"),
+        mode: oneOf(c, `${p}.mode`, v.mode, ["blur", "pixelate", "solid"] as const, "blur"),
         strength: num(c, `${p}.strength`, v.strength, 12, 1, 200),
       };
+      // Older scenes have no fill; it is kept when set (so switching modes remembers it).
+      if (out.mode === "solid" || v.fill !== undefined)
+        out.fill = redactFill(c, `${p}.fill`, v.fill);
+      return out;
+    }
     default:
       c.warn(p, `unknown annotation kind ${JSON.stringify(v.kind)}; dropped`);
       return null;
