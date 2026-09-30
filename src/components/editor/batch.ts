@@ -347,6 +347,11 @@ export class BatchController {
           this.dropPending(ph.key);
           continue;
         }
+        // Another mode came on stage while this image decoded: its design isn't ours to change.
+        if (app.ui.get().mode !== "screenshot" || app.disposed) {
+          this.closeDecoded(d);
+          break;
+        }
         if (known.has(d.id)) {
           skipped.push({ name: p.file.name, reason: "already added" });
           this.dropPending(ph.key);

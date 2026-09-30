@@ -4,8 +4,23 @@
  */
 import { type Page, expect, test } from "@playwright/test";
 import { loadSample, open } from "./helpers";
+import { SHOTS, dropFiles } from "./batch-helpers";
 import { design, pickLayout, screenPoint } from "./screens-helpers";
 
+type App = {
+  scene: { content: { kind: string; assetId?: string | null } };
+  store: {
+    getState(): { doc: { kind?: string; items?: { content: { assetId: string } }[] } };
+    undo(): void;
+  };
+  batch: { ui: { get(): { pending: unknown[] } } };
+  ui: { get(): { mode: string } };
+  setMode(mode: string): void;
+  loadBlob(blob: Blob, opts?: { source?: string }): Promise<boolean>;
+  autosave(): Promise<void>;
+  db: { assets: { get(id: string): Promise<unknown> } } | null;
+  on(evt: string, fn: (arg?: unknown) => void): () => void;
+};
 const screens = (page: Page) => page.getByTestId("screen");
 
 test.describe("screen 1 always has an image", () => {
@@ -43,5 +58,36 @@ test.describe("screen 1 always has an image", () => {
     await page.mouse.up();
     expect((await design(page)).screens).toEqual(before.screens);
     await expect(page.getByTestId("screens-tray")).toBeVisible();
+  });
+});
+
+test.describe("modes during an import", () => {
+  test("switching to Code mid-import leaves the code design alone", async ({ page }) => {
+    await open(page);
+    await dropFiles(page, [...SHOTS]);
+    // Switch while the first images are still decoding.
+    await page.waitForFunction(() => {
+      const a = (window as unknown as { __shotcandy: { app: App } }).__shotcandy.app;
+      if (a.batch.ui.get().pending.length > 0) {
+        a.setMode("code");
+        return true;
+      }
+      return false;
+    });
+    await expect(page.getByTestId("batch-pending")).toHaveCount(0, { timeout: 20_000 });
+    await page.waitForTimeout(500);
+    const code = await page.evaluate(() => {
+      const a = (window as unknown as { __shotcandy: { app: App } }).__shotcandy.app;
+      return { mode: a.ui.get().mode, kind: a.scene.content.kind };
+    });
+    expect(code).toEqual({ mode: "code", kind: "code" });
+    // Back in Screenshot mode the images that made it are there.
+    await page.evaluate(() =>
+      (window as unknown as { __shotcandy: { app: App } }).__shotcandy.app.setMode("screenshot"),
+    );
+    const kind = await page.evaluate(
+      () => (window as unknown as { __shotcandy: { app: App } }).__shotcandy.app.scene.content.kind,
+    );
+    expect(kind).toBe("image");
   });
 });
