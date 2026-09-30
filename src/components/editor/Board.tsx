@@ -15,6 +15,7 @@ import {
 } from "@/engine";
 import { useStore } from "@/lib/store";
 import { Icon } from "../icons";
+import { focusNextFrame } from "../ui/controls";
 import { useApp, useScene, useUi } from "./context";
 import { openFilePicker } from "./EmptyState";
 
@@ -92,9 +93,7 @@ export function Board({ narrow = false }: { narrow?: boolean }) {
       const d = e.key === "ArrowRight" ? 1 : -1;
       if (e.altKey) app.sets.moveSlide(selected, d);
       else app.sets.select(selected + d);
-      requestAnimationFrame(() =>
-        wrapRef.current?.querySelector<HTMLElement>(".slide.on")?.focus({ preventScroll: false }),
-      );
+      focusNextFrame(() => wrapRef.current?.querySelector<HTMLElement>(".slide.on"));
     }
   };
 

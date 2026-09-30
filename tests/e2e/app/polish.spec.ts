@@ -3,7 +3,7 @@
  * and multi-screen designs that once went wrong.
  */
 import { type Page, expect, test } from "@playwright/test";
-import { loadSample, open } from "./helpers";
+import { holdFrames, loadSample, open, releaseFrames } from "./helpers";
 import { SHOTS, b64, dropFiles, info, thumbsReady, waitForCount } from "./batch-helpers";
 import { design, pickLayout, screenPoint } from "./screens-helpers";
 
@@ -526,33 +526,8 @@ test.describe("keyboard only", () => {
   });
 
   test("a late frame never pulls focus back from where the keyboard went", async ({ page }) => {
-    type Held = {
-      requestAnimationFrame: (cb: FrameRequestCallback) => number;
-      cancelAnimationFrame: (id: number) => void;
-      __held: Map<number, FrameRequestCallback>;
-      __raf: (cb: FrameRequestCallback) => number;
-      __caf: (id: number) => void;
-    };
-    // Hold animation frames back, as a busy main thread does, then let them all run.
-    const hold = () =>
-      page.evaluate(() => {
-        const w = window as unknown as Held;
-        let id = 1e6;
-        w.__held = new Map();
-        w.__raf = w.requestAnimationFrame;
-        w.__caf = w.cancelAnimationFrame;
-        w.requestAnimationFrame = (cb) => (w.__held.set(++id, cb), id);
-        w.cancelAnimationFrame = (h) => void (w.__held.delete(h) || w.__caf.call(window, h));
-      });
-    const release = () =>
-      page.evaluate(() => {
-        const w = window as unknown as Held;
-        w.requestAnimationFrame = w.__raf;
-        w.cancelAnimationFrame = w.__caf;
-        const due = [...w.__held.values()];
-        w.__held.clear();
-        for (const cb of due) cb(performance.now());
-      });
+    const hold = () => holdFrames(page);
+    const release = () => releaseFrames(page);
     await open(page);
     await three(page);
     const list = page.getByTestId("batch-list");

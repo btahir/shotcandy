@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import type { EditorApp } from "../../../src/components/editor/app";
-import { chooseSize, loadSample, open, pngSize } from "./helpers";
+import { chooseSize, holdFrames, loadSample, open, pngSize, releaseFrames } from "./helpers";
 
 type W = { __shotcandy: { app: EditorApp } };
 const scene = (page: Page) =>
@@ -297,4 +297,51 @@ test("the Candy Jar lists device styles last for a landscape screenshot", async 
   expect(firstDevice).toBeGreaterThan(0);
   expect(names.slice(firstDevice).every((n) => n === "Device" || n !== "Fruity")).toBe(true);
   expect(names.at(-1)).toBe("Device");
+});
+
+test.describe("arrow keys move focus with the choice", () => {
+  test("position grid", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await open(page);
+    await loadSample(page);
+    const grid = page.getByRole("radiogroup", { name: "Position" });
+    await grid.getByRole("radio", { name: "Centre" }).focus();
+    await page.keyboard.press("ArrowRight");
+    expect((await scene(page)).canvas.anchor).toBe("right");
+    await expect(grid.getByRole("radio", { name: "right", exact: true })).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    expect((await scene(page)).canvas.anchor).toBe("bottom-right");
+    await expect(grid.getByRole("radio", { name: "bottom right" })).toBeFocused();
+    // Keys faster than frames: focus ends on the last choice.
+    await holdFrames(page);
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowUp");
+    await releaseFrames(page);
+    expect((await scene(page)).canvas.anchor).toBe("center");
+    await expect(grid.getByRole("radio", { name: "Centre" })).toBeFocused();
+    expect(errors).toEqual([]);
+  });
+
+  test("frame picker", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await open(page);
+    await loadSample(page);
+    const frames = page
+      .getByTestId("frame-tray")
+      .getByRole("radiogroup", { name: "Frame", exact: true });
+    const checked = frames.locator("[data-frame][aria-checked=true]");
+    const before = await checked.getAttribute("data-frame");
+    await checked.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(checked).not.toHaveAttribute("data-frame", before!);
+    const next = await checked.getAttribute("data-frame");
+    expect((await scene(page)).card.frame.id).toBe(next);
+    await expect(checked).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(checked).toHaveAttribute("data-frame", before!);
+    await expect(checked).toBeFocused();
+    expect(errors).toEqual([]);
+  });
 });

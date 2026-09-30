@@ -23,7 +23,7 @@ import { SUPPORT_URL } from "@/config/site";
 import { fillToCss } from "@/lib/fill-css";
 import { Icon, type IconName } from "../icons";
 import { ColorPicker } from "../ui/ColorPicker";
-import { Popover, Segmented, Switch } from "../ui/controls";
+import { Popover, Segmented, Switch, focusNextFrame } from "../ui/controls";
 import { Slider } from "../ui/Slider";
 import { AnnotationInspector } from "./AnnotationInspector";
 import { styleName } from "./app";
@@ -698,9 +698,9 @@ export function PositionControls() {
     if (!next) return;
     app.set(["canvas", "anchor"], next);
     app.announce(`Position: ${anchorName(next)}`);
-    requestAnimationFrame(() =>
-      e.currentTarget.querySelector<HTMLButtonElement>(`[data-anchor="${next}"]`)?.focus(),
-    );
+    // React clears currentTarget once the handler returns: keep the grid for the next frame.
+    const grid = e.currentTarget;
+    focusNextFrame(() => grid.querySelector<HTMLButtonElement>(`[data-anchor="${next}"]`));
   };
   return (
     <div className="position" data-testid="position">
@@ -1213,9 +1213,9 @@ export const FrameTray = memo(function FrameTray({ bare = false }: { bare?: bool
     const i = FRAMES.findIndex((f) => f.id === frame.id);
     const next = FRAMES[(i + d + FRAMES.length) % FRAMES.length]!;
     app.set(["card", "frame", "id"], next.id);
-    requestAnimationFrame(() =>
-      e.currentTarget.querySelector<HTMLButtonElement>(`[data-frame="${next.id}"]`)?.focus(),
-    );
+    // React clears currentTarget once the handler returns: keep the row for the next frame.
+    const row = e.currentTarget;
+    focusNextFrame(() => row.querySelector<HTMLButtonElement>(`[data-frame="${next.id}"]`));
   };
   return (
     <section className="tray" aria-labelledby="t-frame" data-testid="frame-tray">

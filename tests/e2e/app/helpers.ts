@@ -64,3 +64,36 @@ export async function setScale(page: Page, scale: number) {
 export async function openMore(page: Page) {
   await page.getByRole("button", { name: "More", exact: true }).click();
 }
+
+type Held = {
+  requestAnimationFrame: (cb: FrameRequestCallback) => number;
+  cancelAnimationFrame: (id: number) => void;
+  __held: Map<number, FrameRequestCallback>;
+  __raf: (cb: FrameRequestCallback) => number;
+  __caf: (id: number) => void;
+};
+
+/** Hold animation frames back, as a busy main thread does (see releaseFrames). */
+export function holdFrames(page: Page) {
+  return page.evaluate(() => {
+    const w = window as unknown as Held;
+    let id = 1e6;
+    w.__held = new Map();
+    w.__raf = w.requestAnimationFrame;
+    w.__caf = w.cancelAnimationFrame;
+    w.requestAnimationFrame = (cb) => (w.__held.set(++id, cb), id);
+    w.cancelAnimationFrame = (h) => void (w.__held.delete(h) || w.__caf.call(window, h));
+  });
+}
+
+/** Let the held frames run, in order, and go back to real ones. */
+export function releaseFrames(page: Page) {
+  return page.evaluate(() => {
+    const w = window as unknown as Held;
+    w.requestAnimationFrame = w.__raf;
+    w.cancelAnimationFrame = w.__caf;
+    const due = [...w.__held.values()];
+    w.__held.clear();
+    for (const cb of due) cb(performance.now());
+  });
+}

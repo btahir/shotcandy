@@ -446,9 +446,7 @@ export function ScreenMenu() {
   }, [menu]);
   useEffect(() => {
     if (picking)
-      requestAnimationFrame(() =>
-        listRef.current?.querySelector<HTMLButtonElement>(".menu-item")?.focus(),
-      );
+      focusNextFrame(() => listRef.current?.querySelector<HTMLButtonElement>(".menu-item"));
   }, [picking]);
   const lay = app.screens.active();
   const at = menu ?? shown;
