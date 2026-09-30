@@ -605,11 +605,18 @@ export function BatchRail() {
           className="icon-btn"
           aria-label={`Show images (${n})`}
           title="Show images"
-          onClick={() => app.batch.setRail({ collapsed: false })}
+          data-testid="rail-expand"
+          onClick={() => {
+            app.batch.setRail({ collapsed: false });
+            // This button goes away with the collapsed rail: keep the keyboard on the images.
+            requestAnimationFrame(() =>
+              document.querySelector<HTMLElement>("[data-testid=batch-list]")?.focus(),
+            );
+          }}
         >
           <Icon name="chevronRight" />
         </button>
-        <span className="brail-pos mono" aria-live="polite">
+        <span className="brail-pos mono">
           {ai + 1}/{n}
         </span>
         <button
@@ -644,7 +651,13 @@ export function BatchRail() {
           className="icon-btn sm"
           aria-label="Collapse images"
           title="Collapse"
-          onClick={() => app.batch.setRail({ collapsed: true })}
+          data-testid="rail-collapse"
+          onClick={() => {
+            app.batch.setRail({ collapsed: true });
+            requestAnimationFrame(() =>
+              document.querySelector<HTMLElement>("[data-testid=rail-expand]")?.focus(),
+            );
+          }}
         >
           <Icon name="chevronLeft" size="sm" />
         </button>

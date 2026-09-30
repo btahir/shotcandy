@@ -1185,6 +1185,22 @@ export class EditorApp {
     return false;
   }
 
+  /**
+   * When a change takes away the focused control (undo dissolving the images
+   * rail, the screens of a design going back to one), put the keyboard on the
+   * canvas instead of losing it to the page.
+   */
+  private keepFocus(): void {
+    if (typeof document === "undefined") return;
+    const before = document.activeElement;
+    if (!before || before === document.body) return;
+    requestAnimationFrame(() => {
+      const now = document.activeElement;
+      if (!before.isConnected && (!now || now === document.body))
+        this.ui.set((s) => ({ stageFocus: s.stageFocus + 1 }));
+    });
+  }
+
   /** Keep UI state in step when the document turns into a batch or back into one design. */
   private onDocChange(): void {
     const doc = this.store.getState().doc;
@@ -1194,6 +1210,7 @@ export class EditorApp {
     const was = isBatch(prev);
     const now = isBatch(doc);
     if (now) this.batch.scheduleMemory();
+    this.keepFocus();
     if (was === now || this.docSync || this.ui.get().mode !== "screenshot") return;
     if (now) {
       if (prev && !isBatch(prev) && hasImage(prev))
