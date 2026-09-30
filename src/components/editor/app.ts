@@ -118,6 +118,8 @@ import { GHOST_H, GHOST_ID, GHOST_W, loadGhost } from "@/lib/ghost";
 import { createStore, type Store } from "@/lib/store";
 import { ThumbService } from "@/lib/thumbs/service";
 import { sprinkle } from "@/lib/sprinkles";
+import { HANDOFF_NAMES_KEY, parseHandoff } from "@/lib/handoff";
+import type { LayoutId } from "@/engine/scene/types";
 import { prefersReducedMotion } from "@/lib/platform";
 import { VideoPreview } from "./video-preview";
 import { type Mode, initialCodeScene, initialPostScene, modeForScene } from "./modes";
@@ -497,6 +499,8 @@ export class EditorApp {
   /** Recordings too big to store: designs using them aren't autosaved. */
   private readonly unstored = new Set<string>();
   private initDone = false;
+  /** A layout or tool from a content page link, waiting for the first image. */
+  private pending: { layout: Exclude<LayoutId, "single"> | null; tool: Tool | null } | null = null;
 
   constructor() {
     this.store = createEditorStore<EditorDoc>(initialScene(), {
@@ -582,6 +586,9 @@ export class EditorApp {
       this.bumpAssets();
     });
     this.store.subscribe(() => this.onSceneChange());
+    this.on("loaded", () => {
+      if (this.pending) queueMicrotask(() => this.applyPending());
+    });
     this.store.subscribe(() => this.scheduleHighlight());
     // A hover preview is built from the scene at hover time; any edit ends it.
     this.store.subscribe(() => {
@@ -637,17 +644,113 @@ export class EditorApp {
     if (params.get("gallery")) this.ui.set({ modal: "gallery" });
     const open = params.get("open");
     const sample = params.get("sample");
-    if (open || sample || style || size || modeParam || params.get("gallery")) {
+    const handoff = parseHandoff(params);
+    if (
+      open ||
+      sample ||
+      style ||
+      size ||
+      modeParam ||
+      params.get("gallery") ||
+      params.get("layout") ||
+      params.get("tool")
+    ) {
       const url = new URL(window.location.href);
       url.search = "";
       window.history.replaceState(null, "", url.toString());
     }
-    if (open && this.db) {
-      const rec = await this.db.assets.get(open).catch(() => undefined);
-      if (rec) await this.loadBlob(rec.blob, { source: "handoff" });
+    // A layout or tool picked on a content page waits for the first image.
+    if (handoff.layout || handoff.tool)
+      this.pending = { layout: handoff.layout, tool: handoff.tool };
+    if (handoff.open.length && this.db) {
+      await this.openHandoff(handoff.open);
     } else if (sample) {
       await this.loadSample(sample);
     }
+  }
+
+  /** Images a content page stored for the editor (`?open=`), with their file names. */
+  private async openHandoff(ids: readonly string[]): Promise<void> {
+    let names: Record<string, string> = {};
+    try {
+      const raw = sessionStorage.getItem(HANDOFF_NAMES_KEY);
+      if (raw) {
+        sessionStorage.removeItem(HANDOFF_NAMES_KEY);
+        const parsed: unknown = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") names = parsed as Record<string, string>;
+      }
+    } catch {
+      /* storage blocked or bad JSON: open without names */
+    }
+    const recs = await Promise.all(ids.map((id) => this.db?.assets.get(id).catch(() => undefined)));
+    const files: File[] = [];
+    recs.forEach((rec, i) => {
+      if (!rec) return;
+      const name = names[ids[i]!];
+      files.push(
+        new File([rec.blob], typeof name === "string" && name ? name : `Screenshot ${i + 1}`, {
+          type: rec.mime,
+        }),
+      );
+    });
+    if (this.disposed || !files.length) return;
+    // One image with no name opens exactly as a single handoff always has.
+    if (files.length === 1 && !names[ids[0]!]) {
+      await this.loadBlob(recs.find(Boolean)!.blob, { source: "handoff" });
+      return;
+    }
+    const layout = this.pending?.layout;
+    if (
+      layout &&
+      files.length > 1 &&
+      this.ui.get().mode === "screenshot" &&
+      !this.ui.get().hasContent
+    ) {
+      await this.openInLayout(files, layout, "handoff");
+      return;
+    }
+    if (files.length === 1) await this.loadBlob(files[0]!, { source: "handoff" });
+    else await this.importFiles(files, { source: "handoff" });
+  }
+
+  /**
+   * Several images for a multi-screen design picked before any image was in:
+   * the first opens as usual, the layout comes on, the rest fill its screens
+   * (any past the layout's most join a batch, as a drop on the design would).
+   */
+  private async openInLayout(
+    files: readonly File[],
+    layout: Exclude<LayoutId, "single">,
+    source: string,
+  ): Promise<void> {
+    const [first, ...rest] = [...files].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true }),
+    );
+    const tool = this.pending?.tool ?? null;
+    this.pending = null;
+    if (!first || !(await this.loadBlob(first, { source }))) return;
+    this.screens.setLayout(layout);
+    if (rest.length) {
+      if (this.screens.active()) await this.screens.addFiles(rest, null, source);
+      else await this.importFiles(rest, { source, add: true });
+    }
+    if (tool) this.armTool(tool);
+  }
+
+  /** Apply a layout or tool a content page asked for, once the first image is in. */
+  private applyPending(): void {
+    const p = this.pending;
+    if (!p || this.ui.get().mode !== "screenshot" || !this.ui.get().hasContent) return;
+    this.pending = null;
+    if (p.layout && this.screens.available() && !isBatch(this.store.getState().doc))
+      this.screens.setLayout(p.layout);
+    if (p.tool) this.armTool(p.tool);
+  }
+
+  /** Pick a tool for the user (a content page link): on phones, open the Draw tab too. */
+  private armTool(tool: Tool): void {
+    this.setTool(tool);
+    if (tool !== "select") this.ui.set({ mobileTab: "draw" });
   }
 
   dispose(): void {
@@ -1047,6 +1150,19 @@ export class EditorApp {
           sorted.map((p) => p.file),
         );
       return;
+    }
+    // Several images dropped after picking a layout on a content page: one design.
+    const pendingLayout = this.pending?.layout;
+    if (pendingLayout && mode === "screenshot" && !this.ui.get().hasContent && picked.length > 1) {
+      const images = picked.filter((p) => fileKind(p.file) === "image");
+      if (images.length > 1) {
+        await this.openInLayout(
+          images.map((p) => p.file),
+          pendingLayout,
+          opts.source ?? "drop",
+        );
+        return;
+      }
     }
     const doc = this.store.getState().doc;
     const route = planImport(

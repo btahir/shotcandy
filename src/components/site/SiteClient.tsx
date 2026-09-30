@@ -4,6 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { TOOL_PAGES } from "@/config/site";
+import { captureDrop, fileKind, readCapture } from "@/engine/input/files";
+import type { LayoutId } from "@/engine/scene/types";
+import {
+  HANDOFF_NAMES_KEY,
+  type HandoffMode,
+  type HandoffTool,
+  editorUrl,
+  layoutForCount,
+} from "@/lib/handoff";
 import { isApple } from "@/lib/platform";
 import { setTheme, useThemePref } from "@/lib/theme";
 import { Icon } from "../icons";
@@ -45,6 +54,9 @@ export function ToolsMenu({ active }: { active?: boolean }) {
               {t.label}
             </Link>
           ))}
+          <Link role="menuitem" className="menu-item" href="/tools/" onClick={() => setOpen(false)}>
+            All tools
+          </Link>
         </div>
       </Popover>
     </span>
@@ -70,18 +82,40 @@ export function ThemeToggle() {
 
 const ACCEPT = "image/png,image/jpeg,image/webp";
 
+/** What a drop zone hands to the editor besides the images. */
+export interface DropTarget {
+  style?: string;
+  size?: string;
+  mode?: HandoffMode;
+  /** A multi-screen layout, or "auto" to pick one from the number of images. */
+  layout?: Exclude<LayoutId, "single"> | "auto";
+  tool?: HandoffTool;
+  /** Take several images (up to `max`); folders can be dropped when `folders` is set. */
+  multiple?: { max: number; folders?: boolean };
+}
+
 /**
- * "Paste a screenshot here": hands the image to the editor (via IndexedDB, or
- * sessionStorage when IndexedDB is unavailable) and opens it with a preset.
+ * "Paste a screenshot here": hands the images to the editor (via IndexedDB,
+ * or just the preset when IndexedDB is unavailable) and opens it in the
+ * state the page is about (a style, a size, a mode, a layout or a tool).
  */
 export function DropInline({
   style,
   size,
+  mode,
+  layout,
+  tool,
+  multiple,
   frameLabel,
-}: {
-  style: string;
-  size?: string;
+  title,
+  hint,
+  button,
+}: DropTarget & {
   frameLabel: string;
+  /** Headline and hint override the defaults ("Paste a screenshot here"). */
+  title?: string;
+  hint?: string;
+  button?: string;
 }) {
   const router = useRouter();
   const [over, setOver] = useState(false);
@@ -89,43 +123,72 @@ export function DropInline({
   const [error, setError] = useState<string | null>(null);
   const [mod, setMod] = useState("⌘");
   useEffect(() => setMod(isApple() ? "⌘" : "Ctrl"), []);
+  const max = multiple?.max ?? 1;
 
-  const go = async (blob: Blob) => {
+  const go = async (all: File[]) => {
+    const files = all.filter((f) => fileKind(f) === "image").slice(0, max);
+    if (!files.length) {
+      setError("Couldn't read that file. Try PNG, JPEG or WebP.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       const { validateImageBytes, assetIdForBytes, openStore } = await import("@/engine");
-      const bytes = new Uint8Array(await blob.arrayBuffer());
-      const mime = validateImageBytes(bytes);
-      const bmp = await createImageBitmap(new Blob([bytes], { type: mime }));
-      const id = assetIdForBytes(bytes);
-      const params = new URLSearchParams({ style });
-      if (size) params.set("size", size);
       const db = await openStore();
-      if (db.persistent) {
-        await db.assets.put({
-          id,
-          blob: new Blob([bytes], { type: mime }),
-          mime,
-          width: bmp.width,
-          height: bmp.height,
-          role: "content",
-          createdAt: Date.now(),
-        });
-        params.set("open", id);
+      const ids: string[] = [];
+      const names: Record<string, string> = {};
+      let lastError: unknown = null;
+      for (const file of files) {
+        try {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          const mime = validateImageBytes(bytes);
+          const bmp = await createImageBitmap(new Blob([bytes], { type: mime }));
+          const id = assetIdForBytes(bytes);
+          if (db.persistent)
+            await db.assets.put({
+              id,
+              blob: new Blob([bytes], { type: mime }),
+              mime,
+              width: bmp.width,
+              height: bmp.height,
+              role: "content",
+              createdAt: Date.now(),
+            });
+          bmp.close();
+          if (!ids.includes(id)) ids.push(id);
+          if (multiple && file.name) names[id] = file.name;
+        } catch (e) {
+          lastError = e;
+        }
       }
-      bmp.close();
-      router.push(`/?${params.toString()}`);
+      if (!ids.length) throw lastError ?? new Error("Couldn't read that file.");
+      if (multiple && Object.keys(names).length) {
+        try {
+          sessionStorage.setItem(HANDOFF_NAMES_KEY, JSON.stringify(names));
+        } catch {
+          /* storage blocked: the images open without their names */
+        }
+      }
+      router.push(
+        editorUrl({
+          mode,
+          style,
+          size,
+          layout: layout === "auto" ? layoutForCount(ids.length) : layout,
+          tool,
+          open: db.persistent ? ids : [],
+        }),
+      );
     } catch (e) {
       setBusy(false);
       setError(e instanceof Error ? e.message : "Couldn't read that file. Try PNG, JPEG or WebP.");
     }
   };
-
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
-      const f = Array.from(e.clipboardData?.files ?? []).find((x) => x.type.startsWith("image/"));
-      if (f) {
+      const f = Array.from(e.clipboardData?.files ?? []).filter((x) => x.type.startsWith("image/"));
+      if (f.length) {
         e.preventDefault();
         void go(f);
       }
@@ -139,7 +202,11 @@ export function DropInline({
     const i = document.createElement("input");
     i.type = "file";
     i.accept = ACCEPT;
-    i.onchange = () => i.files?.[0] && void go(i.files[0]);
+    i.multiple = max > 1;
+    i.onchange = () => {
+      const list = Array.from(i.files ?? []);
+      if (list.length) void go(list);
+    };
     i.click();
   };
 
@@ -148,6 +215,7 @@ export function DropInline({
       <div
         className={`drop-inline${over ? " over" : ""}`}
         style={{ marginTop: 28 }}
+        data-testid="drop-inline"
         onDragOver={(e) => {
           e.preventDefault();
           setOver(true);
@@ -156,21 +224,26 @@ export function DropInline({
         onDrop={(e) => {
           e.preventDefault();
           setOver(false);
-          const f = e.dataTransfer.files?.[0];
-          if (f) void go(f);
+          if (multiple?.folders) {
+            const capture = captureDrop(e.dataTransfer);
+            void readCapture(capture).then((picked) => go(picked.map((p) => p.file)));
+            return;
+          }
+          const list = Array.from(e.dataTransfer.files ?? []);
+          if (list.length) void go(list);
         }}
       >
         <kbd className="kbd kbd-lg">{mod}</kbd>
         <kbd className="kbd kbd-lg">V</kbd>
         <div style={{ flex: 1, lineHeight: "20px", minWidth: 180 }}>
-          <b>Paste a screenshot here</b>
+          <b>{title ?? "Paste a screenshot here"}</b>
           <br />
           <span className="muted" style={{ fontSize: 13.5 }}>
-            or drop a file — the editor opens with the {frameLabel} ready
+            {hint ?? `or drop a file — the editor opens with the ${frameLabel} ready`}
           </span>
         </div>
         <button type="button" className="btn btn-primary" onClick={choose} disabled={busy}>
-          <Icon name="upload" /> {busy ? "Opening…" : "Choose file"}
+          <Icon name="upload" /> {busy ? "Opening…" : (button ?? "Choose file")}
         </button>
       </div>
       {error && (
