@@ -14,15 +14,20 @@ import { createPortal } from "react-dom";
 /**
  * Focuses an element on the next frame (once React has rendered it), unless
  * focus has moved on since: a late focus() must never pull the keyboard back
- * from wherever the person went in the meantime.
+ * from wherever the person went in the meantime. A newer call replaces one
+ * still waiting (keys pressed faster than frames), so the last move wins.
  */
-export function focusNextFrame(target: () => HTMLElement | null | undefined) {
+let waiting = 0;
+export function focusNextFrame(target: () => HTMLElement | null | undefined): number {
+  cancelAnimationFrame(waiting);
   const from = document.activeElement;
-  requestAnimationFrame(() => {
+  waiting = requestAnimationFrame(() => {
+    waiting = 0;
     const now = document.activeElement;
     if (now && now !== from && now !== document.body) return;
     target()?.focus();
   });
+  return waiting;
 }
 
 // ---------------------------------------------------------------------------

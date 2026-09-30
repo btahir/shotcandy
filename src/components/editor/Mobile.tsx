@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { type ExportFormat, getStylePreset, layoutScene } from "@/engine";
 import { Icon, LogoMark, type IconName } from "../icons";
-import { Segmented } from "../ui/controls";
+import { Segmented, focusNextFrame } from "../ui/controls";
 import { useStore } from "@/lib/store";
 import { AnnotationInspector, Colours } from "./AnnotationInspector";
 import { type MobileTab, formatBytes, styleName } from "./app";
@@ -443,8 +443,8 @@ function MobileExport() {
       app.ui.set({ mobileExport: false });
     };
     window.addEventListener("keydown", onKey, true);
-    const raf = requestAnimationFrame(() =>
-      sheetRef.current?.querySelector<HTMLElement>("[data-autofocus], button")?.focus(),
+    const raf = focusNextFrame(() =>
+      sheetRef.current?.querySelector<HTMLElement>("[data-autofocus], button"),
     );
     return () => {
       window.removeEventListener("keydown", onKey, true);

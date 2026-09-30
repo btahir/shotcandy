@@ -5,7 +5,7 @@
  */
 import { useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "../icons";
-import { Popover, menuKeys } from "../ui/controls";
+import { Popover, focusNextFrame, menuKeys } from "../ui/controls";
 import { useApp, useUi } from "./context";
 import { MODES } from "./modes";
 
@@ -34,9 +34,7 @@ export function ModeSwitch({ compact = false }: { compact?: boolean }) {
     const next = MODES[(i + d + MODES.length) % MODES.length]!;
     const root = e.currentTarget;
     app.setMode(next.id);
-    requestAnimationFrame(() =>
-      root.querySelector<HTMLButtonElement>(`[data-mode="${next.id}"]`)?.focus(),
-    );
+    focusNextFrame(() => root.querySelector<HTMLButtonElement>(`[data-mode="${next.id}"]`));
   };
   return (
     <div

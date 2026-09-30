@@ -17,7 +17,7 @@ import { GITHUB_URL, SUPPORT_URL } from "@/config/site";
 import { useModKey } from "@/lib/platform";
 import { setTheme, useThemePref } from "@/lib/theme";
 import { Icon, LogoMark } from "../icons";
-import { Popover, Segmented, Switch, menuKeys } from "../ui/controls";
+import { Popover, Segmented, Switch, focusNextFrame, menuKeys } from "../ui/controls";
 import { Slider } from "../ui/Slider";
 import { formatBytes } from "./app";
 import { useApp, useScene, useUi } from "./context";
@@ -536,8 +536,8 @@ export function DestinationChips() {
             const next = DESTINATIONS[(i + dir + DESTINATIONS.length) % DESTINATIONS.length]!;
             app.setExportSettings({ destination: next.id });
             const root = e.currentTarget.parentElement;
-            requestAnimationFrame(() =>
-              root?.querySelector<HTMLButtonElement>(`[data-dest="${next.id}"]`)?.focus(),
+            focusNextFrame(() =>
+              root?.querySelector<HTMLButtonElement>(`[data-dest="${next.id}"]`),
             );
           }}
           data-dest={d.id}
