@@ -50,6 +50,8 @@ export {
   fillEmptySlots,
   swapSlots,
   clearSlot,
+  placeScreen,
+  screenSlot,
   screenCount,
   shownScreens,
   emptySlots,

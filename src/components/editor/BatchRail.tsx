@@ -72,6 +72,8 @@ export const BatchThumb = memo(function BatchThumb({
     const thumbs = app.thumbs;
     const id = scene.content.kind === "image" ? scene.content.assetId : null;
     if (!visible || !thumbs || !id || !app.library.has(id)) return;
+    // Every screen of a multi-screen design must be loaded first (the thumbnail is cached).
+    if (scene.slots?.some((s) => s.assetId && !app.library.has(s.assetId))) return;
     let alive = true;
     const run = () => {
       const layout = layoutScene(scene, app.resolver);

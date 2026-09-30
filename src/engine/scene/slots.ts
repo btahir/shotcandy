@@ -238,3 +238,48 @@ export function clearSlot(scene: Scene, index: number): Scene {
   }
   return withScreen(scene, index, EMPTY);
 }
+
+/** Annotation ids anywhere in the scene (screen 0's marks, canvas marks, other screens' marks). */
+function noteIds(scene: Scene): Set<string> {
+  const ids = new Set(scene.annotations.map((a) => a.id));
+  for (const s of scene.slots ?? []) for (const a of s.annotations ?? []) ids.add(a.id);
+  return ids;
+}
+
+/** Give `notes` ids no other annotation in `scene` uses (ids select annotations). */
+function uniqueNotes(scene: Scene, notes: readonly Annotation[], skip: number): Annotation[] {
+  const taken = noteIds(withScreen(scene, skip, skip === 0 ? { assetId: null } : EMPTY));
+  return notes.map((a) => {
+    let id = a.id;
+    let n = 2;
+    while (taken.has(id)) id = `${a.id}-${n++}`;
+    taken.add(id);
+    return id === a.id ? a : { ...a, id };
+  });
+}
+
+/**
+ * Put a whole screen (an image with its crop and its content marks) into
+ * screen `index`, e.g. another design's screenshot. Its marks come along, so
+ * a redaction stays on the image it hides; they replace the old screen's
+ * marks. Canvas annotations stay put. Like fillSlot, it shows the screen
+ * when the layout has room.
+ */
+export function placeScreen(scene: Scene, index: number, screen: ScreenSlot): Scene {
+  if (!editable(scene) || !Number.isInteger(index) || index < 0 || !screen.assetId) return scene;
+  const def = scene.layout ? getLayoutDef(scene.layout.id) : undefined;
+  const max = Math.max(def?.maxCount ?? 1, screenCount(scene));
+  if (index >= max) return scene;
+  const notes = (screen.annotations ?? []).filter((a) => a.anchor === "content");
+  const slot: ScreenSlot = { ...screen };
+  delete slot.annotations;
+  if (notes.length) slot.annotations = uniqueNotes(scene, notes, index);
+  return reveal(withScreen(scene, index, slot), def, index);
+}
+
+/** Screen `index` as a slot record (screen 0 read from the content), or null past the end. */
+export function screenSlot(scene: Scene, index: number): ScreenSlot | null {
+  if (!editable(scene) || !Number.isInteger(index) || index < 0 || index >= screenCount(scene))
+    return null;
+  return screenAt(scene, index);
+}
