@@ -15,6 +15,7 @@ import {
 import { DESKTOP_LIMITS, SAFARI_LIMITS } from "@/engine/export/formats";
 import { type Batch, addItems, selectItems } from "@/engine/batch/batch";
 import { exportTag, getDestination, planExport } from "@/components/editor/export-plan";
+import { createEditorStore } from "@/state/editor-store";
 
 const src = (id: string, width: number, height: number) => ({ id, width, height, images: [] });
 const assets = new MapAssetResolver([
@@ -91,5 +92,27 @@ describe("range selection", () => {
     let b = selectItems(batch(), "d");
     b = selectItems(b, "e", "range", "gone");
     expect(b.selected).toEqual(["d", "e"]);
+  });
+});
+
+describe("undo steps", () => {
+  it("an import stays one step when the selection changes while it runs", () => {
+    const store = createEditorStore<number>(0, { lens: { scene: () => createScene(), update: (d) => d } });
+    const add = { coalesce: "import", coalesceMs: Infinity, label: "Add images" };
+    store.updateDoc((d) => d + 1, add);
+    store.updateDoc((d) => d + 100, { transient: true }); // picking another image
+    store.updateDoc((d) => d + 1, add);
+    expect(store.getState().doc).toBe(102);
+    store.undo();
+    expect(store.getState().doc).toBe(0);
+  });
+
+  it("a selection change still ends a slider drag", () => {
+    const store = createEditorStore<number>(0, { lens: { scene: () => createScene(), update: (d) => d } });
+    store.updateDoc((d) => d + 1, { coalesce: "slider" });
+    store.updateDoc((d) => d + 100, { transient: true });
+    store.updateDoc((d) => d + 1, { coalesce: "slider" });
+    store.undo();
+    expect(store.getState().doc).toBe(101);
   });
 });

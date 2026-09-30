@@ -96,6 +96,8 @@ export function createEditorStore<D>(
   let futureLabels: (string | null)[] = [];
   let lastKey: string | null = null;
   let lastTime = 0;
+  /** The last merge window was Infinity (a long-running step such as an import). */
+  let lastSticky = false;
   let state: EditorState<D> = {
     scene: lens.scene(initial),
     doc: initial,
@@ -139,6 +141,7 @@ export function createEditorStore<D>(
     futureLabels = [];
     lastKey = o.coalesce ?? null;
     lastTime = t;
+    lastSticky = windowMs === Infinity;
   };
 
   const apply = (doc: D, o: UpdateOptions) => {
@@ -170,8 +173,9 @@ export function createEditorStore<D>(
     updateDoc(recipe, o = {}) {
       const next = recipe(state.doc);
       if (next === state.doc) return;
-      // A document change (selecting another image, reordering) ends any slider drag.
-      if (o.transient) lastKey = null;
+      // A document change (selecting another image, reordering) ends any slider
+      // drag, but not a step that always merges (an import still adding images).
+      if (o.transient && !lastSticky) lastKey = null;
       apply(next, o);
     },
     reset(doc, history) {
