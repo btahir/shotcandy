@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { ACCEPT_IMAGES, layoutScene } from "@/engine";
 import { activeIndex, itemScene } from "@/engine/batch/batch";
 import { overrideGroups } from "@/engine/batch/style";
+import { prefersReducedMotion } from "@/lib/platform";
 import { Icon } from "../icons";
 import { BatchMenu, BatchThumb } from "./BatchRail";
 import { groupsText, useBatch, useBatchUi } from "./batch-ui";
@@ -33,9 +34,11 @@ export function BatchStrip() {
 
   useEffect(() => {
     if (!active) return;
-    document
-      .getElementById(`bs-${active}`)
-      ?.scrollIntoView?.({ block: "nearest", inline: "center", behavior: "smooth" });
+    document.getElementById(`bs-${active}`)?.scrollIntoView?.({
+      block: "nearest",
+      inline: "center",
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
   }, [active]);
 
   if (!batch) return null;
