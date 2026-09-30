@@ -5,7 +5,7 @@ import { ACCEPT_ATTRIBUTE, type Annotation, layoutScene } from "@/engine";
 import { isTypingTarget } from "@/lib/platform";
 import type { EditorApp, Tool } from "./app";
 import { stepZoom } from "./Dock";
-import { openFilePicker } from "./EmptyState";
+import { openFilesPicker } from "./EmptyState";
 
 const TOOL_KEYS: Record<string, Tool> = {
   v: "select",
@@ -60,7 +60,7 @@ export function useShortcuts(app: EditorApp) {
           else void app.download(document.querySelector("[data-testid=export]"));
         } else if (key === "o") {
           e.preventDefault();
-          openFilePicker((f) => void app.loadBlob(f, { source: "file" }), ACCEPT_ATTRIBUTE);
+          openFilesPicker((f) => void app.importFiles(f, { source: "file" }), ACCEPT_ATTRIBUTE);
         } else if (key === "d" && app.store.getState().selection) {
           e.preventDefault();
           app.duplicateAnnotation(app.store.getState().selection!);
@@ -201,6 +201,17 @@ export function useShortcuts(app: EditorApp) {
             if (file) break;
           }
         }
+      // Several images pasted at once (Finder, Explorer) join as a batch.
+      const images: File[] = [];
+      for (let i = 0; i < (dt.files?.length ?? 0); i++) {
+        const f = dt.files[i]!;
+        if (f.type.startsWith("image/") || f.type === "") images.push(f);
+      }
+      if (images.length > 1) {
+        e.preventDefault();
+        void app.importFiles(images, { source: "paste" });
+        return;
+      }
       if (file) {
         e.preventDefault();
         void app.loadBlob(file, { source: "paste" });

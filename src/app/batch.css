@@ -1,0 +1,547 @@
+/* Batches: the images rail (wide), the images strip (narrow), the scope
+   switch and override marks in the inspector, and Export all. Nothing here
+   applies to a single image. Confectionery tokens only. */
+@layer components {
+  /* ---------- Editor grid: a rail column only while a batch is open ---------- */
+  .app[data-batch] {
+    grid-template-columns: var(--sc-rail-w) minmax(0, 1fr) var(--sc-inspector-w);
+  }
+  .app[data-batch] .header .centre {
+    left: calc(var(--sc-rail-w) + (100% - var(--sc-rail-w) - var(--sc-inspector-w)) / 2 + 6px);
+  }
+
+  /* ---------- Rail ---------- */
+  .brail {
+    --bt-sel: color-mix(in srgb, var(--sc-accent) 42%, transparent);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    animation: sc-rail-in var(--sc-dur-slow) var(--sc-ease-out);
+  }
+  @keyframes sc-rail-in {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+  }
+  .brail-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    height: 36px;
+    padding: 0 8px 0 18px;
+    flex: none;
+  }
+  .brail-head h2 {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    font:
+      var(--sc-weight-bold) var(--sc-text-sm) / var(--sc-leading-sm) var(--sc-font-ui),
+      sans-serif;
+    color: var(--sc-ink);
+  }
+  .brail-head h2 .mono {
+    color: var(--sc-ink-3);
+  }
+  .icon-btn.sm {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+  }
+  .brail-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 6px 14px 20px;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  .brail-scroll:hover,
+  .brail-scroll:focus-within {
+    scrollbar-color: var(--sc-line-strong) transparent;
+  }
+  .brail-list {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    outline: none;
+    border-radius: 12px;
+  }
+
+  /* A tile is a picture and a caption: no card, no shadow until selected. */
+  .btile {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    border-radius: 12px;
+    cursor: default;
+    touch-action: pan-y;
+  }
+  .btile .bt-thumb {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+  .bt-img {
+    position: relative;
+    max-height: 100%;
+    border-radius: 8px;
+    transition: box-shadow var(--sc-dur-fast) var(--sc-ease-out);
+  }
+  .bt-img canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    transition: opacity var(--sc-dur-base) var(--sc-ease-out);
+  }
+  .bt-img .skeleton,
+  .bst .skeleton {
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    background: linear-gradient(
+      100deg,
+      var(--sc-well) 30%,
+      var(--sc-well-hover) 50%,
+      var(--sc-well) 70%
+    );
+    background-size: 300% 100%;
+    animation: sc-shimmer 1.4s linear infinite;
+  }
+  .btile.sel .bt-img {
+    box-shadow:
+      0 0 0 2px var(--sc-paper),
+      0 0 0 4px var(--bt-sel);
+  }
+  .btile.on .bt-img {
+    box-shadow:
+      0 0 0 2px var(--sc-paper),
+      0 0 0 4px var(--sc-accent);
+  }
+  .brail-list:focus-visible .btile.on {
+    outline: 2px solid var(--sc-ink);
+    outline-offset: 6px;
+  }
+  .bt-cap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 0 1px;
+  }
+  .bt-n {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    min-width: 18px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: var(--sc-radius-xs);
+    font-size: var(--sc-text-2xs);
+    line-height: 1;
+    color: var(--sc-ink-3);
+    background: var(--sc-well);
+    transition:
+      background var(--sc-dur-fast),
+      color var(--sc-dur-fast);
+  }
+  .btile.on .bt-n {
+    background: var(--sc-accent-fill);
+    color: var(--sc-on-accent);
+  }
+  .bt-name {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: var(--sc-text-xs);
+    line-height: var(--sc-leading-xs);
+    font-weight: var(--sc-weight-semibold);
+    color: var(--sc-ink-2);
+  }
+  .btile.on .bt-name,
+  .btile:hover .bt-name {
+    color: var(--sc-ink);
+  }
+  /* Custom style: a small ink dot on the picture (shape, not colour, carries it). */
+  .bt-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--sc-ink);
+    box-shadow: 0 0 0 1.5px var(--sc-paper);
+    animation: sc-dot-in var(--sc-dur-base) var(--sc-ease-pop);
+    pointer-events: auto;
+  }
+  @keyframes sc-dot-in {
+    from {
+      transform: scale(0);
+    }
+  }
+  .btile.pending {
+    opacity: 0.75;
+  }
+  .btile.drag-src {
+    opacity: 0.4;
+  }
+  .btile.flash .bt-img {
+    animation: sc-bt-flash 700ms var(--sc-ease-out);
+  }
+  @keyframes sc-bt-flash {
+    0% {
+      box-shadow:
+        0 0 0 2px var(--sc-paper),
+        0 0 0 10px var(--sc-accent-soft);
+    }
+  }
+
+  /* Drop line: insert between tiles. */
+  .bt-drop {
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    height: 2px;
+    margin-top: -1px;
+    border-radius: 2px;
+    background: var(--sc-accent);
+    pointer-events: none;
+    z-index: 3;
+  }
+  .bt-drop::before {
+    content: "";
+    position: absolute;
+    left: -6px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 2px solid var(--sc-accent);
+    background: var(--sc-paper);
+  }
+  .bt-ghost {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: var(--sc-z-drag-overlay);
+    pointer-events: none;
+    border-radius: 10px;
+    box-shadow: var(--sc-shadow-float);
+    opacity: 0.94;
+    transform: translate(-9999px, 0);
+  }
+  .bt-ghost canvas {
+    display: block;
+    border-radius: 10px;
+  }
+  .bt-count {
+    position: absolute;
+    top: -9px;
+    right: -9px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: var(--sc-radius-pill);
+    display: grid;
+    place-items: center;
+    background: var(--sc-accent-fill);
+    color: var(--sc-on-accent);
+    font-weight: var(--sc-weight-bold);
+    box-shadow: 0 0 0 2px var(--sc-surface);
+  }
+
+  .brail-add {
+    width: 100%;
+    height: 36px;
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: var(--sc-radius-md);
+    border: 1.5px dashed var(--sc-line-strong);
+    color: var(--sc-ink-2);
+    font-size: 12.5px;
+    font-weight: var(--sc-weight-semibold);
+    transition:
+      background var(--sc-dur-fast),
+      color var(--sc-dur-fast),
+      border-color var(--sc-dur-fast);
+  }
+  .brail-add:hover {
+    background: var(--sc-well);
+    border-color: var(--sc-well-hover);
+    color: var(--sc-ink);
+  }
+  .brail-add:focus-visible {
+    outline: none;
+    box-shadow: var(--sc-focus-ring);
+  }
+  .btile.pending + .brail-add,
+  .brail-list + .brail-add {
+    margin-top: 14px;
+  }
+  .btile.pending {
+    margin-top: 12px;
+  }
+
+  /* Resize handle on the rail's right edge. */
+  .brail-resize {
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    right: -7px;
+    width: 10px;
+    cursor: col-resize;
+    z-index: 4;
+    outline: none;
+    touch-action: none;
+  }
+  .brail-resize::after {
+    content: "";
+    position: absolute;
+    top: 40px;
+    bottom: 40px;
+    left: 4px;
+    width: 2px;
+    border-radius: 1px;
+    background: transparent;
+    transition: background var(--sc-dur-fast);
+  }
+  .brail-resize:hover::after {
+    background: var(--sc-line-strong);
+  }
+  .brail-resize:focus-visible::after {
+    background: var(--sc-ink);
+  }
+
+  .brail.collapsed {
+    align-items: center;
+    gap: 6px;
+    padding-top: 2px;
+  }
+  .brail-pos {
+    color: var(--sc-ink-3);
+    padding: 2px 0;
+  }
+
+  /* ---------- Menu ---------- */
+  .menu-item.danger,
+  .menu-item.danger svg {
+    color: var(--sc-danger);
+  }
+  .batch-menu {
+    min-width: 236px;
+  }
+
+  /* ---------- Inspector: scope switch and override marks ---------- */
+  .bscope {
+    padding: 2px 0 0;
+  }
+  .bscope-note {
+    margin: 8px 4px 0;
+    font-size: 12px;
+    line-height: 17px;
+    color: var(--sc-ink-3);
+  }
+  .bscope-note .link {
+    font-size: 12px;
+    padding: 0;
+  }
+  .tray-dot {
+    display: inline-block;
+    flex: none;
+    width: 7px;
+    height: 7px;
+    margin-left: 7px;
+    border-radius: 50%;
+    background: var(--sc-ink);
+    vertical-align: 1px;
+    animation: sc-dot-in var(--sc-dur-base) var(--sc-ease-pop);
+  }
+  .chip .tray-dot {
+    margin-left: 0;
+  }
+
+  /* ---------- Export popover in a batch ---------- */
+  .batch-export .btn-block {
+    width: 100%;
+  }
+  .batch-folder {
+    margin: 10px auto 0;
+    display: flex;
+    justify-content: center;
+    width: max-content;
+  }
+
+  /* ---------- Narrow: the images strip above the sheet ---------- */
+  .bstrip {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 0 8px;
+    animation: sc-strip-in var(--sc-dur-slow) var(--sc-ease-out);
+  }
+  @keyframes sc-strip-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  .bstrip-scroll {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 4px 16px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+  .bstrip-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .bstrip-list {
+    display: flex;
+    gap: 10px;
+    outline: none;
+    border-radius: 10px;
+  }
+  .bstrip-list:focus-visible .bst.on {
+    outline: 2px solid var(--sc-ink);
+    outline-offset: 5px;
+  }
+  .bst {
+    position: relative;
+    flex: none;
+    height: 56px;
+    min-width: 44px;
+    border-radius: 9px;
+    scroll-snap-align: center;
+    display: grid;
+    place-items: center;
+    transition: box-shadow var(--sc-dur-fast) var(--sc-ease-out);
+  }
+  .bst canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+  }
+  .bst.on {
+    box-shadow:
+      0 0 0 2px var(--sc-paper),
+      0 0 0 4px var(--sc-accent);
+  }
+  .bst.sel {
+    box-shadow:
+      0 0 0 2px var(--sc-paper),
+      0 0 0 4px var(--sc-accent);
+  }
+  .bst .bt-dot {
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+  }
+  .bst-check {
+    position: absolute;
+    left: 4px;
+    bottom: 4px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: color-mix(in srgb, var(--sc-paper) 80%, transparent);
+    box-shadow: inset 0 0 0 1.5px var(--sc-ink-3);
+    color: var(--sc-on-accent);
+  }
+  .bst-check.on {
+    background: var(--sc-accent-fill);
+    box-shadow: 0 0 0 1.5px var(--sc-paper);
+  }
+  .bst.pending {
+    opacity: 0.75;
+  }
+  .bst-add {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    border: 1.5px dashed var(--sc-line-strong);
+    color: var(--sc-ink-2);
+  }
+  .bst-add:focus-visible {
+    outline: none;
+    box-shadow: var(--sc-focus-ring);
+  }
+  .bstrip-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px 0 18px;
+  }
+  .bstrip-pos {
+    flex: 1;
+    color: var(--sc-ink-3);
+  }
+  .bstrip-select {
+    height: 32px;
+    padding: 0 14px;
+  }
+  .m[data-batch] .stage {
+    margin-bottom: 0;
+  }
+  .m[data-batch] .m-tabs button {
+    position: relative;
+  }
+  .m-tabs .tab-dot {
+    position: absolute;
+    top: 6px;
+    right: calc(50% - 16px);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sc-ink);
+  }
+  .m-body .bscope {
+    padding: 0 16px 10px;
+  }
+
+  @media (pointer: coarse) {
+    .bst {
+      min-width: 44px;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brail,
+  .bstrip,
+  .bt-dot,
+  .tray-dot,
+  .btile.flash .bt-img {
+    animation: none;
+  }
+}

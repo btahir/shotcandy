@@ -21,7 +21,7 @@ import { Popover, Segmented, Switch, menuKeys } from "../ui/controls";
 import { Slider } from "../ui/Slider";
 import { formatBytes } from "./app";
 import { useApp, useScene, useUi } from "./context";
-import { openFilePicker } from "./EmptyState";
+import { canPickFolder, openFilePicker, openFilesPicker, openFolderPicker } from "./EmptyState";
 import { MotionExportPanel } from "./MotionExport";
 import {
   COPY_MAX_LONG,
@@ -34,7 +34,7 @@ import {
   ratioOk,
 } from "./export-plan";
 import { ModeSwitch } from "./ModeSwitch";
-import { ACCEPT_ATTRIBUTE, APPSTORE_SIZES, setCanvasSize } from "@/engine";
+import { ACCEPT_ATTRIBUTE, ACCEPT_IMAGES, APPSTORE_SIZES, setCanvasSize } from "@/engine";
 import { useStore } from "@/lib/store";
 
 const RATIO_HINT: Record<string, string> = {
@@ -833,6 +833,7 @@ export function ExportPanel({
 function MoreMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; open: boolean }) {
   const app = useApp();
   const hasContent = useUi((s) => s.hasContent);
+  const mode = useUi((s) => s.mode);
   const recents = useUi((s) => s.recents.length);
   const theme = useThemePref();
   const close = () => app.ui.set({ popover: null });
@@ -858,11 +859,42 @@ function MoreMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
             role="menuitem"
             className="menu-item"
             onClick={run(() =>
-              openFilePicker((f) => void app.loadBlob(f, { source: "file" }), ACCEPT_ATTRIBUTE),
+              openFilesPicker((f) => void app.importFiles(f, { source: "file" }), ACCEPT_ATTRIBUTE),
             )}
           >
             <Icon name="image" size="sm" /> Open image… <span className="meta mono">⌘O</span>
           </button>
+          {mode === "screenshot" && (
+            <button
+              type="button"
+              role="menuitem"
+              className="menu-item"
+              data-testid="add-images"
+              onClick={run(() =>
+                openFilesPicker(
+                  (f) => void app.importFiles(f, { source: "file", add: true }),
+                  ACCEPT_IMAGES,
+                ),
+              )}
+            >
+              <Icon name="plus" size="sm" /> Add images…
+            </button>
+          )}
+          {mode === "screenshot" && canPickFolder() && (
+            <button
+              type="button"
+              role="menuitem"
+              className="menu-item"
+              data-testid="add-folder"
+              onClick={run(() =>
+                openFolderPicker(
+                  (f) => void app.importFiles(f, { source: "folder", folder: true }),
+                ),
+              )}
+            >
+              <Icon name="folder" size="sm" /> Add a folder…
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"

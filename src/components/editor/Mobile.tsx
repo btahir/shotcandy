@@ -26,6 +26,8 @@ import { CardTray, PostStylesTray, PostTray } from "./PostInspector";
 import { HeadlineTray, SetStylesTray, SetTray, SlideTray } from "./AppStoreInspector";
 import { MobileModeButton } from "./ModeSwitch";
 import { StyleThumb } from "./StyleThumb";
+import { BatchStrip } from "./BatchStrip";
+import { useBatch } from "./batch-ui";
 
 type TabDef = { id: MobileTab; label: string; icon: IconName };
 
@@ -596,10 +598,12 @@ function MobileExport() {
 
 export function MobileEditor() {
   const hasContent = useUi((s) => s.hasContent);
+  const batch = useBatch();
   return (
-    <div className="m" data-layout="narrow">
+    <div className="m" data-layout="narrow" data-batch={batch ? "" : undefined}>
       <MobileHeader />
       <Stage narrow />
+      {batch && <BatchStrip />}
       {hasContent && <MobileSheet />}
       <MobileExport />
     </div>

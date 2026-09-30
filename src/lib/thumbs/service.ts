@@ -92,7 +92,13 @@ export class ThumbService {
     width: number,
     height: number,
     palette?: Palette,
+    opts: { replace?: boolean } = {},
   ): Promise<void> {
+    // `replace`: a sharper copy of an image already sent (batches send small ones first).
+    if (opts.replace && this.sentAssets.has(id)) {
+      await this.assetJobs.get(id);
+      this.sentAssets.delete(id);
+    }
     if (!this.worker || this.sentAssets.has(id)) return this.assetJobs.get(id);
     this.sentAssets.add(id);
     const job = this.sendAsset(id, image, width, height, palette);

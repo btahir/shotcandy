@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext } from "react";
+import type { EditorDoc } from "@/engine/batch/batch";
 import type { EditorState } from "@/state/editor-store";
 import { useEditor } from "@/state/react";
 import { useStore } from "@/lib/store";
@@ -14,7 +15,7 @@ export function useApp(): EditorApp {
 }
 
 /** Subscribe to part of the editor (scene) state. */
-export function useScene<T>(selector: (s: EditorState) => T): T {
+export function useScene<T>(selector: (s: EditorState<EditorDoc>) => T): T {
   return useEditor(useApp().store, selector);
 }
 

@@ -99,6 +99,18 @@ import {
 import { createExportWorker } from "@/engine/export/worker-factory";
 import { createAnimationWorker } from "@/engine/animation/worker-factory";
 import { createEditorStore, type EditorHistory, type EditorStore } from "@/state/editor-store";
+import {
+  type EditorDoc,
+  batchLens,
+  docScene,
+  hasImage,
+  isBatch,
+  itemScene,
+  mapItems,
+  routeEdit,
+} from "@/engine/batch/batch";
+import { type PickedFile, fileKind } from "@/engine/input/files";
+import { planImport } from "@/engine/batch/plan";
 import { APP_VERSION } from "@/config/site";
 import { loadCanvasFonts, registerBrandFonts } from "@/lib/fonts";
 import { GHOST_H, GHOST_ID, GHOST_W, loadGhost } from "@/lib/ghost";
@@ -109,6 +121,7 @@ import { prefersReducedMotion } from "@/lib/platform";
 import { VideoPreview } from "./video-preview";
 import { type Mode, initialCodeScene, initialPostScene, modeForScene } from "./modes";
 import { APPSTORE_SET_KEY, SetController } from "./appstore";
+import { BATCH_KEY, BatchController } from "./batch";
 import { orientationOf, shuffleComposition, suitedStyles } from "./shuffle";
 import {
   COPY_MAX_LONG,
@@ -415,7 +428,8 @@ let annSeq = 0;
 const newId = (p: string) => `${p}_${Date.now().toString(36)}${(annSeq++).toString(36)}`;
 
 export class EditorApp {
-  readonly store: EditorStore;
+  /** The document: one design, or a batch of images sharing a style (screenshot mode). */
+  readonly store: EditorStore<EditorDoc>;
   readonly library = new AssetLibrary();
   readonly cache = new RenderCache();
   readonly exporter = new Exporter({ createWorker: createExportWorker });
@@ -436,13 +450,20 @@ export class EditorApp {
   private previewTimer: ReturnType<typeof setTimeout> | null = null;
   /** App Store set slides and options (App Store mode). */
   readonly sets: SetController;
+  /** Batches: import, sidebar, memory, persistence and "Export all". */
+  readonly batch: BatchController;
   private motionAbort: AbortController | null = null;
   private tickRaf = 0;
   /** Each mode's design while another mode is shown. */
   private stash: Partial<
     Record<
       Mode,
-      { scene: Scene; hasContent: boolean; designId: string | null; history?: EditorHistory }
+      {
+        doc: EditorDoc;
+        hasContent: boolean;
+        designId: string | null;
+        history?: EditorHistory<EditorDoc>;
+      }
     >
   > = {};
   private highlightTimer: ReturnType<typeof setTimeout> | null = null;
@@ -458,7 +479,14 @@ export class EditorApp {
   private autosaveTimer: ReturnType<typeof setTimeout> | null = null;
   private toastSeq = 0;
   private userPickedStyle = false;
-  private disposed = false;
+  disposed = false;
+  /** File name of the screenshot on stage (it names the image when a batch starts). */
+  sourceName = "";
+  /** Document changes caused by switching modes or designs (not batch edits). */
+  private docSync = 0;
+  private lastDoc: EditorDoc | null = null;
+  /** The single design a batch grew from (undoing back to it restores its recent). */
+  private preBatch: { scene: Scene; designId: string | null; created: number } | null = null;
   private listeners = new Map<string, Set<(arg?: unknown) => void>>();
   private builtinLoads = new Map<string, Promise<void>>();
   private lastFrameKey: string | null = null;
@@ -467,7 +495,9 @@ export class EditorApp {
   private initDone = false;
 
   constructor() {
-    this.store = createEditorStore(initialScene());
+    this.store = createEditorStore<EditorDoc>(initialScene(), {
+      lens: batchLens(() => this.batch?.editScope() ?? "all"),
+    });
     this.ui = createStore<UiState>({
       mode: "screenshot",
       hasContent: false,
@@ -504,6 +534,7 @@ export class EditorApp {
       get: (id: string) => (id === GHOST_ID ? (this.ghost ?? undefined) : this.library.get(id)),
     };
     this.sets = new SetController(this);
+    this.batch = new BatchController(this);
   }
 
   // ------------------------------------------------------------------ events
@@ -595,6 +626,8 @@ export class EditorApp {
     this.ui.set({ persistent: this.db?.persistent ?? false, dbReady: true });
     void this.refreshPresets();
     void this.refreshRecents();
+    await this.restoreBatch();
+    if (this.disposed) return;
 
     if (params.get("gallery")) this.ui.set({ modal: "gallery" });
     const open = params.get("open");
@@ -617,6 +650,7 @@ export class EditorApp {
     this.video.detach();
     this.motionAbort?.abort();
     this.exporter.dispose();
+    this.batch.dispose();
     this.thumbs?.dispose();
     this.db?.close();
   }
@@ -653,6 +687,20 @@ export class EditorApp {
 
   // ------------------------------------------------------------------- input
   async loadBlob(blob: Blob, opts: { source?: string } = {}): Promise<boolean> {
+    // A batch never replaces an image: a pasted, dropped or opened file joins it.
+    if (this.ui.get().mode === "screenshot" && isBatch(this.store.getState().doc)) {
+      const file =
+        blob instanceof File
+          ? blob
+          : new File(
+              [blob],
+              `Pasted image.${(blob.type.split("/")[1] ?? "png").replace("jpeg", "jpg")}`,
+              {
+                type: blob.type,
+              },
+            );
+      return (await this.batch.add([{ file, path: file.name }], opts)) > 0;
+    }
     if (await isVideoBlob(blob)) return this.loadVideo(blob, opts);
     if (blob.type && !/^image\//.test(blob.type) && blob.type !== "application/octet-stream") {
       this.toast({
@@ -710,6 +758,7 @@ export class EditorApp {
     // A new screenshot starts a new recent design.
     this.designId = newId("d");
     this.designCreated = Date.now();
+    this.sourceName = blob instanceof File ? blob.name : "";
     this.ui.set((s) => ({
       hasContent: true,
       importing: false,
@@ -962,6 +1011,205 @@ export class EditorApp {
     this.toast({ kind: "error", title: m.title, detail: m.detail, prose: true, duration: 6000 });
   }
 
+  // ------------------------------------------------------------------- batch
+  /**
+   * Files from a drop, a paste or a picker. One file with nothing else going
+   * on opens exactly as it always has (replacing the image); several files, a
+   * folder or "Add images…" add them, turning the design into a batch.
+   */
+  async importFiles(
+    files: readonly (File | PickedFile)[],
+    opts: { source?: string; folder?: boolean; add?: boolean } = {},
+  ): Promise<void> {
+    const picked: PickedFile[] = files.map((f) =>
+      f instanceof File ? { file: f, path: f.name } : f,
+    );
+    if (!picked.length) return;
+    const mode = this.ui.get().mode;
+    if (mode === "appstore") {
+      if (picked.length === 1) {
+        await this.loadBlob(picked[0]!.file, opts);
+        return;
+      }
+      const images = picked.filter((p) => fileKind(p.file) === "image");
+      const sorted = images
+        .map((p) => ({ ...p, name: p.file.name }))
+        .sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
+      if (sorted.length)
+        await this.sets.setSlideImages(
+          this.sets.selected,
+          sorted.map((p) => p.file),
+        );
+      return;
+    }
+    const doc = this.store.getState().doc;
+    const route = planImport(
+      picked,
+      { batch: isBatch(doc) ? doc.items.length : 0, single: hasImage(docScene(doc)), max: 1 },
+      opts,
+    ).route;
+    if (route === "single") {
+      await this.loadBlob(picked[0]!.file, opts);
+      return;
+    }
+    if (mode === "code" || mode === "post") this.setMode("screenshot");
+    await this.batch.add(picked, opts);
+  }
+
+  /** The first image of an empty editor gets the default style (like a first paste). */
+  prepareFirstImage(s: Scene, size: { width: number; height: number }): Scene {
+    const { animation, ...rest } = s;
+    let next: Scene =
+      animation?.preset === STILL_MOTION_ID ? (rest as Scene) : ({ ...rest, animation } as Scene);
+    next = withAutoCaption(next, size);
+    if (!this.userPickedStyle) {
+      const id = size.height / size.width >= 1.6 ? "phone-sorbet" : DEFAULT_STYLE_ID;
+      const p = getStylePreset(id);
+      if (p) next = applyStylePatch(next, p.patch, id);
+    }
+    return next;
+  }
+
+  /** The caption a tall canvas gives a landscape screenshot, if it would get one. */
+  captionFor(s: Scene, size: { width: number; height: number }): CaptionSpec | undefined {
+    const next = withAutoCaption(s, size);
+    return next === s ? undefined : next.caption;
+  }
+
+  /** An image landed on an empty editor (through a batch import). */
+  markLoaded(first: boolean, source: string): void {
+    if (isVideoScene(this.scene)) this.stopPreview();
+    if (this.ui.get().exportSettings.kind === "motion" && !this.scene.animation)
+      this.setExportSettings({ kind: "image" });
+    this.designId = newId("d");
+    this.designCreated = Date.now();
+    this.ui.set((s) => ({
+      hasContent: true,
+      importing: false,
+      landing: first ? s.landing + 1 : s.landing,
+      xfade: first ? s.xfade : s.xfade + 1,
+      zoom: null,
+      pan: { x: 0, y: 0 },
+      stageFocus: s.stageFocus + 1,
+    }));
+    this.bumpAssets();
+    this.emit("loaded", source);
+  }
+
+  bumpAssetsVersion(): void {
+    this.bumpAssets();
+  }
+
+  /** A batch import ended on a single design: save it to Recent designs as usual. */
+  afterImport(): void {
+    if (!isBatch(this.store.getState().doc)) this.onSceneChange();
+  }
+
+  /** Another image came on stage: fit it, cross-fade, leave any hover preview. */
+  onBatchSelect(): void {
+    this.clearPreview(true);
+    this.ui.set((s) => ({
+      zoom: null,
+      pan: { x: 0, y: 0 },
+      xfade: s.xfade + 1,
+      editingText: null,
+    }));
+  }
+
+  /** A small poster of the image on stage (export toasts). */
+  batchPoster(): Promise<string | undefined> {
+    return this.posterUrl(this.scene);
+  }
+
+  /** Bring back the batch saved before a reload. */
+  private async restoreBatch(): Promise<void> {
+    let doc: EditorDoc | null = null;
+    try {
+      doc = await this.batch.restore();
+    } catch {
+      doc = null;
+    }
+    if (!doc || this.disposed) return;
+    const cur = this.store.getState().doc;
+    // Something was opened meanwhile: keep it (the batch stays saved).
+    if (isBatch(cur) || hasImage(docScene(cur))) return;
+    if (this.ui.get().mode === "screenshot") {
+      this.setDoc(doc);
+      this.designId = isBatch(doc) ? null : newId("d");
+      this.designCreated = Date.now();
+      this.ui.set((s) => ({
+        hasContent: true,
+        landing: s.landing + 1,
+        zoom: null,
+        pan: { x: 0, y: 0 },
+      }));
+      this.bumpAssets();
+      this.batch.scheduleMemory();
+    } else {
+      this.stash.screenshot = {
+        doc,
+        hasContent: true,
+        designId: isBatch(doc) ? null : newId("d"),
+      };
+    }
+    this.emit("batch-restored", isBatch(doc) ? doc.items.length : 1);
+  }
+
+  /** Replace the document without an undo step (mode switches, loading designs). */
+  private setDoc(doc: EditorDoc, history?: EditorHistory<EditorDoc>): void {
+    this.docSync++;
+    try {
+      this.store.reset(doc, history);
+    } finally {
+      this.docSync--;
+    }
+  }
+
+  /**
+   * Open another design in place of the current one. Over a batch it is one
+   * undo step (so the batch is never lost); otherwise history starts afresh.
+   */
+  private replaceDoc(doc: EditorDoc, label: string): boolean {
+    const cur = this.store.getState().doc;
+    if (isBatch(cur) && this.ui.get().mode === "screenshot") {
+      this.store.updateDoc(() => doc, { label });
+      return true;
+    }
+    this.setDoc(doc);
+    return false;
+  }
+
+  /** Keep UI state in step when the document turns into a batch or back into one design. */
+  private onDocChange(): void {
+    const doc = this.store.getState().doc;
+    const prev = this.lastDoc;
+    this.lastDoc = doc;
+    if (prev === doc) return;
+    const was = isBatch(prev);
+    const now = isBatch(doc);
+    if (now) this.batch.scheduleMemory();
+    if (was === now || this.docSync || this.ui.get().mode !== "screenshot") return;
+    if (now) {
+      if (prev && !isBatch(prev) && hasImage(prev))
+        this.preBatch = { scene: prev, designId: this.designId, created: this.designCreated };
+      if (!this.ui.get().hasContent) this.ui.set({ hasContent: true });
+      return;
+    }
+    // Back to one design (the last image removed, or undone to before the batch).
+    const scene = doc as Scene;
+    this.batch.clearSaved();
+    this.batch.ui.set({ scope: "all", selecting: false });
+    const has = hasImage(scene);
+    if (this.preBatch && this.preBatch.scene === scene) {
+      this.designId = this.preBatch.designId;
+      this.designCreated = this.preBatch.created;
+    } else {
+      this.designId = has ? newId("d") : null;
+      this.designCreated = Date.now();
+    }
+    this.ui.set((s) => ({ hasContent: has, zoom: null, pan: { x: 0, y: 0 }, xfade: s.xfade + 1 }));
+  }
+
   downloadFile(blob: Blob, name: string): void {
     downloadBlob(blob, name);
   }
@@ -1045,7 +1293,8 @@ export class EditorApp {
     // Rolls keep the canvas size: an auto canvas is held at its current pixels
     // so every roll exports at the same size (REVIEW r2 N21).
     let next = r.scene;
-    if (this.scene.canvas.size.kind === "auto") {
+    // (Not in a batch: its images differ in size, and each keeps its own.)
+    if (this.scene.canvas.size.kind === "auto" && !isBatch(this.store.getState().doc)) {
       const cur = layoutScene(this.scene, this.resolver).canvas;
       next = {
         ...next,
@@ -1127,6 +1376,27 @@ export class EditorApp {
   }
 
   setSize(size: CanvasSize): void {
+    if (isBatch(this.store.getState().doc)) {
+      const scope = this.batch.editScope();
+      this.store.updateDoc((d) => {
+        if (!isBatch(d)) return d;
+        const prev = docScene(d);
+        const routed = routeEdit(d, setIn(prev, ["canvas", "size"], size), prev, scope);
+        // Images whose canvas changed get the tall-canvas caption, like a single design.
+        return mapItems(routed, (item, scene) => {
+          const before = d.items.find((x) => x.id === item.id);
+          if (!before || item.caption) return item;
+          if (
+            JSON.stringify(itemScene(d, before).canvas.size) === JSON.stringify(scene.canvas.size)
+          )
+            return item;
+          const cap = this.captionFor(scene, this.contentSizeOf(scene) ?? { width: 1, height: 1 });
+          return cap ? { ...item, caption: cap } : item;
+        });
+      });
+      this.ui.set({ zoom: null, pan: { x: 0, y: 0 } });
+      return;
+    }
     this.store.update((s) =>
       withAutoCaption(setIn(s, ["canvas", "size"], size), this.contentSizeOf(s)),
     );
@@ -1276,26 +1546,27 @@ export class EditorApp {
     if (ui.mode === mode) return;
     this.stopPreview();
     this.stash[ui.mode] = {
-      scene: this.scene,
+      doc: this.store.getState().doc,
       hasContent: ui.hasContent,
       designId: this.designId,
       history: this.store.history(),
     };
     const next = this.stash[mode];
-    let scene: Scene;
+    let doc: EditorDoc;
     let has: boolean;
     if (next) {
-      scene = next.scene;
+      doc = next.doc;
       has = next.hasContent;
       this.designId = next.designId;
     } else {
-      scene = this.freshScene(mode);
+      doc = this.freshScene(mode);
       has = mode !== "screenshot";
       this.designId = has ? newId("d") : null;
       this.designCreated = Date.now();
     }
+    const scene = docScene(doc);
     // Each mode keeps its own undo history across switches.
-    this.store.reset(scene, next?.history);
+    this.setDoc(doc, next?.history);
     this.store.select(null);
     const firstTab: Record<Mode, MobileTab> = {
       screenshot: "styles",
@@ -1324,7 +1595,7 @@ export class EditorApp {
       this.sets.syncTemplateContent();
       if (!next)
         void this.sets.restore().then((tpl) => {
-          if (tpl && this.ui.get().mode === "appstore") this.store.reset(tpl);
+          if (tpl && this.ui.get().mode === "appstore") this.setDoc(tpl);
           this.sets.syncTemplateContent();
         });
     }
@@ -1346,7 +1617,7 @@ export class EditorApp {
     const ui = this.ui.get();
     if (ui.mode !== mode) {
       this.stash[ui.mode] = {
-        scene: this.scene,
+        doc: this.store.getState().doc,
         hasContent: ui.hasContent,
         designId: this.designId,
       };
@@ -1885,8 +2156,9 @@ export class EditorApp {
   exportPlan(
     settings: ExportSettings = this.ui.get().exportSettings,
     opts: { copy?: boolean } = {},
+    scene: Scene = this.exportTarget(),
   ): ExportPlan {
-    const plan = planExport(this.planInput(), {
+    const plan = planExport(this.planInput(scene), {
       scale: settings.scale,
       format: opts.copy ? "png" : settings.format,
       quality: settings.quality,
@@ -1926,8 +2198,12 @@ export class EditorApp {
       : this.scene;
   }
 
-  runExport(format: ExportFormat, scale: number, quality?: number): Promise<ExportResult> {
-    const scene = this.exportTarget();
+  runExport(
+    format: ExportFormat,
+    scale: number,
+    quality?: number,
+    scene: Scene = this.exportTarget(),
+  ): Promise<ExportResult> {
     // A recording's still is its frame at the trim start, at full size.
     const clip = sceneClip(scene);
     const assets = this.exportAssets(scene).map((a) =>
@@ -1948,15 +2224,16 @@ export class EditorApp {
     plan: ExportPlan,
     settings: ExportSettings = this.ui.get().exportSettings,
     opts: { pngOnly?: boolean } = {},
+    scene: Scene = this.exportTarget(),
   ): Promise<ExportResult & { fitted: boolean }> {
     const dest = getDestination(settings.destination);
     let attempt = { format: plan.format, quality: plan.quality, scale: plan.scale };
-    let r = await this.runExport(attempt.format, attempt.scale, attempt.quality);
+    let r = await this.runExport(attempt.format, attempt.scale, attempt.quality, scene);
     let fitted = false;
     const limit = dest.limitBytes;
     for (let i = 0; limit && r.blob.size > limit && i < 5; i++) {
       attempt = nextAttempt(attempt, r.blob.size, limit, dest.format === "auto" && !opts.pngOnly);
-      r = await this.runExport(attempt.format, attempt.scale, attempt.quality);
+      r = await this.runExport(attempt.format, attempt.scale, attempt.quality, scene);
       fitted = true;
     }
     return { ...r, fitted };
@@ -2250,6 +2527,27 @@ export class EditorApp {
   async saveProject(): Promise<void> {
     if (!this.ui.get().hasContent) return;
     const scene = this.scene;
+    const doc = this.store.getState().doc;
+    if (isBatch(doc)) {
+      // The whole batch: every image, the shared style and each one's own changes.
+      await this.batch.ready();
+      const file = await createProjectFile(
+        scene,
+        this.library
+          .exportAssets(this.batch.assetIds())
+          .filter((a) => !isBuiltinAssetId(a.id))
+          .map((a) => ({ id: a.id, blob: a.blob, width: a.width, height: a.height })),
+        { appVersion: APP_VERSION, now: new Date(), batch: doc },
+      );
+      const name = `shotcandy-${doc.items.length}-images.shotcandy`;
+      downloadBlob(await projectToBlob(file), name);
+      this.toast({
+        kind: "info",
+        title: "Project saved",
+        detail: `${name} · ${doc.items.length} images`,
+      });
+      return;
+    }
     if (this.exportAssets(scene).some((a) => a.blob.size > MAX_STORED_VIDEO_BYTES)) {
       this.toast({
         kind: "error",
@@ -2275,13 +2573,37 @@ export class EditorApp {
   async openProject(file: Blob): Promise<void> {
     try {
       const p = await parseProject(file);
+      if (p.batch) {
+        // Images decode in the worker: the one on stage fully, the rest as thumbnails.
+        await this.batch.adoptBlobs(p.assets, p.batch);
+        if (this.ui.get().mode !== "screenshot") this.setMode("screenshot");
+        const undoable = this.replaceDoc(p.batch, "Open project");
+        this.designId = null;
+        this.ui.set((s) => ({
+          hasContent: true,
+          xfade: s.xfade + 1,
+          zoom: null,
+          pan: { x: 0, y: 0 },
+          tool: "select",
+        }));
+        this.bumpAssets();
+        this.batch.scheduleMemory();
+        this.toast({
+          kind: undoable ? "undo" : "info",
+          title: "Project opened",
+          detail: `${p.batch.items.length} images${p.issues.length ? `. With notes: ${p.issues.join("; ")}` : ""}`,
+          prose: true,
+          ...(undoable ? { action: { label: "Undo", run: () => this.store.undo() } } : {}),
+        });
+        return;
+      }
       for (const a of p.assets) {
         const img = await importMedia(a.blob);
         this.library.add(img);
         void this.thumbs?.setAsset(img.id, img.proxy, img.width, img.height, img.palette);
       }
       this.adoptMode(p.scene);
-      this.store.reset(p.scene);
+      const undoable = this.replaceDoc(p.scene, "Open project");
       this.ensureBuiltins(p.scene);
       const has = p.scene.content.kind !== "image" || !!p.scene.content.assetId;
       this.designId = newId("d");
@@ -2295,10 +2617,11 @@ export class EditorApp {
       }));
       this.bumpAssets();
       this.toast({
-        kind: "info",
+        kind: undoable ? "undo" : "info",
         title: "Project opened",
         detail: p.issues.length ? `With notes: ${p.issues.join("; ")}` : "Everything restored.",
         prose: true,
+        ...(undoable ? { action: { label: "Undo", run: () => this.store.undo() } } : {}),
       });
     } catch (e) {
       this.toast({
@@ -2380,11 +2703,17 @@ export class EditorApp {
   }
 
   private onSceneChange() {
+    this.onDocChange();
     this.syncVideo();
     if (this.ui.get().mode === "appstore") {
       this.sets.scheduleSave();
       return;
     }
+    if (isBatch(this.store.getState().doc)) {
+      if (this.ui.get().mode === "screenshot") this.batch.scheduleSave();
+      return;
+    }
+    if (this.batch.importing) return;
     if (!this.ui.get().hasContent || !this.db) return;
     if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
     this.autosaveTimer = setTimeout(() => void this.autosave(), 900);
@@ -2393,6 +2722,8 @@ export class EditorApp {
   /** Save the current design into "Recent designs" (debounced after edits). */
   async autosave(): Promise<void> {
     if (!this.db || !this.ui.get().hasContent) return;
+    // A batch is saved as one batch, never as a recent design per image.
+    if (isBatch(this.store.getState().doc) || this.batch.importing) return;
     const scene = this.scene;
     if (sceneAssetIds(scene).some((id) => this.unstored.has(id))) return;
     if (!this.designId) {
@@ -2434,14 +2765,19 @@ export class EditorApp {
    */
   private async assetsInUse(scenes: Scene[]): Promise<Set<string>> {
     const db = this.db!;
-    const [appstore, presets] = await Promise.all([
+    const [appstore, presets, batch] = await Promise.all([
       db.settings.get(APPSTORE_SET_KEY).catch(() => undefined),
       db.presets.list().catch(() => []),
+      db.settings.get<{ batch?: unknown }>(BATCH_KEY).catch(() => undefined),
     ]);
+    const stashed = Object.values(this.stash).map((x) => x.doc);
+    const open = [this.store.getState().doc, ...stashed];
     return collectKeepIds({
-      scenes: [...scenes, this.scene],
+      scenes: [...scenes, this.scene, ...stashed.filter((d) => !isBatch(d)).map(docScene)],
       patches: presets.map((p) => p.patch),
       appstore,
+      batch: batch?.batch,
+      ids: open.flatMap((d) => (isBatch(d) ? BatchController.keepIds(d) : [])),
     });
   }
 
@@ -2476,7 +2812,7 @@ export class EditorApp {
       }
     }
     this.adoptMode(d.scene);
-    this.store.reset(d.scene);
+    const undoable = this.replaceDoc(d.scene, "Open recent design");
     this.ensureBuiltins(d.scene);
     this.designId = d.id;
     this.designCreated = d.createdAt;
@@ -2491,6 +2827,14 @@ export class EditorApp {
     }));
     this.bumpAssets();
     this.announce(`Opened recent design ${d.name}`);
+    if (undoable)
+      this.toast({
+        kind: "undo",
+        title: "Opened a recent design",
+        detail: "Your images are one undo away.",
+        prose: true,
+        action: { label: "Undo", run: () => this.store.undo() },
+      });
   }
 
   async deleteRecent(id: string): Promise<void> {
