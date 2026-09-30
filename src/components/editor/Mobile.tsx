@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { type ExportFormat, getStylePreset, layoutScene } from "@/engine";
 import { Icon, LogoMark, type IconName } from "../icons";
 import { Segmented } from "../ui/controls";
+import { useStore } from "@/lib/store";
 import { AnnotationInspector, Colours } from "./AnnotationInspector";
 import { type MobileTab, formatBytes, styleName } from "./app";
 import { useApp, useScene, useUi } from "./context";
@@ -26,6 +27,10 @@ import { CardTray, PostStylesTray, PostTray } from "./PostInspector";
 import { HeadlineTray, SetStylesTray, SetTray, SlideTray } from "./AppStoreInspector";
 import { MobileModeButton } from "./ModeSwitch";
 import { StyleThumb } from "./StyleThumb";
+import { BatchStrip } from "./BatchStrip";
+import { BatchScope, useActiveGroups } from "./BatchScope";
+import { useBatch } from "./batch-ui";
+import type { OverrideGroup } from "@/engine/batch/style";
 
 type TabDef = { id: MobileTab; label: string; icon: IconName };
 
@@ -254,6 +259,8 @@ function MobileSheet() {
   const tab = tabs.some((t) => t.id === rawTab) ? rawTab : tabs[0]!.id;
   const expanded = useUi((s) => s.mobileExpanded);
   const selection = useScene((s) => s.selection);
+  const batch = useBatch();
+  const own = useActiveGroups();
   const ref = useRef<HTMLElement>(null);
   const drag = useRef<{ y: number; h: number } | null>(null);
   const [dragH, setDragH] = useState<number | null>(null);
@@ -311,6 +318,7 @@ function MobileSheet() {
         }}
       />
       <div className="m-body" role="tabpanel" aria-label={tabs.find((t) => t.id === tab)?.label}>
+        {batch && tab !== "draw" && <BatchScope />}
         {tab === "code" && <CodeTray bare />}
         {tab === "theme" && mode === "code" && <ThemesTray bare />}
         {tab === "theme" && mode === "post" && (
@@ -364,6 +372,9 @@ function MobileSheet() {
               <Icon name={t.icon} />
             )}
             {t.label}
+            {own.includes(t.id as OverrideGroup) && (
+              <span className="tab-dot" aria-label=", this image has its own settings" />
+            )}
           </button>
         ))}
       </nav>
@@ -413,6 +424,8 @@ function MobileExport() {
   const custom = useUi((s) => s.customPresets);
   const plan = useExportPlan();
   const result = useExportResult(open && mode !== "appstore");
+  const batch = useBatch();
+  const exporting = useStore(app.batch.ui, (s) => s.exporting);
   const [closing, setClosing] = useState(false);
   const sheetRef = useRef<HTMLElement>(null);
   // Esc closes the sheet wherever focus is; focus moves into it when it opens.
@@ -561,15 +574,35 @@ function MobileExport() {
                 />
               </>
             )}
+            {batch && (
+              <button
+                type="button"
+                className="btn btn-primary btn-block"
+                style={{ height: 52, marginTop: 18, fontSize: 15.5 }}
+                disabled={!!exporting}
+                data-testid="m-export-all"
+                onClick={() => {
+                  void app.batch.exportAll("share");
+                  close();
+                }}
+                data-autofocus
+              >
+                <Icon name="zip" /> Save all {batch.items.length}
+              </button>
+            )}
             <button
               type="button"
-              className={`btn btn-primary btn-block${busy ? " pressed shimmer-busy" : ""}`}
+              className={`btn ${batch ? "btn-secondary" : "btn-primary"} btn-block${busy ? " pressed shimmer-busy" : ""}`}
               aria-busy={busy}
-              style={{ height: 52, marginTop: 18, fontSize: 15.5 }}
+              style={
+                batch
+                  ? { height: 44, marginTop: 10 }
+                  : { height: 52, marginTop: 18, fontSize: 15.5 }
+              }
               onClick={() => void app.share("save")}
-              data-autofocus
+              {...(batch ? {} : { "data-autofocus": true })}
             >
-              <Icon name="download" /> Save to Photos
+              <Icon name="download" /> {batch ? "Save this image" : "Save to Photos"}
             </button>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
               <button
@@ -596,10 +629,12 @@ function MobileExport() {
 
 export function MobileEditor() {
   const hasContent = useUi((s) => s.hasContent);
+  const batch = useBatch();
   return (
-    <div className="m" data-layout="narrow">
+    <div className="m" data-layout="narrow" data-batch={batch ? "" : undefined}>
       <MobileHeader />
       <Stage narrow />
+      {batch && <BatchStrip />}
       {hasContent && <MobileSheet />}
       <MobileExport />
     </div>

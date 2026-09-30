@@ -20,6 +20,7 @@ import { Icon } from "../icons";
 import { Segmented, Switch } from "../ui/controls";
 import { Slider } from "../ui/Slider";
 import { useApp, useScene, useUi } from "./context";
+import { OverrideDot, OverrideReset } from "./BatchScope";
 
 /** Tiles in display order; "none" first. */
 export const MOTION_TILES = [
@@ -313,17 +314,22 @@ export const MotionTray = memo(function MotionTray({ bare = false }: { bare?: bo
   return (
     <section className="tray" aria-labelledby="t-motion" data-testid="motion-tray">
       <div className="tray-head">
-        <h2 id="t-motion">{clip ? "Recording" : "Motion"}</h2>
-        {clip ? (
-          <span className="meta">Recording · {formatClipTime(clipLength(clip))}</span>
-        ) : spec ? (
-          <span className="meta">
-            {spec.duration.toFixed(1)}s ·{" "}
-            {preset?.periodic ? "loop" : spec.loop === "boomerang" ? "there & back" : "once"}
-          </span>
-        ) : (
-          <span className="meta">Still</span>
-        )}
+        <h2 id="t-motion">
+          {clip ? "Recording" : "Motion"}
+          <OverrideDot group="motion" />
+        </h2>
+        <OverrideReset group="motion">
+          {clip ? (
+            <span className="meta">Recording · {formatClipTime(clipLength(clip))}</span>
+          ) : spec ? (
+            <span className="meta">
+              {spec.duration.toFixed(1)}s ·{" "}
+              {preset?.periodic ? "loop" : spec.loop === "boomerang" ? "there & back" : "once"}
+            </span>
+          ) : (
+            <span className="meta">Still</span>
+          )}
+        </OverrideReset>
       </div>
       {body}
     </section>

@@ -4,11 +4,31 @@ import { useEffect, useMemo, useState } from "react";
 import { isApple } from "@/lib/platform";
 import { Icon } from "../icons";
 import { Modal } from "../ui/Modal";
-import { useApp, useUi } from "./context";
+import { isBatch } from "@/engine/batch/batch";
+import { useApp, useScene, useUi } from "./context";
 
 type Row = [string, string[]];
 
-function groups(mod: string): { title: string; rows: Row[] }[] {
+function groups(mod: string, batch = false): { title: string; rows: Row[] }[] {
+  const alt = isApple() ? "⌥" : "Alt";
+  // With several images, the images list has its own keys (while it has focus).
+  const images: { title: string; rows: Row[] }[] = batch
+    ? [
+        {
+          title: "Images list",
+          rows: [
+            ["Previous / next image", ["↑", "↓"]],
+            ["Select several", [mod, "click", "·", "⇧", "click"]],
+            ["Select all", [mod, "A"]],
+            ["Move up / down", [alt, "↑", "·", alt, "↓"]],
+            ["Duplicate", [mod, "D"]],
+            ["Remove", ["⌫"]],
+            ["Image menu", ["⇧", "F10"]],
+            ["Back to the canvas", ["↵"]],
+          ],
+        },
+      ]
+    : [];
   return [
     {
       title: "Global",
@@ -66,6 +86,7 @@ function groups(mod: string): { title: string; rows: Row[] }[] {
         ["Quick copy", ["double-click stage"]],
       ],
     },
+    ...images,
   ];
 }
 
@@ -74,7 +95,8 @@ export function ShortcutsSheet() {
   const open = useUi((s) => s.modal === "shortcuts");
   const [mod, setMod] = useState("⌘");
   useEffect(() => setMod(isApple() ? "⌘" : "Ctrl"), []);
-  const data = useMemo(() => groups(mod), [mod]);
+  const batch = useScene((s) => isBatch(s.doc));
+  const data = useMemo(() => groups(mod, batch), [mod, batch]);
   return (
     <Modal
       open={open}
@@ -108,7 +130,11 @@ export function ShortcutsSheet() {
                   <span>{label}</span>
                   <span className="keys">
                     {keys.map((k, i) =>
-                      k === "·" || k === "–" || k === "drag" || k === "double-click stage" ? (
+                      k === "·" ||
+                      k === "–" ||
+                      k === "drag" ||
+                      k === "click" ||
+                      k === "double-click stage" ? (
                         <span
                           key={i}
                           className="muted"

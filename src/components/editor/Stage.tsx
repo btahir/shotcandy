@@ -24,6 +24,7 @@ import { Toasts } from "./Toasts";
 import { RenderPill, Timeline } from "./Timeline";
 import { Board } from "./Board";
 import { CaptionLayer, CodeLineLayer, StageNotes } from "./StageNotes";
+import { BatchProgress } from "./BatchScope";
 
 const MAX_PREVIEW_SIDE = 8192;
 const MAX_PREVIEW_AREA = 36_000_000;
@@ -453,6 +454,7 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
       )}
       {!narrow && !board && hasContent && <ZoomControl />}
       <RenderPill />
+      <BatchProgress />
       <Toasts />
       <DropVeil />
     </main>

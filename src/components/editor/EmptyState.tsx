@@ -2,9 +2,15 @@
 /** The paste card (desktop) and the "Make a screenshot lovely" card (narrow). */
 import { useEffect, useState } from "react";
 import { ACCEPT_ATTRIBUTE, ACCEPT_IMAGES } from "@/engine";
+import {
+  type PickedFile,
+  filesFromDirectoryInput,
+  readDirectoryHandle,
+} from "@/engine/input/files";
 import { isApple } from "@/lib/platform";
 import { Icon } from "../icons";
-import { useApp, useUi } from "./context";
+import { isBatch } from "@/engine/batch/batch";
+import { useApp, useScene, useUi } from "./context";
 import { MODES } from "./modes";
 
 /** "Or make…": the other modes, from the empty screenshot state. */
@@ -64,6 +70,53 @@ export function openFilePicker(onFile: (f: File) => void, accept = ACCEPT_IMAGES
   input.click();
 }
 
+/** File picker for one or several files (several start a batch). */
+export function openFilesPicker(onFiles: (f: File[]) => void, accept = ACCEPT_IMAGES) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = accept;
+  input.multiple = true;
+  input.onchange = () => {
+    const list = Array.from(input.files ?? []);
+    if (list.length) onFiles(list);
+  };
+  input.click();
+}
+
+/** Pick a folder of screenshots (File System Access where it exists, else webkitdirectory). */
+export function openFolderPicker(onFiles: (f: PickedFile[]) => void) {
+  const w = window as unknown as {
+    showDirectoryPicker?: (o: object) => Promise<Parameters<typeof readDirectoryHandle>[0]>;
+  };
+  if (typeof w.showDirectoryPicker === "function") {
+    w.showDirectoryPicker({ id: "shotcandy-import", mode: "read" }).then(
+      async (dir) => onFiles(await readDirectoryHandle(dir)),
+      () => undefined,
+    );
+    return;
+  }
+  const input = document.createElement("input");
+  input.type = "file";
+  (input as HTMLInputElement & { webkitdirectory: boolean }).webkitdirectory = true;
+  input.multiple = true;
+  input.onchange = () => {
+    const list = filesFromDirectoryInput(input.files ?? []);
+    if (list.length) onFiles(list);
+  };
+  input.click();
+}
+
+/** Whether this browser can pick a folder at all. */
+export function canPickFolder(): boolean {
+  if (typeof window === "undefined") return false;
+  if (
+    typeof (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker ===
+    "function"
+  )
+    return true;
+  return "webkitdirectory" in document.createElement("input");
+}
+
 function useMod() {
   const [apple, setApple] = useState(true);
   useEffect(() => setApple(isApple()), []);
@@ -98,8 +151,9 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
   const importing = useUi((s) => s.importing);
   const recents = useUi((s) => s.recents.length);
   const mod = useMod();
+  // One file opens as always; several start a batch.
   const choose = () =>
-    openFilePicker((f) => void app.loadBlob(f, { source: "file" }), ACCEPT_ATTRIBUTE);
+    openFilesPicker((f) => void app.importFiles(f, { source: "file" }), ACCEPT_ATTRIBUTE);
 
   if (narrow)
     return (
@@ -234,12 +288,17 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
 
 export function DropVeil() {
   const drag = useUi((s) => s.drag);
+  const batch = useScene((s) => isBatch(s.doc));
   if (!drag) return null;
   return (
     <div className={`drop-veil${drag === "bad" ? " bad" : ""}`} data-testid="drop-veil">
       <div className="msg">
         <LogoImg />
-        {drag === "bad" ? "PNG, JPEG or WebP, please" : "Drop to sweeten it"}
+        {drag === "bad"
+          ? "PNG, JPEG or WebP, please"
+          : batch
+            ? "Drop to add"
+            : "Drop to sweeten it"}
       </div>
     </div>
   );

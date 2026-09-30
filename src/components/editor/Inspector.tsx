@@ -35,6 +35,7 @@ import { MotionTray } from "./MotionTray";
 import { CodeTray, ThemesTray, WindowTray } from "./CodeInspector";
 import { CardTray, PostStylesTray, PostTray } from "./PostInspector";
 import { HeadlineTray, SetStylesTray, SetTray, SlideTray } from "./AppStoreInspector";
+import { BatchScope, OverrideDot, OverrideReset } from "./BatchScope";
 
 const DEFAULT_ROW = ["sherbet", "mint-julep", "grape-soda", "paper", "midnight", "satin"];
 
@@ -409,8 +410,13 @@ export const BackgroundTray = memo(function BackgroundTray({ bare = false }: { b
     <section className="tray" aria-labelledby="t-bg" data-testid="background-tray">
       {!bare && (
         <div className="tray-head">
-          <h2 id="t-bg">Background</h2>
-          <span className="meta">{bgName(fill)}</span>
+          <h2 id="t-bg">
+            Background
+            <OverrideDot group="background" />
+          </h2>
+          <OverrideReset group="background">
+            <span className="meta">{bgName(fill)}</span>
+          </OverrideReset>
         </div>
       )}
       <div className="auto-row">
@@ -919,10 +925,15 @@ export const LayoutTray = memo(function LayoutTray({ bare = false }: { bare?: bo
     <section className="tray" aria-labelledby="t-layout" data-testid="layout-tray">
       {!bare && (
         <div className="tray-head">
-          <h2 id="t-layout">Layout</h2>
-          <button type="button" className="link quiet" onClick={reset}>
-            Reset
-          </button>
+          <h2 id="t-layout">
+            Layout
+            <OverrideDot group="layout" />
+          </h2>
+          <OverrideReset group="layout">
+            <button type="button" className="link quiet" onClick={reset}>
+              Reset
+            </button>
+          </OverrideReset>
         </div>
       )}
       <Slider
@@ -1209,8 +1220,13 @@ export const FrameTray = memo(function FrameTray({ bare = false }: { bare?: bool
     <section className="tray" aria-labelledby="t-frame" data-testid="frame-tray">
       {!bare && (
         <div className="tray-head">
-          <h2 id="t-frame">Frame</h2>
-          <span className="meta">{frame.id === "none" ? "None" : label}</span>
+          <h2 id="t-frame">
+            Frame
+            <OverrideDot group="frame" />
+          </h2>
+          <OverrideReset group="frame">
+            <span className="meta">{frame.id === "none" ? "None" : label}</span>
+          </OverrideReset>
         </div>
       )}
       <div className="frames" role="radiogroup" aria-label="Frame" onKeyDown={onKey}>
@@ -1417,6 +1433,7 @@ export function Inspector() {
         </div>
       ) : (
         <div className="inspector-pane" key="style">
+          <BatchScope />
           <ModeTrays />
           <div className="foot-note">
             Free and open source ·{" "}
