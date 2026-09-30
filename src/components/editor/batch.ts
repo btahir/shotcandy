@@ -661,16 +661,22 @@ export class BatchController {
 
   private afterSelect(b: Batch, announce = true) {
     const app = this.app;
+    // Picking images snaps the switch back to All; say so when it was elsewhere.
+    const snapped = this.ui.get().scope !== "all";
     this.ui.set({ scope: "all" });
     app.onBatchSelect();
     this.scheduleMemory();
-    if (!announce) return;
+    const all = snapped ? ` Changes apply to all ${b.items.length} images.` : "";
+    if (!announce) {
+      if (snapped) app.announce(all.trim());
+      return;
+    }
     const i = activeIndex(b);
     const item = b.items[i]!;
     app.announce(
-      b.selected.length > 1
+      (b.selected.length > 1
         ? `${b.selected.length} images selected. Image ${i + 1} of ${b.items.length}, ${item.name || "untitled"}`
-        : `Image ${i + 1} of ${b.items.length}, ${item.name || "untitled"}`,
+        : `Image ${i + 1} of ${b.items.length}, ${item.name || "untitled"}`) + all,
     );
   }
 
