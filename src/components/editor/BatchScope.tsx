@@ -94,7 +94,9 @@ export function BatchProgress() {
   if (!job) return null;
   const pct = job.total ? Math.round((job.done / job.total) * 100) : 0;
   return (
-    <div className="render-pill" role="status" aria-live="polite" data-testid="batch-progress">
+    // Not a live region: a hundred images would be a hundred announcements. The
+    // start and the end are announced; the bar reports progress when asked.
+    <div className="render-pill" role="group" aria-label="Export all" data-testid="batch-progress">
       <span className="rp-ring" style={{ ["--p" as string]: `${pct}%` }} aria-hidden="true">
         <Icon name="zip" size="xs" />
       </span>
@@ -111,7 +113,15 @@ export function BatchProgress() {
           · {pct}%
         </span>
       </span>
-      <span className="rp-bar" aria-hidden="true">
+      <span
+        className="rp-bar"
+        role="progressbar"
+        aria-label="Images exported"
+        aria-valuemin={0}
+        aria-valuemax={job.total}
+        aria-valuenow={job.done}
+        aria-valuetext={`${job.done} of ${job.total}`}
+      >
         <i style={{ width: `${pct}%` }} />
       </span>
       <button

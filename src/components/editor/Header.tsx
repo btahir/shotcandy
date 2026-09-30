@@ -106,12 +106,14 @@ export function SizeChip({ compact = false }: { compact?: boolean }) {
         aria-haspopup="menu"
         aria-expanded={open}
         data-testid="size-chip"
-        aria-label={`Canvas size: ${sizeLabel(size)}, ${meta}. Change size (K)`}
+        aria-label={`Canvas size: ${sizeLabel(size)}, ${meta}${ownSize ? ", this image only" : ""}. Change size (K)`}
         onClick={() => app.ui.set({ popover: open ? null : "size" })}
       >
         <Icon name="ratio" size="sm" /> {sizeLabel(size)}
         {!compact && <span className={/\d/.test(meta) ? "mono" : "meta-txt"}>{meta}</span>}
-        {ownSize && <span className="tray-dot" title="This image has its own size" />}
+        {ownSize && (
+          <span className="tray-dot" title="This image has its own size" aria-hidden="true" />
+        )}
         <Icon name="chevronDown" size="sm" />
       </button>
       <SizeMenu anchor={ref} open={open} />

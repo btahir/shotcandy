@@ -376,7 +376,10 @@ function MobileSheet() {
             )}
             {t.label}
             {own.includes(t.id as OverrideGroup) && (
-              <span className="tab-dot" aria-label=", this image has its own settings" />
+              <>
+                <span className="tab-dot" aria-hidden="true" />
+                <span className="sr-only">, this image has its own settings</span>
+              </>
             )}
           </button>
         ))}
