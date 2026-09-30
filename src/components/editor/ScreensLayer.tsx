@@ -104,6 +104,10 @@ export function ScreensLayer({
       press.current = null;
       app.screens.endDrag();
       app.announce("Swap cancelled");
+      // The click that ends this press must not choose an image for the screen under it.
+      suppressClick.current = true;
+      const release = () => setTimeout(() => (suppressClick.current = false), 0);
+      window.addEventListener("pointerup", release, { once: true, capture: true });
     };
     window.addEventListener("keydown", key, true);
     return () => window.removeEventListener("keydown", key, true);

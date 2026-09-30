@@ -345,6 +345,8 @@ interface Drag {
   y: number;
   /** A screen of the multi-screen design on stage under the pointer (drop fills it). */
   slot: number | null;
+  /** The pointer is away from the rail: letting go cancels. */
+  away: boolean;
 }
 
 export function BatchRail() {
@@ -405,7 +407,10 @@ export function BatchRail() {
       app.screens.endDrag();
       if (!d.started) return;
       suppressClick.current = true;
-      setTimeout(() => (suppressClick.current = false), 0);
+      const release = () => setTimeout(() => (suppressClick.current = false), 0);
+      // Escape ends the drag before the button is let go: keep the coming click away too.
+      if (commit) release();
+      else window.addEventListener("pointerup", release, { once: true, capture: true });
       if (commit && d.slot !== null) {
         // Onto a screen of the design on stage: the image goes in (it stays in the batch too).
         app.screens.placeItems(d.slot, d.ids);
@@ -432,7 +437,7 @@ export function BatchRail() {
           : d.y > r.bottom - edge
             ? Math.ceil((d.y - (r.bottom - edge)) / 4)
             : 0;
-      if (dy && d.slot === null) {
+      if (dy && d.slot === null && !d.away) {
         sc.scrollTop += dy;
         const at = dropAt(d.y);
         d.index = at.index;
@@ -460,7 +465,11 @@ export function BatchRail() {
       const slot = app.screens.at(e.clientX, e.clientY);
       d.slot = slot;
       app.screens.hover(slot, slot === null ? null : "image");
-      if (slot !== null) {
+      // Away from the rail (over the stage or the inspector): letting go puts the images back.
+      const r = scrollRef.current?.getBoundingClientRect();
+      const away = !!r && (e.clientX < r.left - 24 || e.clientX > r.right + 24);
+      d.away = away && slot === null;
+      if (slot !== null || away) {
         d.index = -1;
         setDropY(null);
         return;
@@ -532,6 +541,7 @@ export function BatchRail() {
         ghost: null,
         y: e.clientY,
         slot: null,
+        away: false,
       };
     },
     [app],
