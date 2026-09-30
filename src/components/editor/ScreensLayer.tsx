@@ -23,7 +23,7 @@ import {
 import { type Point, type Scene, type SlotRect, screenContent, slotAt, slotRects } from "@/engine";
 import { useStore } from "@/lib/store";
 import { Icon } from "../icons";
-import { Popover, menuKeys } from "../ui/controls";
+import { Popover, focusNextFrame, menuKeys } from "../ui/controls";
 import { isBatch, itemScene } from "@/engine/batch/batch";
 import { BatchThumb } from "./BatchRail";
 import { useApp, useScene, useUi } from "./context";
@@ -196,8 +196,8 @@ export function ScreensLayer({
   };
 
   const focusScreen = (i: number) =>
-    requestAnimationFrame(() =>
-      layerRef.current?.querySelector<HTMLButtonElement>(`[data-screen="${i}"]`)?.focus(),
+    focusNextFrame(() =>
+      layerRef.current?.querySelector<HTMLButtonElement>(`[data-screen="${i}"]`),
     );
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, i: number) => {
