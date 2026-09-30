@@ -524,6 +524,88 @@ test.describe("keyboard only", () => {
     await expect(page.getByTestId("toast")).toContainText("Export cancelled");
     await expect(page.locator("[data-layout=wide] [data-testid=export]")).toBeFocused();
   });
+
+  test("a late frame never pulls focus back from where the keyboard went", async ({ page }) => {
+    type Held = {
+      requestAnimationFrame: (cb: FrameRequestCallback) => number;
+      cancelAnimationFrame: (id: number) => void;
+      __held: Map<number, FrameRequestCallback>;
+      __raf: (cb: FrameRequestCallback) => number;
+      __caf: (id: number) => void;
+    };
+    // Hold animation frames back, as a busy main thread does, then let them all run.
+    const hold = () =>
+      page.evaluate(() => {
+        const w = window as unknown as Held;
+        let id = 1e6;
+        w.__held = new Map();
+        w.__raf = w.requestAnimationFrame;
+        w.__caf = w.cancelAnimationFrame;
+        w.requestAnimationFrame = (cb) => (w.__held.set(++id, cb), id);
+        w.cancelAnimationFrame = (h) => void (w.__held.delete(h) || w.__caf.call(window, h));
+      });
+    const release = () =>
+      page.evaluate(() => {
+        const w = window as unknown as Held;
+        w.requestAnimationFrame = w.__raf;
+        w.cancelAnimationFrame = w.__caf;
+        const due = [...w.__held.values()];
+        w.__held.clear();
+        for (const cb of due) cb(performance.now());
+      });
+    await open(page);
+    await three(page);
+    const list = page.getByTestId("batch-list");
+    const combine = page.getByTestId("combine");
+
+    // The images menu: an item reached before the menu's first frame keeps focus.
+    await list.focus();
+    await page.keyboard.press("Home");
+    await page.keyboard.press("Shift+ArrowDown");
+    await hold();
+    await page.keyboard.press("Shift+F10");
+    await expect(combine).toBeVisible();
+    await combine.focus();
+    await release();
+    await expect(combine).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(list).toBeFocused();
+
+    // Picked before that first frame: focus stays on the images once the menu has gone.
+    await hold();
+    await page.keyboard.press("Shift+F10");
+    await expect(combine).toBeVisible();
+    await combine.focus();
+    await page.keyboard.press("Enter");
+    await release();
+    await expect(page.getByTestId("batch-tile")).toHaveCount(4);
+    await expect(page.getByTestId("batch-menu")).toHaveCount(0);
+    await expect(list).toBeFocused();
+    // Back to a plain image, one screen.
+    await page.keyboard.press("Home");
+    expect(await info(page)).toMatchObject({ active: 0, selected: [0] });
+
+    // All / This image: arrow, then leave before the next frame.
+    const scope = page.getByTestId("batch-scope");
+    await scope.getByRole("radio", { name: /All 4/ }).focus();
+    await hold();
+    await page.keyboard.press("ArrowRight");
+    await expect(scope.getByRole("radio", { name: "This image" })).toBeChecked();
+    const single = page.getByTestId("screens-tray").getByRole("radio", { name: "Single" });
+    await single.focus();
+    await release();
+    await expect(single).toBeFocused();
+
+    // Screens layouts: the same.
+    await hold();
+    await page.keyboard.press("ArrowRight");
+    await expect(
+      page.getByTestId("screens-tray").getByRole("radio", { name: "Side by side" }),
+    ).toBeChecked();
+    await list.focus();
+    await release();
+    await expect(list).toBeFocused();
+  });
 });
 
 test.describe("accessibility gaps", () => {

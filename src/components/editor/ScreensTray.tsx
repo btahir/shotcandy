@@ -16,7 +16,7 @@ import {
   isVideoScene,
   setLayout,
 } from "@/engine";
-import { Segmented } from "../ui/controls";
+import { Segmented, focusNextFrame } from "../ui/controls";
 import { Slider } from "../ui/Slider";
 import { useBatch } from "./batch-ui";
 import { useApp, useScene, useUi } from "./context";
@@ -203,9 +203,7 @@ export const ScreensTray = memo(function ScreensTray({ bare = false }: { bare?: 
     const next = LAYOUTS[(i + d + u + LAYOUTS.length) % LAYOUTS.length]!;
     // Arrowing through the layouts is one undo step.
     app.screens.setLayout(next.id, { coalesce: "screens-layout-keys" });
-    requestAnimationFrame(() =>
-      root.querySelector<HTMLButtonElement>(`[data-layout="${next.id}"]`)?.focus(),
-    );
+    focusNextFrame(() => root.querySelector<HTMLButtonElement>(`[data-layout="${next.id}"]`));
   };
 
   return (

@@ -11,6 +11,20 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+/**
+ * Focuses an element on the next frame (once React has rendered it), unless
+ * focus has moved on since: a late focus() must never pull the keyboard back
+ * from wherever the person went in the meantime.
+ */
+export function focusNextFrame(target: () => HTMLElement | null | undefined) {
+  const from = document.activeElement;
+  requestAnimationFrame(() => {
+    const now = document.activeElement;
+    if (now && now !== from && now !== document.body) return;
+    target()?.focus();
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Segmented control (radiogroup or tablist) with a sliding pill
 // ---------------------------------------------------------------------------
@@ -80,8 +94,8 @@ export function Segmented<T extends string>({
     const next = enabled[(i + dir + enabled.length) % enabled.length];
     if (next) {
       onChange(next.value);
-      requestAnimationFrame(() =>
-        ref.current?.querySelector<HTMLButtonElement>(`button[data-v="${next.value}"]`)?.focus(),
+      focusNextFrame(() =>
+        ref.current?.querySelector<HTMLButtonElement>(`button[data-v="${next.value}"]`),
       );
     }
   };
@@ -253,18 +267,20 @@ export function Popover({
   useEffect(() => {
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
-    if (initialFocus) {
-      requestAnimationFrame(() => {
-        const el = ref.current;
-        if (!el) return;
-        const target =
-          el.querySelector<HTMLElement>("[data-autofocus]") ??
-          el.querySelector<HTMLElement>(
-            '.current, [aria-checked="true"], button:not(:disabled), input, [tabindex="0"]',
-          );
-        target?.focus();
-      });
-    }
+    // Focus goes in on the first frame, unless the popover closed before it came.
+    const first = !initialFocus
+      ? 0
+      : requestAnimationFrame(() => {
+          const el = ref.current;
+          // Already inside (a key or a click got there first): leave focus where it went.
+          if (!el || el.contains(document.activeElement)) return;
+          const target =
+            el.querySelector<HTMLElement>("[data-autofocus]") ??
+            el.querySelector<HTMLElement>(
+              '.current, [aria-checked="true"], button:not(:disabled), input, [tabindex="0"]',
+            );
+          target?.focus();
+        });
     const onDown = (e: PointerEvent) => {
       const t = e.target as Node;
       if (ref.current?.contains(t) || anchor.current?.contains(t)) return;
@@ -283,6 +299,7 @@ export function Popover({
     document.addEventListener("keydown", onKey, true);
     const el = ref.current;
     return () => {
+      cancelAnimationFrame(first);
       document.removeEventListener("pointerdown", onDown, true);
       document.removeEventListener("keydown", onKey, true);
       if (prev && document.activeElement && el?.contains(document.activeElement)) prev.focus?.();
