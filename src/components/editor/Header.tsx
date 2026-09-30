@@ -22,6 +22,7 @@ import { Slider } from "../ui/Slider";
 import { formatBytes } from "./app";
 import { useApp, useScene, useUi } from "./context";
 import { canPickFolder, openFilePicker, openFilesPicker, openFolderPicker } from "./EmptyState";
+import { useActiveGroups } from "./BatchScope";
 import { MotionExportPanel } from "./MotionExport";
 import {
   COPY_MAX_LONG,
@@ -82,6 +83,7 @@ export function SizeChip({ compact = false }: { compact?: boolean }) {
   const hasContent = useUi((s) => s.hasContent);
   const open = useUi((s) => s.popover === "size");
   const layout = useCanvasSize();
+  const ownSize = useActiveGroups().includes("size");
   const ref = useRef<HTMLButtonElement>(null);
   const meta =
     size.kind === "fixed"
@@ -105,6 +107,7 @@ export function SizeChip({ compact = false }: { compact?: boolean }) {
       >
         <Icon name="ratio" size="sm" /> {sizeLabel(size)}
         {!compact && <span className={/\d/.test(meta) ? "mono" : "meta-txt"}>{meta}</span>}
+        {ownSize && <span className="tray-dot" title="This image has its own size" />}
         <Icon name="chevronDown" size="sm" />
       </button>
       <SizeMenu anchor={ref} open={open} />
@@ -1007,6 +1010,8 @@ export function Header() {
   const mod = useModKey();
   const canUndo = useScene((s) => s.canUndo);
   const canRedo = useScene((s) => s.canRedo);
+  const undoLabel = useScene((s) => s.undoLabel);
+  const redoLabel = useScene((s) => s.redoLabel);
   const hasContent = useUi((s) => s.hasContent);
   const popover = useUi((s) => s.popover);
   const copyState = useUi((s) => s.copyState);
@@ -1051,8 +1056,8 @@ export function Header() {
       <button
         type="button"
         className="icon-btn"
-        aria-label="Undo (⌘Z)"
-        title="Undo (⌘Z)"
+        aria-label={undoLabel ? `Undo ${undoLabel} (⌘Z)` : "Undo (⌘Z)"}
+        title={undoLabel ? `Undo ${undoLabel} (⌘Z)` : "Undo (⌘Z)"}
         disabled={!canUndo}
         onClick={() => app.store.undo()}
       >
@@ -1061,8 +1066,8 @@ export function Header() {
       <button
         type="button"
         className="icon-btn"
-        aria-label="Redo (⇧⌘Z)"
-        title="Redo (⇧⌘Z)"
+        aria-label={redoLabel ? `Redo ${redoLabel} (⇧⌘Z)` : "Redo (⇧⌘Z)"}
+        title={redoLabel ? `Redo ${redoLabel} (⇧⌘Z)` : "Redo (⇧⌘Z)"}
         disabled={!canRedo}
         onClick={() => app.store.redo()}
       >

@@ -223,6 +223,135 @@ test.describe("sidebar", () => {
   });
 });
 
+test.describe("one style, with exceptions", () => {
+  test("All vs This image, the override dot, and Reset", async ({ page }) => {
+    await open(page);
+    await dropThree(page);
+    const scope = page.getByTestId("batch-scope");
+    await expect(scope.getByRole("radio", { name: "All 3" })).toBeChecked();
+    // This image: only the image on stage changes, and it gets a dot.
+    await scope.getByRole("radio", { name: "This image" }).click();
+    await page.getByRole("radio", { name: "Browser" }).click();
+    expect((await info(page)).custom).toEqual([0]);
+    await expect(tiles(page).nth(0).getByTestId("batch-dot")).toBeVisible();
+    await expect(page.locator("#t-frame .tray-dot")).toBeVisible();
+    // Picking another image snaps back to All.
+    await tiles(page).nth(1).click();
+    await expect(scope.getByRole("radio", { name: "All 3" })).toBeChecked();
+    await expect(page.getByTestId("batch-custom-note")).toContainText(
+      "1 image has its own changes",
+    );
+    // All: every other image follows; the custom one keeps its frame.
+    await page.getByRole("radio", { name: "Phone" }).click();
+    const frames = await page.evaluate(() => {
+      const d = (
+        window as unknown as {
+          __shotcandy: {
+            app: {
+              store: { getState(): { doc: { shared: { card: { frame: { id: string } } } } } };
+              batch: { scenes(): { scene: { card: { frame: { id: string } } } }[] };
+            };
+          };
+        }
+      ).__shotcandy.app;
+      return d.batch.scenes().map((x) => x.scene.card.frame.id);
+    });
+    expect(frames).toEqual(["browser", "phone", "phone"]);
+    // Reset the group on the custom image.
+    await tiles(page).nth(0).click();
+    await page.getByTestId("reset-frame").click();
+    expect((await info(page)).custom).toEqual([]);
+    await expect(tiles(page).nth(0).getByTestId("batch-dot")).toHaveCount(0);
+    await expect(page.getByTestId("toast")).toContainText("Frame matches all images again");
+  });
+
+  test("Use this style for all names the count and undoes in one step", async ({ page }) => {
+    await open(page);
+    await dropThree(page);
+    const scope = page.getByTestId("batch-scope");
+    await tiles(page).nth(2).click();
+    await scope.getByRole("radio", { name: "This image" }).click();
+    await page.getByRole("button", { name: /^Midnight Spotlight style/ }).click();
+    await tiles(page).nth(1).click();
+    await scope.getByRole("radio", { name: "This image" }).click();
+    await page.getByRole("radio", { name: "Browser" }).click();
+    expect((await info(page)).custom).toEqual([1, 2]);
+    await tiles(page).nth(2).click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Use this style for all" }).click();
+    await expect(page.getByTestId("toast")).toContainText("Used this style for all 3 images");
+    await expect(page.getByTestId("toast")).toContainText("1 image keeps its own changes");
+    expect((await info(page)).custom).toEqual([1]);
+    const style = () =>
+      page.evaluate(
+        () =>
+          (
+            window as unknown as {
+              __shotcandy: {
+                app: {
+                  store: { getState(): { doc: { shared: { meta: { stylePresetId: string } } } } };
+                };
+              };
+            }
+          ).__shotcandy.app.store.getState().doc.shared.meta.stylePresetId,
+      );
+    expect(await style()).toBe("midnight");
+    await page.getByTestId("toast").getByRole("button", { name: "Undo" }).click();
+    expect(await style()).not.toBe("midnight");
+    expect((await info(page)).custom).toEqual([1, 2]);
+  });
+});
+
+test.describe("persistence", () => {
+  test("the batch survives a reload, recents stay single designs", async ({ page }) => {
+    await open(page);
+    await dropThree(page);
+    await page.getByTestId("batch-scope").getByRole("radio", { name: "This image" }).click();
+    await page.getByRole("radio", { name: "Browser" }).click();
+    await tiles(page).nth(1).click();
+    await page.waitForTimeout(900);
+    await page.reload();
+    await open(page);
+    await waitForCount(page, 3);
+    const b = await info(page);
+    expect(b.names).toEqual(["shot-1.png", "shot-2.png", "shot-10.png"]);
+    expect(b.active).toBe(1);
+    expect(b.custom).toEqual([0]);
+    await thumbsReady(page);
+    await expect(page.getByTestId("preview")).toBeVisible();
+  });
+
+  test("a project file saves and reopens the whole batch", async ({ page }) => {
+    await open(page);
+    await dropThree(page);
+    await openMore(page);
+    const [dl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("menuitem", { name: "Save project file" }).click(),
+    ]);
+    expect(dl.suggestedFilename()).toBe("shotcandy-3-images.shotcandy");
+    const text = readFileSync((await dl.path())!, "utf8");
+    const json = JSON.parse(text) as { formatVersion: number; batch: { items: unknown[] } };
+    expect(json.formatVersion).toBe(2);
+    expect(json.batch.items).toHaveLength(3);
+    // Reopen in a fresh editor.
+    await page.evaluate(() => indexedDB.deleteDatabase("shotcandy"));
+    await page.reload();
+    await open(page);
+    await openMore(page);
+    const [chooser] = await Promise.all([
+      page.waitForEvent("filechooser"),
+      page.getByRole("menuitem", { name: "Open project file…" }).click(),
+    ]);
+    await chooser.setFiles({
+      name: "p.shotcandy",
+      mimeType: "application/json",
+      buffer: Buffer.from(text),
+    });
+    await waitForCount(page, 3);
+    expect((await info(page)).names).toEqual(["shot-1.png", "shot-2.png", "shot-10.png"]);
+  });
+});
+
 test.describe("phones", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 

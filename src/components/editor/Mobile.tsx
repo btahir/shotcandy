@@ -27,7 +27,9 @@ import { HeadlineTray, SetStylesTray, SetTray, SlideTray } from "./AppStoreInspe
 import { MobileModeButton } from "./ModeSwitch";
 import { StyleThumb } from "./StyleThumb";
 import { BatchStrip } from "./BatchStrip";
+import { BatchScope, useActiveGroups } from "./BatchScope";
 import { useBatch } from "./batch-ui";
+import type { OverrideGroup } from "@/engine/batch/style";
 
 type TabDef = { id: MobileTab; label: string; icon: IconName };
 
@@ -256,6 +258,8 @@ function MobileSheet() {
   const tab = tabs.some((t) => t.id === rawTab) ? rawTab : tabs[0]!.id;
   const expanded = useUi((s) => s.mobileExpanded);
   const selection = useScene((s) => s.selection);
+  const batch = useBatch();
+  const own = useActiveGroups();
   const ref = useRef<HTMLElement>(null);
   const drag = useRef<{ y: number; h: number } | null>(null);
   const [dragH, setDragH] = useState<number | null>(null);
@@ -313,6 +317,7 @@ function MobileSheet() {
         }}
       />
       <div className="m-body" role="tabpanel" aria-label={tabs.find((t) => t.id === tab)?.label}>
+        {batch && tab !== "draw" && <BatchScope />}
         {tab === "code" && <CodeTray bare />}
         {tab === "theme" && mode === "code" && <ThemesTray bare />}
         {tab === "theme" && mode === "post" && (
@@ -366,6 +371,9 @@ function MobileSheet() {
               <Icon name={t.icon} />
             )}
             {t.label}
+            {own.includes(t.id as OverrideGroup) && (
+              <span className="tab-dot" aria-label=", this image has its own settings" />
+            )}
           </button>
         ))}
       </nav>
