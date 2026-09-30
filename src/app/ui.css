@@ -1466,6 +1466,17 @@
     justify-content: space-between;
     align-items: center;
   }
+  .ann-colours.start {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  /* Auto: half dark, half light (it picks one to suit the screenshot). */
+  .sw.auto {
+    background: conic-gradient(from 45deg, #1c1c1e 0 50%, #f2f2f7 0);
+  }
+  .sw.auto::after {
+    display: none;
+  }
 
   /* ---------- Popover / menus ---------- */
   .popover {
