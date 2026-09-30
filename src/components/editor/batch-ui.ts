@@ -23,18 +23,19 @@ export function useBatchUi<T>(selector: (s: BatchUi) => T): T {
 
 const COMPACT = "(max-width: 1199px)";
 
+// Stable functions, so the media query isn't re-subscribed on every render.
+const subscribeCompact = (cb: () => void) => {
+  const m = window.matchMedia(COMPACT);
+  m.addEventListener("change", cb);
+  return () => m.removeEventListener("change", cb);
+};
+const isCompact = () => window.matchMedia(COMPACT).matches;
+const notCompact = () => false;
+
 /** The rail starts collapsed on smaller desktop windows (the stage needs the room). */
 export function useRailCollapsed(): boolean {
   const pref = useBatchUi((s) => s.railCollapsed);
-  const compact = useSyncExternalStore(
-    (cb) => {
-      const m = window.matchMedia(COMPACT);
-      m.addEventListener("change", cb);
-      return () => m.removeEventListener("change", cb);
-    },
-    () => window.matchMedia(COMPACT).matches,
-    () => false,
-  );
+  const compact = useSyncExternalStore(subscribeCompact, isCompact, notCompact);
   return pref ?? compact;
 }
 
