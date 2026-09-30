@@ -571,6 +571,13 @@ export function BatchRail() {
   const onKeyDown = (e: React.KeyboardEvent) => {
     const mod = e.metaKey || e.ctrlKey;
     const k = e.key;
+    // An annotation picked on the stage (focus can stay here) keeps Delete, arrows and Tab.
+    if (
+      app.store.getState().selection &&
+      !mod &&
+      (k === "Delete" || k === "Backspace" || k === "Tab" || k.startsWith("Arrow"))
+    )
+      return;
     let handled = true;
     if (k === "ArrowUp" || k === "ArrowDown") {
       const dir = k === "ArrowUp" ? -1 : 1;
@@ -674,6 +681,11 @@ export function BatchRail() {
           className="brail-list"
           data-testid="batch-list"
           onKeyDown={onKeyDown}
+          onFocus={(e) => {
+            // Keys go to the images now, not to an annotation picked earlier.
+            if (e.target === e.currentTarget && app.store.getState().selection)
+              app.store.select(null);
+          }}
         >
           {batch.items.map((x, i) => (
             <Tile
