@@ -7,6 +7,7 @@ import "@/app/motion.css";
 import "@/app/modes.css";
 import "@/app/controls.css";
 import "@/app/batch.css";
+import "@/app/screens.css";
 import { imageFromDataTransfer } from "@/engine";
 import { isBatch } from "@/engine/batch/batch";
 import { captureDrop, readCapture } from "@/engine/input/files";
@@ -60,18 +61,34 @@ function useDragAndDrop(app: EditorApp) {
       if (kind(e.dataTransfer)) {
         e.preventDefault();
         if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+        // A multi-screen design: the screen under the pointer lights up.
+        app.screens.hover(app.screens.at(e.clientX, e.clientY), "files");
       }
     };
     const leave = (e: DragEvent) => {
       if (!kind(e.dataTransfer)) return;
       depth = Math.max(0, depth - 1);
-      if (depth === 0) app.ui.set({ drag: null });
+      if (depth === 0) {
+        app.ui.set({ drag: null });
+        app.screens.endDrag();
+      }
     };
     const drop = (e: DragEvent) => {
       depth = 0;
       app.ui.set({ drag: null });
+      app.screens.endDrag();
       if (!e.dataTransfer) return;
       if (e.dataTransfer.types.includes("text/x-annotation")) return;
+      // Onto a screen, or while the design has empty screens: the files fill them.
+      if (app.ui.get().mode === "screenshot" && app.screens.takesFiles(e.clientX, e.clientY)) {
+        const at = app.screens.at(e.clientX, e.clientY);
+        const shot = captureDrop(e.dataTransfer);
+        if (shot.files.length || shot.hasFolder) {
+          e.preventDefault();
+          void readCapture(shot).then((files) => app.screens.addFiles(files, at, "drop"));
+          return;
+        }
+      }
       // Folders and several files: capture them now (the drop's data is gone after this event).
       const cap = captureDrop(e.dataTransfer);
       if (cap.hasFolder || cap.files.length > 1) {

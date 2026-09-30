@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   type Scene,
+  activeLayout,
   evaluateScene,
   getMotionPreset,
   layoutScene,
@@ -25,6 +26,7 @@ import { RenderPill, Timeline } from "./Timeline";
 import { Board } from "./Board";
 import { CaptionLayer, CodeLineLayer, StageNotes } from "./StageNotes";
 import { BatchProgress } from "./BatchScope";
+import { ScreensLayer } from "./ScreensLayer";
 
 const MAX_PREVIEW_SIDE = 8192;
 const MAX_PREVIEW_AREA = 36_000_000;
@@ -161,8 +163,13 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
       const t = app.playback.get().t ?? app.restTime(renderScene_.animation);
       frame = evaluateScene(renderScene_, t, app.motionContext());
     }
-    // Recordings draw their current preview frame in place of the poster.
-    renderScene(ctx, frame, app.frameAssets(), { scale: s, cache: app.cache });
+    // Recordings draw their current preview frame in place of the poster. Empty
+    // screens of a multi-screen design show a placeholder here (exports skip them).
+    renderScene(ctx, frame, app.frameAssets(), {
+      scale: s,
+      cache: app.cache,
+      emptySlots: "placeholder",
+    });
     const ms = performance.now() - t0;
     (window as unknown as { __shotcandyRenderMs?: number }).__shotcandyRenderMs = ms;
     app.emit("rendered", ms);
@@ -374,6 +381,9 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
     !showFrames &&
     !previewScene;
   const zoomed = zoom > fit * 1.01;
+  // The screens of a multi-screen design take drops, clicks and focus (not while a motion plays).
+  const showScreens =
+    hasContent && mode === "screenshot" && !showFrames && !previewScene && !!activeLayout(scene);
 
   return (
     <main
@@ -415,6 +425,9 @@ export function Stage({ narrow = false }: { narrow?: boolean }) {
               role="img"
               aria-label={`Preview, ${W} by ${H} pixels`}
             />
+            {showScreens && (
+              <ScreensLayer scene={scene} zoom={zoom} compRef={compRef} spaceDown={spaceDown} />
+            )}
           </div>
           {showMarks && (
             <div

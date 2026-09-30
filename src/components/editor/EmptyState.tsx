@@ -10,6 +10,7 @@ import {
 import { isApple } from "@/lib/platform";
 import { Icon } from "../icons";
 import { isBatch } from "@/engine/batch/batch";
+import { useStore } from "@/lib/store";
 import { useApp, useScene, useUi } from "./context";
 import { MODES } from "./modes";
 
@@ -287,18 +288,24 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
 }
 
 export function DropVeil() {
+  const app = useApp();
   const drag = useUi((s) => s.drag);
   const batch = useScene((s) => isBatch(s.doc));
+  // A multi-screen design: say which screen (or how many empty ones) the drop fills.
+  useScene((s) => s.scene);
+  useStore(app.screens.ui, (s) => s.target);
   if (!drag) return null;
+  const screens = drag === "ok" ? app.screens.dropMessage() : null;
   return (
-    <div className={`drop-veil${drag === "bad" ? " bad" : ""}`} data-testid="drop-veil">
+    <div
+      className={`drop-veil${drag === "bad" ? " bad" : ""}${app.screens.active() ? " screens" : ""}`}
+      data-testid="drop-veil"
+    >
       <div className="msg">
         <LogoImg />
         {drag === "bad"
           ? "PNG, JPEG or WebP, please"
-          : batch
-            ? "Drop to add"
-            : "Drop to sweeten it"}
+          : (screens ?? (batch ? "Drop to add" : "Drop to sweeten it"))}
       </div>
     </div>
   );

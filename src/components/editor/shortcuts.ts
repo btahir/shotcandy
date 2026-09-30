@@ -207,6 +207,13 @@ export function useShortcuts(app: EditorApp) {
         const f = dt.files[i]!;
         if (f.type.startsWith("image/") || f.type === "") images.push(f);
       }
+      // A multi-screen design with empty screens: the pasted image fills the next one.
+      const pasted = images.length ? images : file ? [file] : [];
+      if (pasted.length && app.ui.get().mode === "screenshot" && app.screens.takesFiles()) {
+        e.preventDefault();
+        void app.screens.addFiles(pasted, null, "paste");
+        return;
+      }
       if (images.length > 1) {
         e.preventDefault();
         void app.importFiles(images, { source: "paste" });
