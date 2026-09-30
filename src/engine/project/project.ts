@@ -13,7 +13,12 @@
  *
  * The wrapper and the scene are versioned independently and both pass through
  * migrations on load. Asset ids are content hashes and are verified on import.
+ *
+ * Format 2 adds an optional `batch` (many images sharing one style, see
+ * batch/batch.ts); `scene` is then the image that was on stage. Files without
+ * a batch are still written as format 1, so older versions keep opening them.
  */
+import { type Batch, batchAssetIds, isBatch, normalizeBatch } from "../batch/batch";
 import { MIME_FOR_VIDEO, sniffVideoKind, validateImageBytes } from "../input/input";
 import { assetIdForBytes } from "../input/import";
 import { createMigrator, loadScene, type MigrationStep } from "../scene/migrate";
@@ -22,7 +27,7 @@ import { videoIdForBytes } from "../video/id";
 import type { Scene } from "../scene/types";
 
 export const PROJECT_FORMAT = "shotcandy.project";
-export const PROJECT_FORMAT_VERSION = 1;
+export const PROJECT_FORMAT_VERSION = 2;
 export const PROJECT_EXTENSION = "shotcandy";
 export const PROJECT_MIME = "application/vnd.shotcandy.project+json";
 
@@ -40,6 +45,8 @@ export interface ProjectFile {
   app: { name: string; version: string };
   createdAt: string;
   scene: Scene;
+  /** Format 2: a batch of images sharing one style. */
+  batch?: Batch;
   assets: Record<string, ProjectAsset>;
 }
 
@@ -52,6 +59,8 @@ export interface ProjectAssetInput {
 
 export interface LoadedProject {
   scene: Scene;
+  /** The batch, when the file holds one (validated). */
+  batch?: Batch;
   assets: { id: string; blob: Blob; mime: string; width: number; height: number }[];
   issues: string[];
 }
@@ -64,7 +73,15 @@ export class ProjectError extends Error {
 }
 
 /** Wrapper migrations (format-level changes, independent of the scene schema). */
-export const PROJECT_MIGRATIONS: readonly MigrationStep[] = [];
+export const PROJECT_MIGRATIONS: readonly MigrationStep[] = [
+  {
+    from: 1,
+    to: 2,
+    // v2 adds the optional `batch`; a v1 file is a valid v2 file.
+    migrate: (doc) => doc,
+    description: "batches (additive)",
+  },
+];
 const projectMigrator = createMigrator(PROJECT_FORMAT_VERSION, PROJECT_MIGRATIONS, "formatVersion");
 
 // ----------------------------------------------------------------------------
@@ -92,10 +109,12 @@ export function base64ToBytes(b64: string): Uint8Array {
 export async function createProjectFile(
   scene: Scene,
   assets: ProjectAssetInput[],
-  meta: { appVersion: string; now: Date },
+  meta: { appVersion: string; now: Date; batch?: Batch },
 ): Promise<ProjectFile> {
   // Built-in wallpapers ship with the app and are never embedded.
   const needed = new Set(sceneAssetIds(scene, { includeBuiltin: false }));
+  const batch = meta.batch && isBatch(meta.batch) ? meta.batch : undefined;
+  if (batch) for (const id of batchAssetIds(batch)) if (!id.startsWith("builtin:")) needed.add(id);
   const out: Record<string, ProjectAsset> = {};
   for (const a of assets) {
     if (!needed.has(a.id)) continue;
@@ -112,10 +131,11 @@ export async function createProjectFile(
   if (missing.length) throw new ProjectError(`Missing asset data for ${missing.join(", ")}`);
   return {
     format: PROJECT_FORMAT,
-    formatVersion: PROJECT_FORMAT_VERSION,
+    formatVersion: batch ? PROJECT_FORMAT_VERSION : 1,
     app: { name: "Shotcandy", version: meta.appVersion },
     createdAt: meta.now.toISOString(),
     scene,
+    ...(batch ? { batch } : {}),
     assets: out,
   };
 }
@@ -176,17 +196,27 @@ export async function parseProject(input: string | Blob): Promise<LoadedProject>
       height: Number(a.height) || 0,
     });
   }
-  let sceneRaw = doc.scene;
-  if (remap.size) {
-    let json = JSON.stringify(sceneRaw);
+  const fix = (raw: unknown) => {
+    if (!remap.size || raw === undefined) return raw;
+    let json = JSON.stringify(raw);
     for (const [from, to] of remap)
       json = json.split(JSON.stringify(from)).join(JSON.stringify(to));
-    sceneRaw = JSON.parse(json);
-  }
-  const loaded = loadScene(sceneRaw);
+    return JSON.parse(json);
+  };
+  const loaded = loadScene(fix(doc.scene));
   issues.push(...loaded.issues);
   const have = new Set(assets.map((a) => a.id));
   for (const id of sceneAssetIds(loaded.scene, { includeBuiltin: false }))
     if (!have.has(id)) issues.push(`scene references missing asset ${id}`);
-  return { scene: loaded.scene, assets, issues };
+  let batch: Batch | undefined;
+  if (doc.batch !== undefined) {
+    const b = normalizeBatch(fix(doc.batch));
+    if (isBatch(b)) {
+      const lost = b.items.filter((x) => !have.has(x.content.assetId!));
+      for (const x of lost) issues.push(`batch image ${x.name || x.id} is missing`);
+      const kept = normalizeBatch({ ...b, items: b.items.filter((x) => !lost.includes(x)) });
+      if (isBatch(kept)) batch = kept;
+    } else issues.push("the batch in this file couldn't be read");
+  }
+  return { scene: loaded.scene, ...(batch ? { batch } : {}), assets, issues };
 }
