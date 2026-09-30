@@ -100,6 +100,12 @@ export class ScreensController {
     };
   }
 
+  /** Which design is on stage (the batch image, or the single design). */
+  private designKey(): string {
+    const doc = this.app.store.getState().doc;
+    return isBatch(doc) ? doc.active : "single";
+  }
+
   /** The screen under a client point, or null (off the screens, or a single design). */
   at(x: number, y: number): number | null {
     return this.active() ? (this.locate?.(x, y) ?? null) : null;
@@ -277,10 +283,12 @@ export class ScreensController {
     }
     const take = sorted.slice(0, slots.length);
     const rest = sorted.slice(slots.length);
+    const design = this.designKey();
     const { added, skipped } = await app.batch.importImages(take.map((p) => p.file));
     for (const a of added) this.names.set(a.id, a.name);
-    // The layout went away meanwhile (undo, another design): import them the usual way.
-    if (!this.active()) {
+    // The layout went away or another image came on stage meanwhile (undo, a
+    // click in the rail): the screens picked are gone, so import them the usual way.
+    if (!this.active() || this.designKey() !== design) {
       await app.importFiles(sorted, { source });
       return;
     }
