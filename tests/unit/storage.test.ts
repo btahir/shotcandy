@@ -2,6 +2,8 @@ import "fake-indexeddb/auto";
 import { describe, expect, it } from "vitest";
 import {
   SCENE_VERSION,
+  collectKeepIds,
+  createSet,
   createIndexedDBStore,
   createMemoryStore,
   createScene,
@@ -126,5 +128,78 @@ describe("openStore", () => {
     const b = await openStore("persist-test");
     expect((await b.designs.get("k"))!.name).toBe("k");
     b.close();
+  });
+});
+
+describe("collectKeepIds", () => {
+  const imageScene = (assetId: string, bg?: string) => {
+    const s = createScene();
+    return {
+      ...s,
+      content: { kind: "image" as const, assetId },
+      ...(bg
+        ? {
+            background: {
+              ...s.background,
+              fill: {
+                kind: "image" as const,
+                assetId: bg,
+                fit: "cover" as const,
+                blur: 0,
+                tint: 0,
+              },
+            },
+          }
+        : {}),
+    };
+  };
+
+  it("keeps recents, App Store slides and template, and preset backgrounds", () => {
+    const set = createSet();
+    set.slides[0]!.assetId = "slide-a";
+    set.slides[2]!.assetId = "slide-b";
+    const keep = collectKeepIds({
+      scenes: [imageScene("recent", "recent-bg")],
+      appstore: { set, template: imageScene("tpl", "tpl-bg") },
+      patches: [
+        {
+          background: {
+            fill: { kind: "image", assetId: "preset-bg", fit: "cover", blur: 0, tint: 0 },
+          },
+        },
+        { canvas: { padding: 10 } },
+      ],
+      ids: ["open"],
+    });
+    expect([...keep].sort()).toEqual(
+      ["open", "preset-bg", "recent", "recent-bg", "slide-a", "slide-b", "tpl", "tpl-bg"].sort(),
+    );
+  });
+
+  it("ignores a missing or malformed App Store record", () => {
+    expect([...collectKeepIds({ appstore: undefined })]).toEqual([]);
+    expect([...collectKeepIds({ appstore: "nope" })]).toEqual([]);
+    expect([...collectKeepIds({ appstore: { set: { slides: "x" } } })]).toEqual([]);
+  });
+
+  it("gc with the keep set no longer drops App Store slide images", async () => {
+    const store = createMemoryStore();
+    const put = (id: string) =>
+      store.assets.put({
+        id,
+        blob: new Blob([id]),
+        mime: "image/png",
+        width: 1,
+        height: 1,
+        role: "content",
+        createdAt: 1,
+      });
+    await Promise.all(["recent", "slide-a", "orphan"].map(put));
+    const set = createSet();
+    set.slides[0]!.assetId = "slide-a";
+    const deleted = await store.assets.gc(
+      collectKeepIds({ scenes: [imageScene("recent")], appstore: { set } }),
+    );
+    expect(deleted).toEqual(["orphan"]);
   });
 });

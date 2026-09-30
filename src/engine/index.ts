@@ -392,6 +392,7 @@ export {
 } from "./project/project";
 export { openStore, createMemoryStore } from "./storage/memory";
 export { createIndexedDBStore } from "./storage/idb";
+export { collectKeepIds, patchAssetIds, type KeepSources } from "./storage/keep";
 export type * from "./storage/types";
 
 // Colour helpers useful to UI pickers

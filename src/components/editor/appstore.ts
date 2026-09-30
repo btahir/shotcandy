@@ -48,7 +48,8 @@ export interface SetState {
   loaded: boolean;
 }
 
-const KEY = "appstore-set";
+export const APPSTORE_SET_KEY = "appstore-set";
+const KEY = APPSTORE_SET_KEY;
 
 export class SetController {
   readonly state: Store<SetState>;

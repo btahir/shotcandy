@@ -94,6 +94,7 @@ import {
   sceneAssetIds,
   setIn,
   updateAnnotation,
+  collectKeepIds,
 } from "@/engine";
 import { createExportWorker } from "@/engine/export/worker-factory";
 import { createAnimationWorker } from "@/engine/animation/worker-factory";
@@ -107,7 +108,7 @@ import { sprinkle } from "@/lib/sprinkles";
 import { prefersReducedMotion } from "@/lib/platform";
 import { VideoPreview } from "./video-preview";
 import { type Mode, initialCodeScene, initialPostScene, modeForScene } from "./modes";
-import { SetController } from "./appstore";
+import { APPSTORE_SET_KEY, SetController } from "./appstore";
 import { orientationOf, shuffleComposition, suitedStyles } from "./shuffle";
 import {
   COPY_MAX_LONG,
@@ -2419,15 +2420,29 @@ export class EditorApp {
       for (const d of extra) await this.db.designs.delete(d.id);
       const kept = all.slice(0, MAX_RECENTS);
       this.ui.set({ recents: kept });
-      if (extra.length) {
-        const keep = new Set<string>();
-        for (const d of kept) for (const id of sceneAssetIds(d.scene)) keep.add(id);
-        await this.db.assets.gc(keep);
-      }
+      if (extra.length) await this.db.assets.gc(await this.assetsInUse(kept.map((d) => d.scene)));
       this.emit("autosaved", rec.id);
     } catch {
       /* storage full or blocked: editing continues */
     }
+  }
+
+  /**
+   * Every stored asset something still points at: the kept recents, the open
+   * design, the saved App Store set (read from storage, since it may not be
+   * loaded this session) and saved styles with an uploaded background.
+   */
+  private async assetsInUse(scenes: Scene[]): Promise<Set<string>> {
+    const db = this.db!;
+    const [appstore, presets] = await Promise.all([
+      db.settings.get(APPSTORE_SET_KEY).catch(() => undefined),
+      db.presets.list().catch(() => []),
+    ]);
+    return collectKeepIds({
+      scenes: [...scenes, this.scene],
+      patches: presets.map((p) => p.patch),
+      appstore,
+    });
   }
 
   private async designThumbnail(scene: Scene): Promise<Blob | undefined> {
