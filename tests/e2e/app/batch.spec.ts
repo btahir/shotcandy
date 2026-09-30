@@ -646,3 +646,96 @@ test.describe("performance", () => {
     expect(Math.max(0, ...long)).toBeLessThan(400);
   });
 });
+
+test.describe("at the cap", () => {
+  test.skip(({ browserName }) => browserName !== "chromium", "measured once, in Chromium");
+  test.setTimeout(180_000);
+
+  test("105 screenshots: the first 100 join, memory stays flat, the page stays responsive", async ({
+    page,
+  }) => {
+    await open(page);
+    await page.evaluate(() => {
+      const w = window as unknown as { __long: number[] };
+      w.__long = [];
+      new PerformanceObserver((l) => {
+        for (const e of l.getEntries()) w.__long.push(e.duration);
+      }).observe({ type: "longtask", buffered: false });
+    });
+    // Generate distinct screenshots in the page (so none are duplicates), then drop them.
+    const result = await page.evaluate(async () => {
+      const files: File[] = [];
+      for (let i = 0; i < 105; i++) {
+        const c = new OffscreenCanvas(1920, 1200);
+        const g = c.getContext("2d")!;
+        g.fillStyle = `hsl(${(i * 37) % 360} 60% 92%)`;
+        g.fillRect(0, 0, 1920, 1200);
+        g.fillStyle = `hsl(${(i * 37) % 360} 50% 40%)`;
+        g.fillRect(80, 80, 600 + i * 5, 90);
+        for (let r = 0; r < 12; r++) g.fillRect(80, 260 + r * 70, 1200 - ((r * 97 + i) % 500), 28);
+        const blob = await c.convertToBlob({ type: "image/png" });
+        files.push(new File([blob], `screen-${i + 1}.png`, { type: "image/png" }));
+      }
+      const done = new Promise<{ added: number; ms: number }>((res) =>
+        (
+          window as unknown as {
+            __shotcandy: { app: { on(e: string, f: (x?: unknown) => void): void } };
+          }
+        ).__shotcandy.app.on("batch-imported", (x) => res(x as { added: number; ms: number })),
+      );
+      const dt = new DataTransfer();
+      for (const f of files) dt.items.add(f);
+      (window as unknown as { __long: number[] }).__long.length = 0;
+      document.body.dispatchEvent(
+        new DragEvent("drop", { dataTransfer: dt, bubbles: true, cancelable: true }),
+      );
+      return done;
+    });
+    await expect(page.getByTestId("toast")).toContainText(/Added 100 images/);
+    await waitForCount(page, 100);
+    const b = await info(page);
+    expect(b.names[0]).toBe("screen-1.png");
+    expect(b.names[9]).toBe("screen-10.png"); // natural order
+    expect(b.names).toHaveLength(100);
+    const stats = await page.evaluate(() =>
+      (
+        window as unknown as {
+          __shotcandy: { app: { batch: { memoryStats(): { full: number; thumbs: number } } } };
+        }
+      ).__shotcandy.app.batch.memoryStats(),
+    );
+    const long = await page.evaluate(() => (window as unknown as { __long: number[] }).__long);
+    // A style change under All: time until the stage has redrawn.
+    const edit = await page.evaluate(async () => {
+      const app = (
+        window as unknown as {
+          __shotcandy: {
+            app: {
+              on(e: string, f: (x?: unknown) => void): () => void;
+              applyStyle(id: string): void;
+            };
+          };
+        }
+      ).__shotcandy.app;
+      const t0 = performance.now();
+      const drawn = new Promise<number>((res) => {
+        const off = app.on("rendered", () => {
+          off();
+          res(performance.now() - t0);
+        });
+      });
+      app.applyStyle("midnight");
+      return drawn;
+    });
+    await thumbsReady(page);
+    console.log(
+      `cap: ${result.added} images in ${result.ms} ms (${Math.round(result.ms / result.added)} ms each); full decodes ${stats.full}, thumbnails ${stats.thumbs}; long tasks ${long.length}, longest ${Math.round(Math.max(0, ...long))} ms; style under All redrawn in ${Math.round(edit)} ms`,
+    );
+    expect(result.added).toBe(100);
+    expect(stats.full).toBeLessThanOrEqual(3);
+    expect(Math.max(0, ...long)).toBeLessThan(500);
+    // Scrolling far down still paints the tiles there.
+    await tiles(page).nth(95).scrollIntoViewIfNeeded();
+    await thumbsReady(page);
+  });
+});

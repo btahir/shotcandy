@@ -510,9 +510,11 @@ export function BatchRail() {
     (e: React.MouseEvent, id: string) => {
       if (suppressClick.current) return;
       listRef.current?.focus({ preventScroll: true });
+      // Cmd-click on Macs (Ctrl-click there is a right click), Ctrl-click elsewhere.
+      const toggle = isMac() ? e.metaKey : e.ctrlKey || e.metaKey;
       if (e.shiftKey) app.batch.select(id, "range");
-      else if (e.metaKey || e.ctrlKey) app.batch.select(id, "toggle");
-      else app.batch.select(id, "only");
+      else if (toggle) app.batch.select(id, "toggle");
+      else if (!(isMac() && e.ctrlKey)) app.batch.select(id, "only");
     },
     [app],
   );
