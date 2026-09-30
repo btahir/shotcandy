@@ -28,6 +28,7 @@ import { HeadlineTray, SetStylesTray, SetTray, SlideTray } from "./AppStoreInspe
 import { MobileModeButton } from "./ModeSwitch";
 import { StyleThumb } from "./StyleThumb";
 import { BatchStrip } from "./BatchStrip";
+import { ScreensTray } from "./ScreensTray";
 import { BatchScope, useActiveGroups } from "./BatchScope";
 import { useBatch } from "./batch-ui";
 import type { OverrideGroup } from "@/engine/batch/style";
@@ -319,6 +320,8 @@ function MobileSheet() {
       />
       <div className="m-body" role="tabpanel" aria-label={tabs.find((t) => t.id === tab)?.label}>
         {batch && tab !== "draw" && <BatchScope />}
+        {/* Screens head the Layout tab (they belong to the image on stage, even under All). */}
+        {tab === "layout" && mode === "screenshot" && <ScreensTray bare />}
         {tab === "code" && <CodeTray bare />}
         {tab === "theme" && mode === "code" && <ThemesTray bare />}
         {tab === "theme" && mode === "post" && (

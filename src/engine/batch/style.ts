@@ -15,8 +15,13 @@
  */
 import type { Scene } from "../scene/types";
 
-/** Scene keys that belong to each image, never to the shared style. */
-export const ITEM_KEYS = ["content", "annotations", "caption"] as const;
+/**
+ * Scene keys that belong to each image, never to the shared style: the
+ * screenshot, its marks and caption, and its multi-screen arrangement (which
+ * layout, and the other screens' images). Overrides, "Apply to all" and
+ * "Use this style for all" never copy or clear these.
+ */
+export const ITEM_KEYS = ["content", "annotations", "caption", "layout", "slots"] as const;
 const SKIP = new Set<string>(["version", ...ITEM_KEYS]);
 
 /** Paths (dot-joined) whose values are replaced whole. */

@@ -214,7 +214,18 @@ export async function parseProject(input: string | Blob): Promise<LoadedProject>
     if (isBatch(b)) {
       const lost = b.items.filter((x) => !have.has(x.content.assetId!));
       for (const x of lost) issues.push(`batch image ${x.name || x.id} is missing`);
-      const kept = normalizeBatch({ ...b, items: b.items.filter((x) => !lost.includes(x)) });
+      // A missing extra screen leaves that screen empty (the design itself is kept).
+      const items = b.items
+        .filter((x) => !lost.includes(x))
+        .map((x) => {
+          if (!x.slots?.some((s) => s.assetId && !have.has(s.assetId))) return x;
+          issues.push(`a screen of ${x.name || x.id} is missing`);
+          return {
+            ...x,
+            slots: x.slots.map((s) => (s.assetId && !have.has(s.assetId) ? { assetId: null } : s)),
+          };
+        });
+      const kept = normalizeBatch({ ...b, items });
       if (isBatch(kept)) batch = kept;
     } else issues.push("the batch in this file couldn't be read");
   }

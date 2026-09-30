@@ -8,8 +8,9 @@
  * sampling), annotations and redactions (always per image), caption, and
  * sparse style overrides. `itemScene` composes an item into an ordinary
  * Scene, so every item previews, renders and exports through the unchanged
- * pipeline (multi-screen layouts plug in the same way: per-image keys go in
- * ITEM_KEYS).
+ * pipeline. A multi-screen design is one item: its layout and its other
+ * screens are per-image keys (ITEM_KEYS) like its screenshot, so a shared
+ * style change never rearranges or empties anyone's screens.
  *
  * The editor document is either a single Scene or a Batch; a batch always has
  * two or more images. `batchLens` lets the editor store edit the active item's
@@ -20,7 +21,16 @@
  */
 import { loadScene } from "../scene/migrate";
 import { normalizeScene } from "../scene/normalize";
-import type { Annotation, CaptionSpec, ImageContent, Scene } from "../scene/types";
+import { sceneAssetIds } from "../scene/patch";
+import { placeScreen, setLayout, setScreenCount } from "../scene/slots";
+import type {
+  Annotation,
+  CaptionSpec,
+  ImageContent,
+  LayoutSpec,
+  Scene,
+  ScreenSlot,
+} from "../scene/types";
 import { baseName } from "./names";
 import {
   type OverrideGroup,
@@ -47,6 +57,10 @@ export interface BatchItem {
   content: ImageContent;
   annotations: Annotation[];
   caption?: CaptionSpec;
+  /** Multi-screen arrangement of this image's design (absent: a single screen). */
+  layout?: LayoutSpec;
+  /** This design's other screens (screen 1 is `slots[0]`), kept even while "single". */
+  slots?: ScreenSlot[];
   /** Style that differs from the shared style (absent: follows it). */
   overrides?: StyleOverrides;
 }
@@ -87,10 +101,23 @@ export function newItemId(): string {
 // Composition
 // ---------------------------------------------------------------------------
 
-/** The shared style of a scene: the scene without its image, marks and caption. */
+/** The shared style of a scene: the scene without its images, marks, caption and arrangement. */
 export function styleScene(scene: Scene): Scene {
-  const { caption: _c, ...rest } = scene;
+  const { caption: _c, layout: _l, slots: _s, ...rest } = scene;
   return { ...rest, content: { kind: "image", assetId: null }, annotations: [] };
+}
+
+/** The per-image parts of a scene that aren't content or marks: caption and screens. */
+function itemExtras(s: {
+  caption?: CaptionSpec;
+  layout?: LayoutSpec;
+  slots?: ScreenSlot[];
+}): Pick<BatchItem, "caption" | "layout" | "slots"> {
+  return {
+    ...(s.caption ? { caption: s.caption } : {}),
+    ...(s.layout ? { layout: s.layout } : {}),
+    ...(s.slots?.length ? { slots: s.slots } : {}),
+  };
 }
 
 const cache = new WeakMap<Scene, WeakMap<BatchItem, Scene>>();
@@ -102,14 +129,14 @@ export function itemScene(b: Batch, item: BatchItem): Scene {
   const hit = byItem.get(item);
   if (hit) return hit;
   const styled = applyStyle(b.shared, item.overrides);
-  const { caption: _c, ...rest } = styled;
+  const { caption: _c, layout: _l, slots: _s, ...rest } = styled;
   const name = baseName(item.name) || styled.meta.name;
   const scene: Scene = {
     ...rest,
     content: item.content,
     annotations: item.annotations,
     meta: { ...styled.meta, name },
-    ...(item.caption ? { caption: item.caption } : {}),
+    ...itemExtras(item),
   };
   byItem.set(item, scene);
   return scene;
@@ -157,6 +184,15 @@ export function routeEdit(b: Batch, next: Scene, prev: Scene, scope: EditScope):
   if (next.caption !== prev.caption) {
     const { caption: _c, ...rest } = item;
     item = next.caption ? { ...rest, caption: next.caption } : rest;
+  }
+  // Layout and screens always belong to the image on stage, whatever the scope.
+  if (next.layout !== prev.layout) {
+    const { layout: _l, ...rest } = item;
+    item = next.layout ? { ...rest, layout: next.layout } : rest;
+  }
+  if (next.slots !== prev.slots) {
+    const { slots: _s, ...rest } = item;
+    item = next.slots?.length ? { ...rest, slots: next.slots } : rest;
   }
   const changed = diffStyle(prev, next);
   if (!changed) {
@@ -211,6 +247,8 @@ export interface NewItem {
   content: ImageContent;
   annotations?: Annotation[];
   caption?: CaptionSpec;
+  layout?: LayoutSpec;
+  slots?: ScreenSlot[];
   id?: string;
 }
 
@@ -220,7 +258,7 @@ function makeItem(n: NewItem): BatchItem {
     name: n.name,
     content: n.content,
     annotations: n.annotations ?? [],
-    ...(n.caption ? { caption: n.caption } : {}),
+    ...itemExtras(n),
   };
 }
 
@@ -235,7 +273,7 @@ export function batchFromScene(scene: Scene, current: { name: string; id?: strin
     name: current.name,
     content: scene.content as ImageContent,
     annotations: scene.annotations,
-    ...(scene.caption ? { caption: scene.caption } : {}),
+    ...itemExtras(scene),
     ...(current.id ? { id: current.id } : {}),
   });
   return {
@@ -275,7 +313,7 @@ export function addItems(
       ...d,
       content: n.content,
       annotations: n.annotations ?? d.annotations,
-      ...(n.caption ? { caption: n.caption } : {}),
+      ...itemExtras(n),
     };
     if (opts.prepareFirst) s = opts.prepareFirst(s);
     if (rest.length === 1) return s;
@@ -384,6 +422,53 @@ export function duplicateItems(b: Batch, ids: readonly string[]): Batch {
   return { ...b, items, active: copies[0]!, selected: copies };
 }
 
+/** Fewest and most images "Combine into one design" takes. */
+export const COMBINE_MIN = 2;
+export const COMBINE_MAX = 6;
+
+/** An item's screenshot as a screen: its image, crop and content marks (redactions stay on it). */
+export function itemScreen(item: BatchItem): ScreenSlot {
+  const c = item.content;
+  const out: ScreenSlot = { assetId: c.assetId };
+  if (c.crop) out.crop = c.crop;
+  if (c.tall !== undefined) out.tall = c.tall;
+  if (c.fade !== undefined) out.fade = c.fade;
+  if (c.sampling !== undefined) out.sampling = c.sampling;
+  const notes = item.annotations.filter((a) => a.anchor === "content");
+  if (notes.length) out.annotations = notes;
+  return out;
+}
+
+/**
+ * "Combine into one design": a new item whose screen 0 is the first of the
+ * given images (with its look, marks and caption) and whose other screens are
+ * the rest, in batch order, side by side for 2-3 images and in a grid for
+ * 4-6. It goes right after the last of them and comes on stage; the
+ * originals stay. Returns the batch unchanged for fewer than 2 or more than 6.
+ */
+export function combineItems(b: Batch, ids: readonly string[], id: string = newItemId()): Batch {
+  const set = new Set(ids);
+  const sel = b.items.filter((x) => set.has(x.id));
+  if (sel.length < COMBINE_MIN || sel.length > COMBINE_MAX) return b;
+  const [first, ...rest] = sel as [BatchItem, ...BatchItem[]];
+  // The first image's own design, without any screens it already had.
+  const { layout: _l, slots: _s, ...plain } = first;
+  let scene = setLayout(itemScene(b, plain), sel.length <= 3 ? "side-by-side" : "grid");
+  rest.forEach((x, i) => (scene = placeScreen(scene, i + 1, itemScreen(x))));
+  scene = setScreenCount(scene, sel.length);
+  const item: BatchItem = {
+    id,
+    name: first.name,
+    content: scene.content as ImageContent,
+    annotations: scene.annotations,
+    ...itemExtras(scene),
+    ...(first.overrides ? { overrides: first.overrides } : {}),
+  };
+  const at = b.items.indexOf(sel[sel.length - 1]!) + 1;
+  const items = [...b.items.slice(0, at), item, ...b.items.slice(at)];
+  return { ...b, items, active: item.id, selected: [item.id] };
+}
+
 /** Select: only this item, toggle it (Cmd/Ctrl), or a range from `anchor` (Shift). */
 export function selectItems(
   b: Batch,
@@ -464,14 +549,22 @@ export function mapItems(b: Batch, fn: (item: BatchItem, scene: Scene) => BatchI
   return touched ? withItems(b, items) : b;
 }
 
-/** Asset ids the batch uses (images and shared or overridden backgrounds). */
+/**
+ * Asset ids the batch uses: every image (each design's screenshot and its
+ * other screens, shown or kept for later) and shared or overridden
+ * backgrounds. Storage clean-up, persistence and project files go by this.
+ */
 export function batchAssetIds(b: Batch): string[] {
   const ids = new Set<string>();
-  for (const x of b.items) {
-    const s = itemScene(b, x);
-    if (s.content.kind === "image" && s.content.assetId) ids.add(s.content.assetId);
-    if (s.background.fill.kind === "image") ids.add(s.background.fill.assetId);
-  }
+  for (const x of b.items) for (const id of sceneAssetIds(itemScene(b, x))) ids.add(id);
+  return [...ids];
+}
+
+/** An item's own images: its screenshot, then its other screens (empty ones skipped). */
+export function itemAssetIds(item: BatchItem): string[] {
+  const ids = new Set<string>();
+  if (item.content.assetId) ids.add(item.content.assetId);
+  for (const s of item.slots ?? []) if (s.assetId) ids.add(s.assetId);
   return [...ids];
 }
 
@@ -511,6 +604,8 @@ export function normalizeBatch(input: unknown, max = BATCH_MAX): EditorDoc | nul
       content: raw.content,
       annotations: raw.annotations,
       ...(raw.caption ? { caption: raw.caption } : {}),
+      ...(raw.layout ? { layout: raw.layout } : {}),
+      ...(raw.slots ? { slots: raw.slots } : {}),
     }).scene;
     if (probe.content.kind !== "image" || !probe.content.assetId) continue;
     let overrides: StyleOverrides | undefined;
@@ -527,7 +622,7 @@ export function normalizeBatch(input: unknown, max = BATCH_MAX): EditorDoc | nul
       name: typeof raw.name === "string" ? raw.name.slice(0, 255) : "",
       content: probe.content,
       annotations: probe.annotations,
-      ...(probe.caption ? { caption: probe.caption } : {}),
+      ...itemExtras(probe),
       ...(overrides ? { overrides } : {}),
     });
   }

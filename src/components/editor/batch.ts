@@ -26,10 +26,14 @@ import {
   activeIndex,
   addItems,
   batchAssetIds,
+  combineItems,
+  COMBINE_MAX,
+  COMBINE_MIN,
   customCount,
   duplicateItems,
   hasImage,
   isBatch,
+  itemAssetIds,
   itemScene,
   moveItems,
   normalizeBatch,
@@ -44,7 +48,7 @@ import {
 import { batchArchiveName, batchFileName, dedupeName } from "@/engine/batch/names";
 import { type Skipped, planImport, summarizeSkipped } from "@/engine/batch/plan";
 import { type OverrideGroup, GROUP_LABELS, overrideGroups } from "@/engine/batch/style";
-import type { PickedFile } from "@/engine/input/files";
+import { type PickedFile, fileKind } from "@/engine/input/files";
 import { ImportError, STILL_MOTION_ID, importImage } from "@/engine";
 import { type Decoded, ImportService } from "@/lib/import/service";
 import { createStore, type Store } from "@/lib/store";
@@ -146,6 +150,28 @@ function reasonOf(e: unknown): string {
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
+/** Every image of a single design: its screenshot and its other screens. */
+function sceneImages(s: Scene): string[] {
+  const ids: string[] = [];
+  if (s.content.kind === "image" && s.content.assetId) ids.push(s.content.assetId);
+  for (const x of s.slots ?? []) if (x.assetId && !ids.includes(x.assetId)) ids.push(x.assetId);
+  return ids;
+}
+
+/** The batch with screens whose image couldn't be loaded emptied (their designs stay). */
+function withoutMissingScreens(b: Batch, missing: ReadonlySet<string>): Batch {
+  let touched = false;
+  const items = b.items.map((x) => {
+    if (!x.slots?.some((s) => s.assetId && missing.has(s.assetId))) return x;
+    touched = true;
+    return {
+      ...x,
+      slots: x.slots.map((s) => (s.assetId && missing.has(s.assetId) ? { assetId: null } : s)),
+    };
+  });
+  return touched ? { ...b, items } : b;
+}
+
 function toCanvas(img: CanvasImageSource): HTMLCanvasElement {
   const { width, height } = img as unknown as { width: number; height: number };
   const c = document.createElement("canvas");
@@ -231,7 +257,10 @@ export class BatchController {
    * name order, with placeholder tiles meanwhile; unsupported files and exact
    * duplicates are skipped and reported in one toast. One undo step.
    */
-  async add(picked: readonly PickedFile[], opts: { source?: string } = {}): Promise<number> {
+  async add(
+    picked: readonly PickedFile[],
+    opts: { source?: string; note?: string } = {},
+  ): Promise<number> {
     const app = this.app;
     const doc = this.doc;
     // A recording open on its own can't join a batch: the images start a new one.
@@ -325,6 +354,7 @@ export class BatchController {
           continue;
         }
         known.add(d.id);
+        app.screens.names.set(d.id, p.file.name);
         const blob =
           p.file.type === d.mime ? (p.file as Blob) : new Blob([p.file], { type: d.mime });
         this.adopt(d, blob);
@@ -365,7 +395,8 @@ export class BatchController {
     this.scheduleMemory();
     if (!isBatch(this.doc)) app.afterImport();
     const b = this.batch;
-    const detail = skipped.length ? `Skipped ${summarizeSkipped(skipped)}.` : undefined;
+    const said = [opts.note, skipped.length ? `Skipped ${summarizeSkipped(skipped)}.` : ""];
+    const detail = said.filter(Boolean).join(" ") || undefined;
     if (added) {
       const title =
         b && added === b.items.length
@@ -390,6 +421,42 @@ export class BatchController {
       });
     }
     return added;
+  }
+
+  /**
+   * Decode images for a design's screens (full size: they go on stage) and
+   * put them in the library, thumbnails and storage. Recordings and other
+   * files are skipped with a reason. In order; nothing goes into the document.
+   */
+  async importImages(
+    files: readonly File[],
+  ): Promise<{ added: { id: string; name: string }[]; skipped: Skipped[] }> {
+    const added: { id: string; name: string }[] = [];
+    const skipped: Skipped[] = [];
+    for (const f of files) {
+      const kind = fileKind(f);
+      if (kind !== "image") {
+        skipped.push({
+          name: f.name,
+          reason: kind === "video" ? "recordings can't go in a screen" : "not an image",
+        });
+        continue;
+      }
+      try {
+        const d = await this.decode(f, true);
+        const blob = f.type === d.mime ? (f as Blob) : new Blob([f], { type: d.mime });
+        if (this.stored.has(d.id) || this.app.library.has(d.id)) {
+          // Already here (the same image twice): make sure it's full, drop the new decode.
+          this.closeDecoded(d);
+          if (this.stored.has(d.id)) await this.ensureFull(d.id);
+        } else this.adopt(d, blob);
+        added.push({ id: d.id, name: f.name });
+      } catch (e) {
+        skipped.push({ name: f.name, reason: reasonOf(e) });
+      }
+    }
+    if (added.length) this.app.bumpAssetsVersion();
+    return { added, skipped };
   }
 
   private dropPending(key: string) {
@@ -525,21 +592,20 @@ export class BatchController {
   private applyMemory() {
     const b = this.batch;
     if (!b && this.app.ui.get().mode === "screenshot") {
-      // A single design: whatever is on stage is full.
+      // A single design: whatever is on stage is full, every screen of it.
       const d = this.doc;
-      if (!isBatch(d) && d.content.kind === "image" && d.content.assetId)
-        void this.ensureFull(d.content.assetId);
+      if (!isBatch(d) && d.content.kind === "image" && !d.content.clip)
+        for (const id of sceneImages(d)) void this.ensureFull(id);
       return;
     }
     if (!b) return;
     const i = activeIndex(b);
     const near = isNarrow() ? [i, i + 1 < b.items.length ? i + 1 : i - 1] : [i, i - 1, i + 1];
-    const keep = new Set(
-      near.map((j) => b.items[j]?.content.assetId).filter((x): x is string => !!x),
-    );
-    const active = b.items[i]?.content.assetId;
-    if (active) void this.ensureFull(active);
-    for (const id of keep) if (id !== active) void this.ensureFull(id);
+    // The images of the designs near the stage, screens included, the one on stage first.
+    const onStage = b.items[i] ? itemAssetIds(b.items[i]!) : [];
+    const keep = new Set(near.flatMap((j) => (b.items[j] ? itemAssetIds(b.items[j]!) : [])));
+    for (const id of onStage) void this.ensureFull(id);
+    for (const id of keep) if (!onStage.includes(id)) void this.ensureFull(id);
     for (const [id, s] of this.stored)
       if (s.full && !keep.has(id) && !this.upgrading.has(id)) this.swap(id);
   }
@@ -569,14 +635,15 @@ export class BatchController {
     }
   }
 
-  /** Images of an opened project file: decoded in the worker, the one on stage fully. */
+  /** Images of an opened project file: decoded in the worker, the design on stage fully. */
   async adoptBlobs(assets: readonly { id: string; blob: Blob }[], b: Batch): Promise<void> {
-    const active = b.items[activeIndex(b)]?.content.assetId;
-    const items = new Set(b.items.map((x) => x.content.assetId));
+    const act = b.items[activeIndex(b)];
+    const active = new Set(act ? itemAssetIds(act) : []);
+    const items = new Set(b.items.flatMap(itemAssetIds));
     for (const a of assets) {
       if (this.stored.has(a.id) || this.app.library.has(a.id)) continue;
       try {
-        if (items.has(a.id)) this.adopt(await this.decode(a.blob, a.id === active), a.blob);
+        if (items.has(a.id)) this.adopt(await this.decode(a.blob, active.has(a.id)), a.blob);
         else this.app.adoptImportedAsset(await importImage(a.blob));
       } catch {
         /* reported as missing when drawn */
@@ -751,6 +818,48 @@ export class BatchController {
     this.app.announce(use.length === 1 ? "Image duplicated" : `${use.length} images duplicated`);
   }
 
+  /** Whether "Combine into one design" applies to these images (2 to 6 of them). */
+  canCombine(ids: readonly string[] = this.targets()): boolean {
+    return ids.length >= COMBINE_MIN && ids.length <= COMBINE_MAX;
+  }
+
+  /**
+   * "Combine into one design": one new multi-screen design from the selected
+   * images (side by side for 2-3, a grid for 4-6), right after them and on
+   * stage. The originals stay. One undo step.
+   */
+  combine(ids: string[] = this.targets()): void {
+    const b = this.batch;
+    if (!b || !this.canCombine(ids)) return;
+    if (b.items.length >= this.max) {
+      this.app.toast({
+        kind: "info",
+        title: `A batch holds up to ${this.max} images`,
+        detail: "Remove one to combine these.",
+        prose: true,
+      });
+      return;
+    }
+    const n = ids.length;
+    this.app.store.updateDoc((d) => (isBatch(d) ? combineItems(d, ids) : d), {
+      label: `Combine ${n} images`,
+    });
+    const next = this.batch;
+    if (!next || next === b) return;
+    this.afterSelect(next, false);
+    const i = activeIndex(next);
+    const title = `Combined ${n} images into one design`;
+    this.app.toast({
+      kind: "undo",
+      title,
+      detail: `Image ${i + 1} of ${next.items.length}. The originals stay.`,
+      prose: true,
+      action: { label: "Undo", run: () => this.app.store.undo() },
+      duration: 6000,
+    });
+    this.app.announce(`${title}. Image ${i + 1} of ${next.items.length}.`);
+  }
+
   /** Reset the images (or some inspector groups of them) to the shared style. */
   reset(ids: string[] = this.targets(), groups?: OverrideGroup[]): void {
     const b = this.batch;
@@ -851,13 +960,17 @@ export class BatchController {
       this.clearSaved();
       return null;
     }
-    // The image on stage first (full), then the others as thumbnails.
+    // The design on stage first (full, every screen), then the others as thumbnails.
     const act = doc.items[activeIndex(doc)]!;
     const order = [act, ...doc.items.filter((x) => x !== act)];
     const missing = new Set<string>();
     const first = act.content.assetId!;
-    if (!(await this.loadStored(first, true))) missing.add(first);
-    const rest = order.slice(1).map((x) => x.content.assetId!);
+    for (const id of itemAssetIds(act)) if (!(await this.loadStored(id, true))) missing.add(id);
+    const seen = new Set(itemAssetIds(act));
+    const rest = order
+      .slice(1)
+      .flatMap(itemAssetIds)
+      .filter((id) => !seen.has(id) && (seen.add(id), true));
     const later = (async () => {
       for (const id of rest) {
         if (missing.has(id)) continue;
@@ -878,25 +991,25 @@ export class BatchController {
       const kept = doc.items.filter((x) => !missing.has(x.content.assetId!));
       if (!kept.length) return null;
       const fixed = removeItems(
-        doc,
+        withoutMissingScreens(doc, missing),
         doc.items.filter((x) => missing.has(x.content.assetId!)).map((x) => x.id),
       );
       return fixed as Batch | Scene;
     }
-    return doc;
+    // A lost extra screen of the design on stage shows as empty rather than broken.
+    return missing.size ? withoutMissingScreens(doc, missing) : doc;
   }
 
   private restoring: Promise<void> | null = null;
 
-  /** Wait until every image of the batch is in the library (before exporting). */
+  /** Wait until every image of the batch (every screen of every design) is in the library. */
   async ready(): Promise<void> {
     if (this.restoring) await this.restoring;
     const b = this.batch;
     if (!b) return;
-    for (const x of b.items) {
-      const id = x.content.assetId;
-      if (id && !this.app.library.has(id)) await this.loadStored(id, false);
-    }
+    for (const x of b.items)
+      for (const id of itemAssetIds(x))
+        if (!this.app.library.has(id)) await this.loadStored(id, false);
   }
 
   /** Every asset id a saved or open batch uses (never garbage-collected). */

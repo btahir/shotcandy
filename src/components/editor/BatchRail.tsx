@@ -72,6 +72,8 @@ export const BatchThumb = memo(function BatchThumb({
     const thumbs = app.thumbs;
     const id = scene.content.kind === "image" ? scene.content.assetId : null;
     if (!visible || !thumbs || !id || !app.library.has(id)) return;
+    // Every screen of a multi-screen design must be loaded first (the thumbnail is cached).
+    if (scene.slots?.some((s) => s.assetId && !app.library.has(s.assetId))) return;
     let alive = true;
     const run = () => {
       const layout = layoutScene(scene, app.resolver);
@@ -216,6 +218,17 @@ export function BatchMenu({
             {horizontal ? "Move right" : "Move down"}
             {!horizontal && <span className="meta mono">⌥↓</span>}
           </button>
+          {app.batch.canCombine(ids) && (
+            <button
+              type="button"
+              role="menuitem"
+              className="menu-item"
+              data-testid="combine"
+              onClick={run(() => app.batch.combine(ids))}
+            >
+              <Icon name="phones" size="sm" /> Combine into one design
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"
@@ -330,6 +343,8 @@ interface Drag {
   index: number;
   ghost: HTMLElement | null;
   y: number;
+  /** A screen of the multi-screen design on stage under the pointer (drop fills it). */
+  slot: number | null;
 }
 
 export function BatchRail() {
@@ -387,10 +402,14 @@ export function BatchRail() {
       d.ghost?.remove();
       setDragIds(null);
       setDropY(null);
+      app.screens.endDrag();
       if (!d.started) return;
       suppressClick.current = true;
       setTimeout(() => (suppressClick.current = false), 0);
-      if (commit && d.index >= 0) {
+      if (commit && d.slot !== null) {
+        // Onto a screen of the design on stage: the image goes in (it stays in the batch too).
+        app.screens.placeItems(d.slot, d.ids);
+      } else if (commit && d.index >= 0) {
         app.batch.moveTo(d.ids, d.index);
         setFlash(d.ids);
         setTimeout(() => setFlash([]), 700);
@@ -413,7 +432,7 @@ export function BatchRail() {
           : d.y > r.bottom - edge
             ? Math.ceil((d.y - (r.bottom - edge)) / 4)
             : 0;
-      if (dy) {
+      if (dy && d.slot === null) {
         sc.scrollTop += dy;
         const at = dropAt(d.y);
         d.index = at.index;
@@ -437,6 +456,15 @@ export function BatchRail() {
         );
       }
       if (d.ghost) d.ghost.style.transform = `translate(${e.clientX + 12}px, ${e.clientY + 8}px)`;
+      // Over a screen of a multi-screen design: fill it instead of reordering.
+      const slot = app.screens.at(e.clientX, e.clientY);
+      d.slot = slot;
+      app.screens.hover(slot, slot === null ? null : "image");
+      if (slot !== null) {
+        d.index = -1;
+        setDropY(null);
+        return;
+      }
       const at = dropAt(e.clientY);
       d.index = at.index;
       setDropY(at.y);
@@ -491,7 +519,9 @@ export function BatchRail() {
         return;
       }
       const mods = e.metaKey || e.ctrlKey || e.shiftKey;
-      if (!mods && !b.selected.includes(id)) app.batch.select(id, "only");
+      // With a multi-screen design on stage, a press doesn't switch images yet: the
+      // image may be on its way into one of the screens (a click still selects it).
+      if (!mods && !b.selected.includes(id) && !app.screens.active()) app.batch.select(id, "only");
       drag.current = {
         id,
         x0: e.clientX,
@@ -501,6 +531,7 @@ export function BatchRail() {
         index: -1,
         ghost: null,
         y: e.clientY,
+        slot: null,
       };
     },
     [app],

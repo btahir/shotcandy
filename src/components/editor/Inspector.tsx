@@ -1,6 +1,6 @@
 "use client";
 /**
- * The inspector: Styles → Background → Layout (+ 3D tilt) → Frame, or the
+ * The inspector: Styles → Background → Screens → Layout (+ 3D tilt) → Frame, or the
  * contextual annotation inspector when a tool or annotation is active.
  * Every control writes the scene directly; the preview re-renders live.
  */
@@ -36,6 +36,7 @@ import { CodeTray, ThemesTray, WindowTray } from "./CodeInspector";
 import { CardTray, PostStylesTray, PostTray } from "./PostInspector";
 import { HeadlineTray, SetStylesTray, SetTray, SlideTray } from "./AppStoreInspector";
 import { BatchScope, OverrideDot, OverrideReset } from "./BatchScope";
+import { ScreensTray } from "./ScreensTray";
 
 const DEFAULT_ROW = ["sherbet", "mint-julep", "grape-soda", "paper", "midnight", "satin"];
 
@@ -1409,6 +1410,8 @@ function ModeTrays() {
     <>
       <StylesTray />
       <BackgroundTray />
+      {/* How many screens and how they're arranged, then the card's own layout. */}
+      <ScreensTray />
       <LayoutTray />
       <FrameTray />
       {/* Motion is used least often: last, so Background and Layout stay above the fold (REVIEW r2 N9). */}
