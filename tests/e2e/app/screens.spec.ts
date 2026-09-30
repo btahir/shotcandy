@@ -489,6 +489,35 @@ test.describe("batch", () => {
     expect(sizes[3]!.width).toBeGreaterThan(sizes[3]!.height * 2);
   });
 
+  test("keeps every screen of the design on stage fully decoded, and only near it", async ({
+    page,
+  }) => {
+    await open(page);
+    await dropFiles(
+      page,
+      ["a", "b", "c", "d", "e"].map((n, i) => ({ name: `${n}.png`, from: SHOTS[i] })),
+    );
+    await waitForCount(page, 5);
+    await pickLayout(page, "Side by side");
+    await dropFiles(page, [{ name: "x.png", from: SHOTS[5] }]);
+    await waitScreen(page, 1);
+    const stats = () =>
+      page.evaluate(() =>
+        (
+          window as unknown as {
+            __shotcandy: { app: { batch: { memoryStats(): { full: number; thumbs: number } } } };
+          }
+        ).__shotcandy.app.batch.memoryStats(),
+      );
+    // a and its second screen x, and the neighbour b.
+    await expect.poll(stats, { timeout: 20_000 }).toEqual({ full: 3, thumbs: 3 });
+    await tiles(page).nth(4).click();
+    // d and e only: x is a thumbnail again.
+    await expect.poll(stats, { timeout: 20_000 }).toEqual({ full: 2, thumbs: 4 });
+    await tiles(page).nth(0).click();
+    await expect.poll(stats, { timeout: 20_000 }).toEqual({ full: 3, thumbs: 3 });
+  });
+
   test("the batch comes back after a reload with its screens", async ({ page }) => {
     await open(page);
     await threeImages(page);
