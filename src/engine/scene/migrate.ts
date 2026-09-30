@@ -90,6 +90,15 @@ export const SCENE_MIGRATIONS: readonly MigrationStep[] = [
     migrate: (doc) => doc,
     description: "animation and new content kinds (additive)",
   },
+  {
+    from: 2,
+    to: 3,
+    // v3 adds optional multi-screen fields (scene.layout, scene.slots); a v2
+    // scene is a valid v3 scene. Older apps refuse v3 files instead of silently
+    // dropping the extra screens.
+    migrate: (doc) => doc,
+    description: "multi-screen layouts and extra screens (additive)",
+  },
 ];
 
 export const sceneMigrator = createMigrator(SCENE_VERSION, SCENE_MIGRATIONS);

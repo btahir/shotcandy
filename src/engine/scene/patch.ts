@@ -117,14 +117,18 @@ export function removeAnnotation(scene: Scene, id: string): Scene {
 }
 
 /**
- * Asset ids referenced by a scene (content + background image). Built-in
- * wallpapers (`builtin:*`) are included unless `includeBuiltin` is false.
+ * Asset ids referenced by a scene (content, every extra screen, background
+ * image). Extra screens count even while the layout is "single": they are
+ * kept for when the user switches back, so storage clean-up, project files
+ * and exports must all carry them. Built-in wallpapers (`builtin:*`) are
+ * included unless `includeBuiltin` is false.
  */
 export function sceneAssetIds(scene: Scene, opts: { includeBuiltin?: boolean } = {}): string[] {
   const ids = new Set<string>();
   if (scene.content.kind === "image" && scene.content.assetId) ids.add(scene.content.assetId);
   if (scene.content.kind === "post" && scene.content.avatarAssetId)
     ids.add(scene.content.avatarAssetId);
+  for (const s of scene.slots ?? []) if (s.assetId) ids.add(s.assetId);
   if (scene.background.fill.kind === "image") ids.add(scene.background.fill.assetId);
   const all = [...ids];
   return opts.includeBuiltin === false ? all.filter((id) => !id.startsWith("builtin:")) : all;

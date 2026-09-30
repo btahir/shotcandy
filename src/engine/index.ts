@@ -29,6 +29,32 @@ export {
   sceneAssetIds,
 } from "./scene/patch";
 
+// Multi-screen layouts (screen 0 is the content; extra screens live in scene.slots)
+export {
+  LAYOUTS,
+  LAYOUT_IDS,
+  MAX_SCREENS,
+  getLayoutDef,
+  resolveParams,
+  activeLayout,
+  screenContent,
+  type LayoutDef,
+  type LayoutParamDef,
+  type ActiveLayout,
+} from "./scene/layouts";
+export {
+  setLayout,
+  setLayoutParam,
+  setScreenCount,
+  fillSlot,
+  fillEmptySlots,
+  swapSlots,
+  clearSlot,
+  screenCount,
+  shownScreens,
+  emptySlots,
+} from "./scene/slots";
+
 // Layout and geometry
 export {
   computeLayout,
@@ -47,6 +73,15 @@ export {
   type SceneLayout,
   type CardGeometry,
 } from "./layout/layout";
+export {
+  computeGroupLayout,
+  balanceSizes,
+  fanPositions,
+  GROUP_MAX_SIDE,
+  type GroupLayout,
+  type SlotLayout,
+  type Placement,
+} from "./layout/group";
 export {
   captionLayout,
   captionActive,
@@ -67,10 +102,15 @@ export {
   renderScene,
   renderToCanvas,
   layoutScene,
+  layoutGroupScene,
+  slotRects,
+  slotAt,
+  slotScene,
   scenePalette,
   resolveFrameTheme,
   type RenderOptions,
   type RenderResult,
+  type SlotRect,
 } from "./render/render";
 export { RenderCache } from "./render/cache";
 export {

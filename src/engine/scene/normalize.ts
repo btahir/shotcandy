@@ -30,8 +30,12 @@ import type {
   TextureSpec,
   VignetteSpec,
   CanvasSpec,
+  LayoutSpec,
+  LayoutParamKey,
+  ScreenSlot,
 } from "./types";
 import { SCENE_VERSION } from "./types";
+import { LAYOUT_IDS, MAX_SCREENS, clampCount, getLayoutDef } from "./layouts";
 import { MAX_CLIP_SECONDS, MIN_CLIP_SECONDS } from "../video/clip";
 
 export interface NormalizeResult {
@@ -354,17 +358,7 @@ function content(c: Ctx, v: unknown): Content {
   }
   const assetId = typeof o.assetId === "string" && o.assetId ? o.assetId : null;
   const out: ImageContent = { kind: "image", assetId };
-  if (o.tall !== undefined)
-    out.tall = oneOf(c, "content.tall", o.tall, ["auto", "top", "full"] as const, "auto");
-  if (o.fade !== undefined) out.fade = num(c, "content.fade", o.fade, 0.18, 0, 0.5);
-  if (o.sampling !== undefined)
-    out.sampling = oneOf(
-      c,
-      "content.sampling",
-      o.sampling,
-      ["auto", "smooth", "pixel"] as const,
-      "auto",
-    );
+  imageFields(c, "content", o, out);
   if (o.clip !== undefined && o.clip !== null) {
     const cl = obj(c, "content.clip", o.clip);
     const duration = num(c, "content.clip.duration", cl.duration, 0, 0, MAX_CLIP_SECONDS);
@@ -381,18 +375,41 @@ function content(c: Ctx, v: unknown): Content {
       c.warn("content.clip.duration", "recording without a length; clip dropped");
     }
   }
-  if (o.crop !== undefined) {
-    const cr = obj(c, "content.crop", o.crop);
-    const x = num(c, "content.crop.x", cr.x, 0, 0, 1);
-    const y = num(c, "content.crop.y", cr.y, 0, 0, 1);
-    out.crop = {
-      x,
-      y,
-      width: num(c, "content.crop.width", cr.width, 1 - x, 0.001, 1 - x),
-      height: num(c, "content.crop.height", cr.height, 1 - y, 0.001, 1 - y),
-    };
-  }
+  cropField(c, "content", o, out);
   return out;
+}
+
+/** Long-capture and sampling fields shared by the content image and extra screens. */
+function imageFields(
+  c: Ctx,
+  p: string,
+  o: Obj,
+  out: Pick<ImageContent, "tall" | "fade" | "sampling">,
+): void {
+  if (o.tall !== undefined)
+    out.tall = oneOf(c, `${p}.tall`, o.tall, ["auto", "top", "full"] as const, "auto");
+  if (o.fade !== undefined) out.fade = num(c, `${p}.fade`, o.fade, 0.18, 0, 0.5);
+  if (o.sampling !== undefined)
+    out.sampling = oneOf(
+      c,
+      `${p}.sampling`,
+      o.sampling,
+      ["auto", "smooth", "pixel"] as const,
+      "auto",
+    );
+}
+
+function cropField(c: Ctx, p: string, o: Obj, out: Pick<ImageContent, "crop">): void {
+  if (o.crop === undefined) return;
+  const cr = obj(c, `${p}.crop`, o.crop);
+  const x = num(c, `${p}.crop.x`, cr.x, 0, 0, 1);
+  const y = num(c, `${p}.crop.y`, cr.y, 0, 0, 1);
+  out.crop = {
+    x,
+    y,
+    width: num(c, `${p}.crop.width`, cr.width, 1 - x, 0.001, 1 - x),
+    height: num(c, `${p}.crop.height`, cr.height, 1 - y, 0.001, 1 - y),
+  };
 }
 
 function postContent(c: Ctx, o: Obj): PostContent {
@@ -571,8 +588,8 @@ function animation(c: Ctx, v: unknown): AnimationSpec | undefined {
   };
 }
 
-function annotation(c: Ctx, v: unknown, i: number): Annotation | null {
-  const p = `annotations[${i}]`;
+function annotation(c: Ctx, v: unknown, i: number, base = "annotations"): Annotation | null {
+  const p = `${base}[${i}]`;
   if (!isObj(v)) {
     c.warn(p, "expected an object");
     return null;
@@ -672,6 +689,72 @@ function caption(c: Ctx, v: unknown): CaptionSpec | undefined {
   };
 }
 
+/** Multi-screen layout; "single" (or anything unusable) normalizes to absent. */
+function layoutSpec(c: Ctx, v: unknown): LayoutSpec | undefined {
+  if (v === undefined || v === null) return undefined;
+  const o = obj(c, "layout", v);
+  const id = oneOf(c, "layout.id", o.id, LAYOUT_IDS, "single");
+  const def = getLayoutDef(id);
+  if (!def || id === "single") return undefined;
+  const count = clampCount(def, num(c, "layout.count", o.count, def.defaultCount, 1, MAX_SCREENS));
+  const po = obj(c, "layout.params", o.params);
+  const params: Partial<Record<LayoutParamKey, number>> = {};
+  for (const p of def.params) {
+    if (po[p.key] === undefined) continue;
+    params[p.key] = num(c, `layout.params.${p.key}`, po[p.key], p.default, p.min, p.max);
+  }
+  for (const k of Object.keys(po))
+    if (!def.params.some((p) => p.key === k))
+      c.warn(`layout.params.${k}`, `not a ${id} knob; dropped`);
+  return { id, count, ...(Object.keys(params).length ? { params } : {}) };
+}
+
+/** Extra screens: invalid entries are dropped, the list is capped. */
+function screenSlots(c: Ctx, v: unknown, ids: Set<string>): ScreenSlot[] | undefined {
+  if (v === undefined || v === null) return undefined;
+  const out: ScreenSlot[] = [];
+  arr(c, "slots", v).forEach((raw, i) => {
+    const p = `slots[${i}]`;
+    if (!isObj(raw)) {
+      c.warn(p, "expected an object; dropped");
+      return;
+    }
+    if (out.length >= MAX_SCREENS - 1) {
+      c.warn(p, `more than ${MAX_SCREENS - 1} extra screens; dropped`);
+      return;
+    }
+    const slot: ScreenSlot = {
+      assetId: typeof raw.assetId === "string" && raw.assetId ? raw.assetId.slice(0, 200) : null,
+    };
+    cropField(c, p, raw, slot);
+    imageFields(c, p, raw, slot);
+    if (raw.annotations !== undefined) {
+      const list = arr(c, `${p}.annotations`, raw.annotations)
+        .slice(0, 200)
+        .map((a, j) => annotation(c, a, j, `${p}.annotations`))
+        .filter((a): a is Annotation => {
+          if (!a) return false;
+          if (a.anchor === "content") return true;
+          c.warn(`${p}.annotations`, "canvas annotations belong to the scene; dropped");
+          return false;
+        })
+        .map((a) => uniqueId(a, ids));
+      if (list.length) slot.annotations = list;
+    }
+    out.push(slot);
+  });
+  return out.length ? out : undefined;
+}
+
+/** Ids must be unique for editing; suffix duplicates deterministically. */
+function uniqueId(a: Annotation, ids: Set<string>): Annotation {
+  let id = a.id;
+  let n = 2;
+  while (ids.has(id)) id = `${a.id}-${n++}`;
+  ids.add(id);
+  return id === a.id ? a : { ...a, id };
+}
+
 export function normalizeScene(input: unknown): NormalizeResult {
   const c = new Ctx();
   if (!isObj(input)) {
@@ -688,14 +771,7 @@ export function normalizeScene(input: unknown): NormalizeResult {
     .slice(0, 200)
     .map((a, i) => annotation(c, a, i))
     .filter((a): a is Annotation => a !== null)
-    .map((a) => {
-      // Ids must be unique for editing; suffix duplicates deterministically.
-      let id = a.id;
-      let n = 2;
-      while (ids.has(id)) id = `${a.id}-${n++}`;
-      ids.add(id);
-      return id === a.id ? a : { ...a, id };
-    });
+    .map((a) => uniqueId(a, ids));
   const scene: Scene = {
     version: SCENE_VERSION,
     canvas: {
@@ -716,5 +792,9 @@ export function normalizeScene(input: unknown): NormalizeResult {
   if (anim) scene.animation = anim;
   const cap = caption(c, input.caption);
   if (cap) scene.caption = cap;
+  const lay = layoutSpec(c, input.layout);
+  if (lay) scene.layout = lay;
+  const slots = screenSlots(c, input.slots, ids);
+  if (slots) scene.slots = slots;
   return { scene, issues: c.issues };
 }
