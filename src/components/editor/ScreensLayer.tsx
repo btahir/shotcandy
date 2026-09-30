@@ -456,11 +456,14 @@ export function ScreenMenu() {
   const close = (refocus = true) => {
     app.screens.closeMenu();
     if (refocus)
-      requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        // A click elsewhere (a field in the inspector, say) keeps the focus it gave.
+        const now = document.activeElement;
+        if (now && now !== document.body && !now.closest(".screen-menu")) return;
         document
           .querySelector<HTMLButtonElement>(`[data-testid=screens-layer] [data-screen="${i}"]`)
-          ?.focus(),
-      );
+          ?.focus();
+      });
   };
   const run = (fn: () => void) => () => {
     close(false);
