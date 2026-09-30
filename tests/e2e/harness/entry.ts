@@ -89,6 +89,24 @@ const harness = {
     return { dataUrl: await blobToDataUrl(blob), width: size.width, height: size.height, ms };
   },
 
+  /**
+   * Render with the long side at `long` px (auto canvases have no size up
+   * front); `placeholders` draws empty screens the way the editor does.
+   */
+  async renderLong(scene: Scene, long: number, placeholders = false) {
+    const layout = layoutScene(scene, resolver);
+    const scale = long / Math.max(layout.canvas.width, layout.canvas.height);
+    const size = outputSize(layout, scale);
+    const canvas = new OffscreenCanvas(size.width, size.height);
+    renderScene(canvas.getContext("2d")!, scene, resolver, {
+      scale,
+      cache: new RenderCache(),
+      emptySlots: placeholders ? "placeholder" : "skip",
+    });
+    const blob = await canvas.convertToBlob({ type: "image/png" });
+    return { dataUrl: await blobToDataUrl(blob), width: size.width, height: size.height };
+  },
+
   /** Time repeated preview renders (interaction latency). */
   previewTimings(scenes: Scene[], maxSide: number) {
     const times: number[] = [];
