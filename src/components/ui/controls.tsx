@@ -197,6 +197,10 @@ export function Switch({
 // Popover: fixed-position, anchored, portal; Esc and outside click close it.
 // ---------------------------------------------------------------------------
 
+/** Open popovers, innermost last: Escape closes only the innermost. */
+const openPopovers: object[] = [];
+const escaped = new WeakSet<Event>();
+
 export function Popover({
   open,
   anchor,
@@ -327,8 +331,11 @@ export function Popover({
       byPointer = true;
       closeRef.current();
     };
+    const me = {};
+    openPopovers.push(me);
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && openPopovers.at(-1) === me && !escaped.has(e)) {
+        escaped.add(e);
         e.stopPropagation();
         closeRef.current();
         anchor.current?.focus();
@@ -340,6 +347,7 @@ export function Popover({
     const trigger = anchor.current;
     return () => {
       cancelAnimationFrame(first);
+      openPopovers.splice(openPopovers.indexOf(me), 1);
       document.removeEventListener("pointerdown", onDown, true);
       document.removeEventListener("keydown", onKey, true);
       // Closed with focus inside (or already dropped on the page): hand it back once the

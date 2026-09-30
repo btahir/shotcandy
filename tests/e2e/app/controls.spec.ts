@@ -406,4 +406,27 @@ test.describe("menus give focus back when they close", () => {
     await expect(menu).toHaveCount(0);
     await expect(page.getByRole("textbox", { name: "File name pattern" })).toBeFocused();
   });
+
+  test("Escape closes only the innermost popover", async ({ page }) => {
+    await open(page);
+    await loadSample(page);
+    const options = page.getByTestId("export-options");
+    await options.click();
+    const dialog = page.getByRole("dialog", { name: "Export options" });
+    await expect(dialog).toBeVisible();
+    const button = page.getByRole("button", { name: "Insert a name token" });
+    await button.focus();
+    await page.keyboard.press("Enter");
+    const menu = page.getByRole("menu", { name: "Name tokens" });
+    await expect(menu.getByRole("menuitem").first()).toBeFocused();
+    // The token menu goes; Export options stays, with focus back on the token button.
+    await page.keyboard.press("Escape");
+    await expect(menu).toHaveCount(0);
+    await expect(dialog).toBeVisible();
+    await expect(button).toBeFocused();
+    // The next Escape closes Export options.
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(options).toBeFocused();
+  });
 });
