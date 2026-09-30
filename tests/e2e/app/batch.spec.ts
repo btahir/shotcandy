@@ -3,8 +3,9 @@
  * Single-image use must stay exactly as it was (no rail, same flows).
  */
 import { readFileSync } from "node:fs";
+import { unzipSync } from "fflate";
 import { type Page, expect, test } from "@playwright/test";
-import { loadSample, open, openMore } from "./helpers";
+import { loadSample, open, openMore, pngSize } from "./helpers";
 import {
   SHOTS,
   dropFiles,
@@ -53,6 +54,7 @@ test.describe("import", () => {
     expect(b.active).toBe(0);
     await expect(page.getByTestId("batch-rail")).toBeVisible();
     await expect(page.getByTestId("toast")).toContainText("Added 3 images");
+    await expect(page.getByTestId("export")).toContainText("Export all (3)");
     await thumbsReady(page);
     // No recent design per image.
     await page.waitForTimeout(1300);
@@ -301,6 +303,44 @@ test.describe("one style, with exceptions", () => {
   });
 });
 
+test.describe("export all", () => {
+  test("a ZIP of every image, with the original names, deduped", async ({ page }) => {
+    await open(page);
+    await dropFiles(page, [
+      { name: "Login.png", from: SHOTS[0] },
+      { name: "home.png", from: SHOTS[1] },
+      { name: "login.PNG", from: SHOTS[2] },
+    ]);
+    await waitForCount(page, 3);
+    const [dl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByTestId("export").click(),
+    ]);
+    expect(dl.suggestedFilename()).toMatch(/^shotcandy-3-images-\d{4}-\d{2}-\d{2}\.zip$/);
+    const zip = unzipSync(new Uint8Array(readFileSync((await dl.path())!)));
+    expect(Object.keys(zip)).toEqual(["home.png", "Login.png", "login (2).png"]);
+    for (const f of Object.values(zip)) {
+      const size = pngSize(Buffer.from(f));
+      expect(size.width).toBeGreaterThan(100);
+      expect(size.height).toBeGreaterThan(100);
+    }
+    await expect(page.getByTestId("toast")).toContainText("Saved 3 images");
+  });
+
+  test("export this image still downloads one file from the popover", async ({ page }) => {
+    await open(page);
+    await dropThree(page);
+    await page.getByTestId("export-options").click();
+    await expect(page.getByTestId("export-all")).toContainText("Export all (3)");
+    await expect(page.getByTestId("filename-preview")).toContainText("shot-1.png");
+    const [dl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByTestId("download").click(),
+    ]);
+    expect(dl.suggestedFilename()).toMatch(/^shot-1-\d+x\d+@\d+x\.png$/);
+  });
+});
+
 test.describe("persistence", () => {
   test("the batch survives a reload, recents stay single designs", async ({ page }) => {
     await open(page);
@@ -382,6 +422,185 @@ type AppHandle = {
     };
   };
 };
+
+test.describe("export all: failures, cancel, folders", () => {
+  test("a failed image doesn't stop the rest; Retry failed exports just that one", async ({
+    page,
+  }) => {
+    await open(page);
+    await dropThree(page);
+    await page.evaluate(() => {
+      const app = (window as unknown as AppHandle).__shotcandy.app;
+      const orig = app.runPlan.bind(app);
+      let n = 0;
+      app.runPlan = (...a: unknown[]) =>
+        ++n === 2 ? Promise.reject(new Error("GPU said no")) : orig(...a);
+    });
+    const [dl] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByTestId("export").click(),
+    ]);
+    const zip = unzipSync(new Uint8Array(readFileSync((await dl.path())!)));
+    expect(Object.keys(zip)).toEqual(["shot-1.png", "shot-10.png"]);
+    const toast = page.getByTestId("toast");
+    await expect(toast).toContainText("Exported 2 of 3");
+    await expect(toast).toContainText("shot-2.png (GPU said no)");
+    const [again] = await Promise.all([
+      page.waitForEvent("download"),
+      toast.getByRole("button", { name: "Retry failed" }).click(),
+    ]);
+    expect(again.suggestedFilename()).toMatch(/^shotcandy-1-image-/);
+    const one = unzipSync(new Uint8Array(readFileSync((await again.path())!)));
+    expect(Object.keys(one)).toEqual(["shot-2.png"]);
+  });
+
+  test("shows progress and cancels", async ({ page }) => {
+    await open(page);
+    await dropThree(page);
+    await page.evaluate(() => {
+      const app = (window as unknown as AppHandle).__shotcandy.app;
+      const orig = app.runPlan.bind(app);
+      app.runPlan = async (...a: unknown[]) => {
+        await new Promise((r) => setTimeout(r, 700));
+        return orig(...a);
+      };
+    });
+    let downloads = 0;
+    page.on("download", () => downloads++);
+    await page.getByTestId("export").click();
+    const pill = page.getByTestId("batch-progress");
+    await expect(pill).toContainText(/Exporting [12] of 3/);
+    await pill.getByRole("button", { name: "Cancel" }).click();
+    await expect(page.getByTestId("toast")).toContainText("Export cancelled");
+    await expect(pill).toHaveCount(0);
+    await page.waitForTimeout(800);
+    expect(downloads).toBe(0);
+  });
+
+  test("saves into a new Shotcandy folder, never over files already there", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== "chromium", "The folder picker is Chromium-only");
+    await open(page);
+    await dropFiles(page, [
+      { name: "Login.png", from: SHOTS[0] },
+      { name: "home.png", from: SHOTS[1] },
+    ]);
+    await waitForCount(page, 2);
+    await page.evaluate(() => {
+      const written: Record<string, number> = {};
+      const existing = new Set(["login.png"]);
+      const sub = {
+        name: "Shotcandy",
+        async getFileHandle(name: string, o?: { create?: boolean }) {
+          if (!o?.create && !existing.has(name)) throw new DOMException("x", "NotFoundError");
+          return {
+            async createWritable() {
+              return {
+                async write(b: Blob) {
+                  written[name] = b.size;
+                },
+                async close() {},
+              };
+            },
+          };
+        },
+        async *values() {
+          for (const name of existing) yield { name, kind: "file" };
+        },
+      };
+      const parent = {
+        name: "Pictures",
+        made: [] as string[],
+        async getDirectoryHandle(name: string) {
+          parent.made.push(name);
+          return sub;
+        },
+      };
+      (window as unknown as Record<string, unknown>).showDirectoryPicker = async () => parent;
+      (window as unknown as Record<string, unknown>).__written = written;
+      (window as unknown as Record<string, unknown>).__parent = parent;
+    });
+    await page.getByTestId("export-options").click();
+    await page.getByTestId("export-folder").click();
+    await expect(page.getByTestId("toast")).toContainText("Saved 2 images");
+    const out = await page.evaluate(() => ({
+      written: Object.keys((window as unknown as { __written: object }).__written),
+      made: (window as unknown as { __parent: { made: string[] } }).__parent.made,
+    }));
+    expect(out.made).toEqual(["Shotcandy"]);
+    expect(out.written).toEqual(["home.png", "Login (2).png"]);
+  });
+});
+
+test.describe("accessibility", () => {
+  test.skip(({ browserName }) => browserName !== "chromium", "axe runs once, in Chromium");
+  for (const scheme of ["light", "dark"] as const) {
+    test(`axe: rail, scope switch, menu (${scheme})`, async ({ page }) => {
+      const { default: AxeBuilder } = await import("@axe-core/playwright");
+      const check = async (label: string) => {
+        const r = await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+          .analyze();
+        const bad = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+        expect(
+          bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(" | ")}`),
+          label,
+        ).toEqual([]);
+      };
+      await page.emulateMedia({ colorScheme: scheme });
+      await open(page);
+      await dropThree(page);
+      await thumbsReady(page);
+      await page.getByTestId("batch-scope").getByRole("radio", { name: "This image" }).click();
+      await page.getByRole("radio", { name: "Browser" }).click();
+      await page.waitForTimeout(300);
+      await check("rail");
+      await tiles(page).nth(1).click({ button: "right" });
+      await page.waitForTimeout(300);
+      await check("menu");
+      await page.keyboard.press("Escape");
+      await page.getByTestId("export-options").click();
+      await page.waitForTimeout(400);
+      await check("export popover");
+    });
+  }
+
+  test("axe: phone strip", async ({ page }) => {
+    const { default: AxeBuilder } = await import("@axe-core/playwright");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page);
+    await dropThree(page, "batch-strip-tile");
+    await page.getByTestId("batch-select").click();
+    await page.waitForTimeout(300);
+    const r = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+      .analyze();
+    const bad = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+    expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(" | ")}`)).toEqual([]);
+  });
+
+  test("the rail is one tab stop, announces position and opens its menu from the keyboard", async ({
+    page,
+  }) => {
+    await open(page);
+    await dropThree(page);
+    const list = page.getByTestId("batch-list");
+    await list.focus();
+    await expect(list).toHaveAttribute("aria-activedescendant", /^bt-/);
+    await page.keyboard.press("ArrowDown");
+    await expect(page.getByTestId("status")).toHaveText(/Image 2 of 3, shot-2\.png/);
+    await page.keyboard.press("Shift+F10");
+    await expect(page.getByTestId("batch-menu")).toBeVisible();
+    // Focus moves into the menu, and back to the rail when it closes.
+    await expect(page.getByRole("menuitem", { name: /Move up/ })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(list).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.locator("[data-layout=wide] [data-testid=stage]")).toBeFocused();
+  });
+});
 
 test.describe("performance", () => {
   test.skip(({ browserName }) => browserName !== "chromium", "measured once, in Chromium");

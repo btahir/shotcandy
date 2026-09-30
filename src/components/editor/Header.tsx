@@ -22,7 +22,11 @@ import { Slider } from "../ui/Slider";
 import { formatBytes } from "./app";
 import { useApp, useScene, useUi } from "./context";
 import { canPickFolder, openFilePicker, openFilesPicker, openFolderPicker } from "./EmptyState";
+import { BatchController } from "./batch";
+import { useBatch, useBatchUi } from "./batch-ui";
 import { useActiveGroups } from "./BatchScope";
+import { activeItem } from "@/engine/batch/batch";
+import { batchFileName } from "@/engine/batch/names";
 import { MotionExportPanel } from "./MotionExport";
 import {
   COPY_MAX_LONG,
@@ -566,6 +570,9 @@ export function ExportPanel({
   const dest = getDestination(settings.destination);
   const result = useExportResult(true);
   const [tokensOpen, setTokensOpen] = useState(false);
+  const batch = useBatch();
+  const exporting = useBatchUi((s) => s.exporting);
+  const tokens = batch ? [...TOKENS, ["{n}", "number in the batch"] as const] : TOKENS;
   const tokRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const max = Math.max(1, maxExportScale(layout));
@@ -763,7 +770,7 @@ export function ExportPanel({
             className="menu"
           >
             <div onKeyDown={menuKeys}>
-              {TOKENS.map(([t, d]) => (
+              {tokens.map(([t, d]) => (
                 <button
                   key={t}
                   type="button"
@@ -784,7 +791,18 @@ export function ExportPanel({
             style={{ margin: "6px 2px 16px", overflowWrap: "anywhere" }}
             data-testid="filename-preview"
           >
-            → {preview}
+            →{" "}
+            {batch
+              ? `${batchFileName(settings.pattern, {
+                  source: activeItem(batch).name,
+                  n: batch.items.indexOf(activeItem(batch)) + 1,
+                  width: outW,
+                  height: outH,
+                  scale: plan.scale,
+                  format: outFormat,
+                  now: new Date(),
+                })}, one file per image`
+              : preview}
           </div>
         </>
       )}
@@ -797,7 +815,7 @@ export function ExportPanel({
       {plan.format === "jpeg" && fill === "none" && !appstore && (
         <p className="note">JPEG has no transparency, so the background becomes white.</p>
       )}
-      {!compact && (
+      {!compact && !batch && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 8 }}>
           <button
             type="button"
@@ -823,6 +841,62 @@ export function ExportPanel({
             <Icon name="download" /> Download{" "}
             <span className="tag">{mod === "⌘" ? "⌘S" : "Ctrl S"}</span>
           </button>
+        </div>
+      )}
+      {!compact && batch && (
+        <div className="batch-export" data-testid="batch-export">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 8 }}>
+            <button
+              type="button"
+              className={`btn btn-secondary${copyState === "busy" ? " pressed shimmer-busy" : ""}`}
+              aria-busy={copyState === "busy"}
+              onClick={(e) => {
+                app.copy(e.currentTarget);
+                onDone?.();
+              }}
+            >
+              <Icon name="copy" /> Copy
+            </button>
+            <button
+              type="button"
+              className={`btn btn-secondary${exportBusy ? " pressed shimmer-busy" : ""}`}
+              aria-busy={exportBusy}
+              data-testid="download"
+              onClick={(e) => {
+                void app.downloadImage(e.currentTarget);
+                onDone?.();
+              }}
+            >
+              <Icon name="download" /> Export this image
+            </button>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary btn-block"
+            style={{ marginTop: 8 }}
+            disabled={!!exporting}
+            data-testid="export-all"
+            onClick={() => {
+              void app.batch.exportAll("zip");
+              onDone?.();
+            }}
+          >
+            <Icon name="zip" /> Export all ({batch.items.length}) <span className="tag">ZIP</span>
+          </button>
+          {BatchController.canSaveToFolder() && (
+            <button
+              type="button"
+              className="link quiet batch-folder"
+              data-testid="export-folder"
+              disabled={!!exporting}
+              onClick={() => {
+                void app.batch.exportAll("folder");
+                onDone?.();
+              }}
+            >
+              <Icon name="folder" size="xs" /> Save into a folder instead
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -1020,6 +1094,8 @@ export function Header() {
   const motionJob = useUi((s) => s.motionExport);
   const mode = useUi((s) => s.mode);
   const packing = useStore(app.sets.state, (s) => s.packing);
+  const batch = useBatch();
+  const batchJob = useBatchUi((s) => s.exporting);
   const hasMotion = useScene((s) => !!s.scene.animation);
   const motionKind = settings.kind === "motion" && hasMotion;
   const m = settings.motion;
@@ -1118,15 +1194,26 @@ export function Header() {
             hasContent
               ? motionKind
                 ? "Export the clip (⌘S)"
-                : "Download (⌘S)"
+                : batch
+                  ? "Export all images (⌘S)"
+                  : "Download (⌘S)"
               : "Paste a screenshot first"
           }
           onClick={(e) => void app.download(e.currentTarget)}
         >
-          <Icon name={motionKind ? "film" : "download"} /> Export{" "}
+          <Icon name={motionKind ? "film" : "download"} />{" "}
+          {batch && !motionKind ? `Export all (${batch.items.length})` : "Export"}{" "}
           {hasContent && (
             <span className="tag">
-              {motionJob ? (
+              {batchJob ? (
+                `${batchJob.done}/${batchJob.total}`
+              ) : batch && !motionKind ? (
+                settings.format === "jpeg" ? (
+                  "JPG"
+                ) : (
+                  settings.format.toUpperCase()
+                )
+              ) : motionJob ? (
                 `${motionJob.total ? Math.round((motionJob.done / motionJob.total) * 100) : 0}%`
               ) : packing ? (
                 `${packing.done}/${packing.total}`

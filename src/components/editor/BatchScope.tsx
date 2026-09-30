@@ -7,6 +7,7 @@
 import type { ReactNode } from "react";
 import { activeIndex, customCount } from "@/engine/batch/batch";
 import { type OverrideGroup, GROUP_LABELS, overrideGroups } from "@/engine/batch/style";
+import { Icon } from "../icons";
 import { Segmented } from "../ui/controls";
 import { useBatch, useBatchUi } from "./batch-ui";
 import { useApp } from "./context";
@@ -83,5 +84,44 @@ export function OverrideReset({ group, children }: { group: OverrideGroup; child
     >
       Reset
     </button>
+  );
+}
+
+/** "Exporting 7 of 12" with Cancel, over the stage while Export all runs. */
+export function BatchProgress() {
+  const app = useApp();
+  const job = useBatchUi((s) => s.exporting);
+  if (!job) return null;
+  const pct = job.total ? Math.round((job.done / job.total) * 100) : 0;
+  return (
+    <div className="render-pill" role="status" aria-live="polite" data-testid="batch-progress">
+      <span className="rp-ring" style={{ ["--p" as string]: `${pct}%` }} aria-hidden="true">
+        <Icon name="zip" size="xs" />
+      </span>
+      <span className="rp-txt">
+        <b>
+          Exporting {Math.min(job.done + 1, job.total)} of {job.total}
+        </b>
+        <span className="mono">
+          {job.target === "folder"
+            ? "Into the Shotcandy folder"
+            : job.target === "share"
+              ? "For sharing"
+              : "ZIP"}{" "}
+          · {pct}%
+        </span>
+      </span>
+      <span className="rp-bar" aria-hidden="true">
+        <i style={{ width: `${pct}%` }} />
+      </span>
+      <button
+        type="button"
+        className="act"
+        onClick={() => app.batch.cancelExport()}
+        data-testid="cancel-batch-export"
+      >
+        Cancel
+      </button>
+    </div>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { type ExportFormat, getStylePreset, layoutScene } from "@/engine";
 import { Icon, LogoMark, type IconName } from "../icons";
 import { Segmented } from "../ui/controls";
+import { useStore } from "@/lib/store";
 import { AnnotationInspector, Colours } from "./AnnotationInspector";
 import { type MobileTab, formatBytes, styleName } from "./app";
 import { useApp, useScene, useUi } from "./context";
@@ -423,6 +424,8 @@ function MobileExport() {
   const custom = useUi((s) => s.customPresets);
   const plan = useExportPlan();
   const result = useExportResult(open && mode !== "appstore");
+  const batch = useBatch();
+  const exporting = useStore(app.batch.ui, (s) => s.exporting);
   const [closing, setClosing] = useState(false);
   const sheetRef = useRef<HTMLElement>(null);
   // Esc closes the sheet wherever focus is; focus moves into it when it opens.
@@ -571,15 +574,35 @@ function MobileExport() {
                 />
               </>
             )}
+            {batch && (
+              <button
+                type="button"
+                className="btn btn-primary btn-block"
+                style={{ height: 52, marginTop: 18, fontSize: 15.5 }}
+                disabled={!!exporting}
+                data-testid="m-export-all"
+                onClick={() => {
+                  void app.batch.exportAll("share");
+                  close();
+                }}
+                data-autofocus
+              >
+                <Icon name="zip" /> Save all {batch.items.length}
+              </button>
+            )}
             <button
               type="button"
-              className={`btn btn-primary btn-block${busy ? " pressed shimmer-busy" : ""}`}
+              className={`btn ${batch ? "btn-secondary" : "btn-primary"} btn-block${busy ? " pressed shimmer-busy" : ""}`}
               aria-busy={busy}
-              style={{ height: 52, marginTop: 18, fontSize: 15.5 }}
+              style={
+                batch
+                  ? { height: 44, marginTop: 10 }
+                  : { height: 52, marginTop: 18, fontSize: 15.5 }
+              }
               onClick={() => void app.share("save")}
-              data-autofocus
+              {...(batch ? {} : { "data-autofocus": true })}
             >
-              <Icon name="download" /> Save to Photos
+              <Icon name="download" /> {batch ? "Save this image" : "Save to Photos"}
             </button>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
               <button

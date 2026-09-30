@@ -2411,6 +2411,10 @@ export class EditorApp {
       return this.sets.exportZip(this.ui.get().exportSettings.format === "jpeg" ? "jpeg" : "png");
     if (this.ui.get().exportSettings.kind === "motion" && this.scene.animation)
       return this.exportMotion(anchor);
+    if (this.ui.get().mode === "screenshot" && isBatch(this.store.getState().doc))
+      return this.batch.exportAll(
+        window.matchMedia?.("(max-width: 767px)").matches ? "share" : "zip",
+      );
     return this.downloadImage(anchor);
   }
 
