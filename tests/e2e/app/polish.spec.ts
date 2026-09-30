@@ -765,3 +765,34 @@ test.describe("performance at 4K", () => {
     expect(timing.exportMs).toBeLessThan(15_000);
   });
 });
+
+test.describe("modes with a batch open", () => {
+  test("Code, Post and App Store leave the batch alone, and it comes back whole", async ({
+    page,
+  }) => {
+    await open(page);
+    await three(page);
+    await pickLayout(page, "Overlap");
+    await page.getByTestId("batch-tile").nth(1).click();
+    const before = await info(page);
+    const tabs = page.getByTestId("mode-switch");
+    for (const mode of ["Code", "Post", "App Store"]) {
+      await tabs.getByRole("tab", { name: mode }).click();
+      await expect(tabs.getByRole("tab", { name: mode })).toHaveAttribute("aria-selected", "true");
+      // No batch UI in other modes, and their designs aren't touched by it.
+      await expect(page.getByTestId("batch-rail")).toHaveCount(0);
+      await expect(page.getByTestId("batch-scope")).toHaveCount(0);
+      await expect(page.getByTestId("screens-tray")).toHaveCount(0);
+      await expect(page.getByTestId("export")).not.toContainText("Export all");
+    }
+    await tabs.getByRole("tab", { name: "Screenshot" }).click();
+    await waitForCount(page, 3);
+    expect(await info(page)).toEqual(before);
+    await expect(page.getByTestId("export")).toContainText("Export all (3)");
+    // The first image still has its layout, and undo still reaches it.
+    await page.getByTestId("batch-tile").nth(0).click();
+    expect((await design(page)).layout).toBe("overlap");
+    await page.keyboard.press("ControlOrMeta+z");
+    expect((await design(page)).layout).toBe("single");
+  });
+});
