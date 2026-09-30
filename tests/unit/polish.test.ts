@@ -97,7 +97,9 @@ describe("range selection", () => {
 
 describe("undo steps", () => {
   it("an import stays one step when the selection changes while it runs", () => {
-    const store = createEditorStore<number>(0, { lens: { scene: () => createScene(), update: (d) => d } });
+    const store = createEditorStore<number>(0, {
+      lens: { scene: () => createScene(), update: (d) => d },
+    });
     const add = { coalesce: "import", coalesceMs: Infinity, label: "Add images" };
     store.updateDoc((d) => d + 1, add);
     store.updateDoc((d) => d + 100, { transient: true }); // picking another image
@@ -108,7 +110,9 @@ describe("undo steps", () => {
   });
 
   it("a selection change still ends a slider drag", () => {
-    const store = createEditorStore<number>(0, { lens: { scene: () => createScene(), update: (d) => d } });
+    const store = createEditorStore<number>(0, {
+      lens: { scene: () => createScene(), update: (d) => d },
+    });
     store.updateDoc((d) => d + 1, { coalesce: "slider" });
     store.updateDoc((d) => d + 100, { transient: true });
     store.updateDoc((d) => d + 1, { coalesce: "slider" });

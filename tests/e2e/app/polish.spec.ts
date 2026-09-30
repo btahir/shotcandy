@@ -8,11 +8,13 @@ import { SHOTS, b64, dropFiles, info, waitForCount } from "./batch-helpers";
 import { design, pickLayout, screenPoint } from "./screens-helpers";
 
 type App = {
-  scene: { content: { kind: string; assetId?: string | null } };
+  scene: { content: { kind: string; assetId?: string | null }; annotations: { id: string }[] };
   store: {
     getState(): { doc: { kind?: string; items?: { content: { assetId: string } }[] } };
     undo(): void;
+    select(id: string | null): void;
   };
+  addAnnotation(kind: string, props?: object): string;
   batch: { ui: { get(): { pending: unknown[] } } };
   ui: { get(): { mode: string } };
   setMode(mode: string): void;
@@ -22,6 +24,24 @@ type App = {
   on(evt: string, fn: (arg?: unknown) => void): () => void;
 };
 const screens = (page: Page) => page.getByTestId("screen");
+const run = <T>(page: Page, fn: (a: App) => T) =>
+  page.evaluate(
+    (src) =>
+      new Function("a", `return (${src})(a)`)(
+        (window as unknown as { __shotcandy: { app: App } }).__shotcandy.app,
+      ),
+    fn.toString(),
+  ) as Promise<T>;
+
+/** Three images as a batch, in name order. */
+async function three(page: Page, testId = "batch-tile") {
+  await dropFiles(page, [
+    { name: "a.png", from: SHOTS[0] },
+    { name: "b.png", from: SHOTS[1] },
+    { name: "c.png", from: SHOTS[2] },
+  ]);
+  await waitForCount(page, 3, testId);
+}
 
 test.describe("screen 1 always has an image", () => {
   test("no swap, key or drag moves an empty screen into screen 1", async ({ page }) => {
@@ -143,5 +163,152 @@ test.describe("storage clean-up", () => {
       return Promise.all(list.map(async (id) => !!(await a.db!.assets.get(id))));
     }, ids);
     expect(stored).toEqual([true, true, true]);
+  });
+});
+
+test.describe("focus and keys", () => {
+  test("collapsing and expanding the rail keeps the keyboard on it", async ({ page }) => {
+    await open(page);
+    await three(page);
+    await page.getByTestId("rail-collapse").focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("rail-expand")).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("batch-list")).toBeFocused();
+  });
+
+  test("undo that dissolves the batch puts the keyboard on the canvas", async ({ page }) => {
+    await open(page);
+    await loadSample(page);
+    await dropFiles(page, [
+      { name: "b.png", from: SHOTS[1] },
+      { name: "c.png", from: SHOTS[2] },
+    ]);
+    await waitForCount(page, 3);
+    await page.getByTestId("batch-tile").nth(1).click();
+    await expect(page.getByTestId("batch-list")).toBeFocused();
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(page.getByTestId("batch-rail")).toHaveCount(0);
+    await expect(page.getByTestId("stage")).toBeFocused();
+  });
+
+  test("with an annotation picked, Delete removes it, not the image", async ({ page }) => {
+    await open(page);
+    await three(page);
+    await page.getByTestId("batch-tile").nth(0).click();
+    await expect(page.getByTestId("batch-list")).toBeFocused();
+    // Picking an annotation on the stage need not move focus off the rail.
+    await run(page, (a) => a.store.select(a.addAnnotation("rect")));
+    await page.keyboard.press("Delete");
+    expect((await info(page)).names).toHaveLength(3);
+    expect(await run(page, (a) => a.scene.annotations.length)).toBe(0);
+    // Focusing the rail again lets go of an annotation.
+    await run(page, (a) => a.store.select(a.addAnnotation("rect")));
+    await page.getByTestId("stage").focus();
+    await page.getByTestId("batch-list").focus();
+    await page.keyboard.press("Delete");
+    expect((await info(page)).names).toEqual(["b.png", "c.png"]);
+  });
+
+  test("a click elsewhere after the screen menu keeps its focus", async ({ page }) => {
+    await open(page);
+    await loadSample(page);
+    await pickLayout(page, "Side by side");
+    const p = await screenPoint(page, 0);
+    await page.mouse.click(p.x, p.y, { button: "right" });
+    await expect(page.getByTestId("screen-menu")).toBeVisible();
+    const single = page.getByTestId("screens-tray").getByRole("radio", { name: "Overlap" });
+    await single.click();
+    await page.waitForTimeout(150);
+    await expect(single).toBeFocused();
+  });
+});
+
+test.describe("cancelled drags", () => {
+  test("Escape during a screen drag, then letting go on an empty screen, opens nothing", async ({
+    page,
+  }) => {
+    await open(page);
+    await loadSample(page);
+    await pickLayout(page, "Side by side");
+    const a = await screenPoint(page, 0);
+    const b = await screenPoint(page, 1);
+    let chooser = false;
+    page.on("filechooser", () => (chooser = true));
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    await page.mouse.move(b.x, b.y, { steps: 8 });
+    await page.keyboard.press("Escape");
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    expect(chooser).toBe(false);
+  });
+
+  test("Escape during a rail drag keeps the selection", async ({ page }) => {
+    await open(page);
+    await three(page);
+    await page.getByTestId("batch-tile").nth(0).click();
+    await page
+      .getByTestId("batch-tile")
+      .nth(1)
+      .click({ modifiers: ["Shift"] });
+    expect((await info(page)).selected).toEqual([0, 1]);
+    const box = (await page.getByTestId("batch-tile").nth(0).boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 30, { steps: 5 });
+    await page.keyboard.press("Escape");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 3 });
+    await page.mouse.up();
+    await page.waitForTimeout(100);
+    expect((await info(page)).selected).toEqual([0, 1]);
+  });
+
+  test("a rail drag let go over the canvas doesn't reorder", async ({ page }) => {
+    await open(page);
+    await three(page);
+    const box = (await page.getByTestId("batch-tile").nth(0).boundingBox())!;
+    const stage = (await page.getByTestId("stage").boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height - 60, { steps: 10 });
+    await expect(page.getByTestId("batch-drop")).toHaveCount(0);
+    await page.mouse.up();
+    expect((await info(page)).names).toEqual(["a.png", "b.png", "c.png"]);
+    await expect(page.getByTestId("status")).toHaveText(/Move cancelled/);
+  });
+});
+
+test.describe("phones", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test("when the share sheet needs a fresh tap, a Share button offers one", async ({ page }) => {
+    await open(page);
+    await page.evaluate(() => {
+      const w = window as unknown as { __shares: number; __files: number };
+      w.__shares = 0;
+      w.__files = 0;
+      Object.assign(navigator, {
+        canShare: () => true,
+        share: async (d: { files: File[] }) => {
+          w.__shares++;
+          // The first call comes long after the tap: blocked, like Safari does.
+          if (w.__shares === 1) throw new DOMException("no activation", "NotAllowedError");
+          w.__files = d.files.length;
+        },
+      });
+    });
+    let downloads = 0;
+    page.on("download", () => downloads++);
+    await three(page, "batch-strip-tile");
+    await page.getByTestId("export").click();
+    await page.getByTestId("m-export-all").click();
+    const toast = page.getByTestId("toast").filter({ hasText: "3 images ready" });
+    await expect(toast).toBeVisible({ timeout: 20_000 });
+    await toast.getByRole("button", { name: "Share" }).click();
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __files: number }).__files))
+      .toBe(3);
+    expect(downloads).toBe(0);
   });
 });

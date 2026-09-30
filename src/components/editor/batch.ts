@@ -1054,8 +1054,20 @@ export class BatchController {
    * sheet (phones). Failures don't stop the rest; they can be retried.
    */
   async exportAll(target: ExportTarget = "zip", only?: string[]): Promise<void> {
+    // One at a time, from the first click (the folder picker and loading come before progress shows).
+    if (this.exportBusy || this.ui.get().exporting || !this.batch) return;
+    this.exportBusy = true;
+    try {
+      await this.runExportAll(target, only);
+    } finally {
+      this.exportBusy = false;
+    }
+  }
+
+  private exportBusy = false;
+
+  private async runExportAll(target: ExportTarget, only?: string[]): Promise<void> {
     const app = this.app;
-    if (this.ui.get().exporting || !this.batch) return;
     // The folder picker needs the click's user activation: ask before anything else.
     let dir: FileSystemDirectoryHandleLike | null = null;
     if (target === "folder") {
@@ -1196,17 +1208,39 @@ export class BatchController {
       } else if (dir) {
         where = "the Shotcandy folder";
       } else {
-        const shared = await this.shareFiles(files);
-        if (shared === "cancelled") return;
-        if (shared === "unsupported") {
+        const zipAll = async () => {
           const zm = zipMod ?? (await import("@/engine/batch/zip"));
           const z = new zm.ZipStream();
           for (const f of files) z.add(f.name, new Uint8Array(await f.arrayBuffer()), now);
-          const blob = await z.finish();
           const file = `${batchArchiveName(files.length, now)}.zip`;
-          app.downloadFile(blob, file);
-          where = file;
+          app.downloadFile(await z.finish(), file);
+          return file;
+        };
+        const shared = await this.shareFiles(files);
+        if (shared === "cancelled") return;
+        if (shared === "blocked") {
+          // Rendering outlasted the tap that asked for it, and the share sheet
+          // only opens from a tap: offer one.
+          this.ui.set({ failed });
+          app.toast({
+            kind: "info",
+            title: `${plural(files.length, "image")} ready`,
+            detail: "Tap Share to save or send them.",
+            prose: true,
+            duration: 20000,
+            action: {
+              label: "Share",
+              run: () =>
+                void this.shareFiles(files).then(async (r) => {
+                  if (r === "unsupported" || r === "blocked") await zipAll();
+                  if (r !== "cancelled") app.announce(`Exported ${plural(files.length, "image")}`);
+                }),
+            },
+          });
+          app.announce(`${plural(files.length, "image")} ready. Use Share to save them.`);
+          return;
         }
+        if (shared === "unsupported") where = await zipAll();
       }
       app.emit("batch-exported", { names, target, failed: failed.map((f) => f.name) });
       this.ui.set({ failed });
@@ -1249,7 +1283,9 @@ export class BatchController {
     }
   }
 
-  private async shareFiles(files: File[]): Promise<"shared" | "cancelled" | "unsupported"> {
+  private async shareFiles(
+    files: File[],
+  ): Promise<"shared" | "cancelled" | "blocked" | "unsupported"> {
     const nav = navigator as Navigator & {
       canShare?: (d: ShareData) => boolean;
       share?: (d: ShareData) => Promise<void>;
@@ -1259,7 +1295,13 @@ export class BatchController {
       await nav.share({ files, title: "Shotcandy images" });
       return "shared";
     } catch (e) {
-      return (e as Error).name === "AbortError" ? "cancelled" : "unsupported";
+      const name = (e as Error).name;
+      // NotAllowedError: no recent tap (the share sheet needs one).
+      return name === "AbortError"
+        ? "cancelled"
+        : name === "NotAllowedError"
+          ? "blocked"
+          : "unsupported";
     }
   }
 
