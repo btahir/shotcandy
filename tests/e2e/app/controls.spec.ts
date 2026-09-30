@@ -345,3 +345,22 @@ test.describe("arrow keys move focus with the choice", () => {
     expect(errors).toEqual([]);
   });
 });
+
+test("a name token goes in at the caret, and the caret lands after it", async ({ page }) => {
+  await open(page);
+  await loadSample(page);
+  await page.getByTestId("export-options").click();
+  const field = page.getByRole("textbox", { name: "File name pattern" });
+  await field.fill("shot");
+  await field.press("Home");
+  await page.getByRole("button", { name: "Insert a name token" }).click();
+  await page.getByRole("menuitem", { name: /\{w\}/ }).focus();
+  // A late frame still puts focus in the field, with the caret after the token.
+  await holdFrames(page);
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("menu", { name: "Name tokens" })).toHaveCount(0);
+  await releaseFrames(page);
+  await expect(field).toHaveValue("{w}shot");
+  await expect(field).toBeFocused();
+  expect(await field.evaluate((el: HTMLInputElement) => el.selectionStart)).toBe(3);
+});

@@ -183,6 +183,39 @@ test.describe("focus and keys", () => {
     await expect(page.getByTestId("batch-list")).toBeFocused();
   });
 
+  test("a late frame after collapsing or expanding the rail never takes focus back", async ({
+    page,
+  }) => {
+    await open(page);
+    await three(page);
+    const stage = page.getByTestId("stage");
+    // Frames late: the keyboard still lands on the new button, then back on the images.
+    await page.getByTestId("rail-collapse").focus();
+    await holdFrames(page);
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("rail-expand")).toBeVisible();
+    await releaseFrames(page);
+    await expect(page.getByTestId("rail-expand")).toBeFocused();
+    await holdFrames(page);
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("batch-list")).toBeVisible();
+    await releaseFrames(page);
+    await expect(page.getByTestId("batch-list")).toBeFocused();
+    // Gone elsewhere before the frame: focus stays there.
+    await page.getByTestId("rail-collapse").focus();
+    await holdFrames(page);
+    await page.keyboard.press("Enter");
+    await stage.focus();
+    await releaseFrames(page);
+    await expect(stage).toBeFocused();
+    await page.getByTestId("rail-expand").focus();
+    await holdFrames(page);
+    await page.keyboard.press("Enter");
+    await stage.focus();
+    await releaseFrames(page);
+    await expect(stage).toBeFocused();
+  });
+
   test("undo that dissolves the batch puts the keyboard on the canvas", async ({ page }) => {
     await open(page);
     await loadSample(page);

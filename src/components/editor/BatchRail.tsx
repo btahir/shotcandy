@@ -13,7 +13,7 @@ import { type BatchItem, activeIndex, itemScene } from "@/engine/batch/batch";
 import { overrideGroups } from "@/engine/batch/style";
 import { thumbScale } from "@/lib/thumbs/service";
 import { Icon } from "../icons";
-import { Popover, menuKeys } from "../ui/controls";
+import { Popover, focusNextFrame, menuKeys } from "../ui/controls";
 import { RAIL_MAX, RAIL_MIN } from "./batch";
 import {
   groupsText,
@@ -627,9 +627,7 @@ export function BatchRail() {
           onClick={() => {
             app.batch.setRail({ collapsed: false });
             // This button goes away with the collapsed rail: keep the keyboard on the images.
-            requestAnimationFrame(() =>
-              document.querySelector<HTMLElement>("[data-testid=batch-list]")?.focus(),
-            );
+            focusNextFrame(() => document.querySelector<HTMLElement>("[data-testid=batch-list]"));
           }}
         >
           <Icon name="chevronRight" />
@@ -672,9 +670,7 @@ export function BatchRail() {
           data-testid="rail-collapse"
           onClick={() => {
             app.batch.setRail({ collapsed: true });
-            requestAnimationFrame(() =>
-              document.querySelector<HTMLElement>("[data-testid=rail-expand]")?.focus(),
-            );
+            focusNextFrame(() => document.querySelector<HTMLElement>("[data-testid=rail-expand]"));
           }}
         >
           <Icon name="chevronLeft" size="sm" />

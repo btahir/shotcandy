@@ -601,10 +601,10 @@ export function ExportPanel({
     const end = el?.selectionEnd ?? v.length;
     app.setExportSettings({ pattern: v.slice(0, at) + tok + v.slice(end) });
     setTokensOpen(false);
-    requestAnimationFrame(() => {
-      el?.focus();
-      el?.setSelectionRange(at + tok.length, at + tok.length);
-    });
+    focusNextFrame(
+      () => el,
+      () => el?.setSelectionRange(at + tok.length, at + tok.length),
+    );
   };
   return (
     <div className="export-panel">
