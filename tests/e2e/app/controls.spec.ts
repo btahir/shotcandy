@@ -364,3 +364,46 @@ test("a name token goes in at the caret, and the caret lands after it", async ({
   await expect(field).toBeFocused();
   expect(await field.evaluate((el: HTMLInputElement) => el.selectionStart)).toBe(3);
 });
+
+test.describe("menus give focus back when they close", () => {
+  test("More: an action that keeps focus returns it to More", async ({ page }) => {
+    await open(page);
+    await loadSample(page);
+    const more = page.getByRole("button", { name: "More", exact: true });
+    // From the keyboard.
+    await more.focus();
+    await page.keyboard.press("Enter");
+    const save = page.getByRole("menuitem", { name: /Save project file/ });
+    await expect(save).toBeVisible();
+    await save.focus();
+    let dl = page.waitForEvent("download");
+    await page.keyboard.press("Enter");
+    await dl;
+    await expect(page.getByRole("menu")).toHaveCount(0);
+    await expect(more).toBeFocused();
+    // With the pointer.
+    await more.click();
+    dl = page.waitForEvent("download");
+    await save.click();
+    await dl;
+    await expect(page.getByRole("menu")).toHaveCount(0);
+    await expect(more).toBeFocused();
+  });
+
+  test("name tokens: the keyboard goes in, and a pick lands in the field", async ({ page }) => {
+    await open(page);
+    await loadSample(page);
+    await page.getByTestId("export-options").click();
+    const button = page.getByRole("button", { name: "Insert a name token" });
+    await button.focus();
+    await page.keyboard.press("Enter");
+    const menu = page.getByRole("menu", { name: "Name tokens" });
+    await expect(menu.getByRole("menuitem").first()).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(menu.getByRole("menuitem").nth(1)).toBeFocused();
+    // A picked token sends focus to the field; closing the menu doesn't take it back.
+    await page.keyboard.press("Enter");
+    await expect(menu).toHaveCount(0);
+    await expect(page.getByRole("textbox", { name: "File name pattern" })).toBeFocused();
+  });
+});

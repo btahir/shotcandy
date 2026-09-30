@@ -16,16 +16,16 @@ import { createPortal } from "react-dom";
  * focus has moved on since: a late focus() must never pull the keyboard back
  * from wherever the person went in the meantime. A newer call replaces one
  * still waiting (keys pressed faster than frames), so the last move wins.
- * `then` runs once focus has moved.
+ * `then` runs once focus has moved. Returns a function that cancels it.
  */
 let waiting = 0;
 export function focusNextFrame(
   target: () => HTMLElement | null | undefined,
   then?: (el: HTMLElement) => void,
-): number {
+): () => void {
   cancelAnimationFrame(waiting);
   const from = document.activeElement;
-  waiting = requestAnimationFrame(() => {
+  const id = requestAnimationFrame(() => {
     waiting = 0;
     const now = document.activeElement;
     if (now && now !== from && now !== document.body) return;
@@ -34,7 +34,11 @@ export function focusNextFrame(
     el.focus();
     then?.(el);
   });
-  return waiting;
+  waiting = id;
+  return () => {
+    cancelAnimationFrame(id);
+    if (waiting === id) waiting = 0;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -231,6 +235,10 @@ export function Popover({
   const [pos, setPos] = useState<{ left: number; top: number; arrowX: number } | null>(null);
   const [closing, setClosing] = useState(false);
   const [mounted, setMounted] = useState(open);
+  // Where focus goes back to if the popover closed with it inside (see the open effect).
+  const handBack = useRef<HTMLElement | null>(null);
+  // Rendered from the first open render, so the open effect finds it (focus in, and back).
+  const shown = open || mounted;
 
   useEffect(() => {
     if (open) {
@@ -239,6 +247,17 @@ export function Popover({
     } else if (mounted) {
       setClosing(true);
       const t = setTimeout(() => {
+        // Nothing else took focus while it animated closed: give it back, don't drop it on the page.
+        const back = handBack.current;
+        handBack.current = null;
+        const now = document.activeElement;
+        // A focus move still waiting for its frame (an action's own) goes first.
+        if (
+          back?.isConnected &&
+          !waiting &&
+          (!now || now === document.body || ref.current?.contains(now))
+        )
+          back.focus();
         setMounted(false);
         setClosing(false);
       }, 120);
@@ -247,7 +266,7 @@ export function Popover({
   }, [open, mounted]);
 
   useLayoutEffect(() => {
-    if (!mounted) return;
+    if (!shown) return;
     const place = () => {
       const el = ref.current;
       const anchorEl = anchor.current;
@@ -274,11 +293,14 @@ export function Popover({
       ro.disconnect();
       window.removeEventListener("resize", place);
     };
-  }, [mounted, anchor, align, offset, side]);
+  }, [shown, anchor, align, offset, side]);
 
   useEffect(() => {
     if (!open) return;
+    handBack.current = null;
     const prev = document.activeElement as HTMLElement | null;
+    // A click outside (or on the trigger) closes it with focus where the pointer put it.
+    let byPointer = false;
     // Focus goes in on the first frame, unless the popover closed before it came.
     const first = !initialFocus
       ? 0
@@ -295,9 +317,14 @@ export function Popover({
         });
     const onDown = (e: PointerEvent) => {
       const t = e.target as Node;
-      if (ref.current?.contains(t) || anchor.current?.contains(t)) return;
+      if (ref.current?.contains(t)) return;
+      if (anchor.current?.contains(t)) {
+        byPointer = true;
+        return;
+      }
       // Clicks inside a nested popover (portal) must not close its parent.
       if ((t as Element).closest?.(".popover")) return;
+      byPointer = true;
       closeRef.current();
     };
     const onKey = (e: globalThis.KeyboardEvent) => {
@@ -310,15 +337,20 @@ export function Popover({
     document.addEventListener("pointerdown", onDown, true);
     document.addEventListener("keydown", onKey, true);
     const el = ref.current;
+    const trigger = anchor.current;
     return () => {
       cancelAnimationFrame(first);
       document.removeEventListener("pointerdown", onDown, true);
       document.removeEventListener("keydown", onKey, true);
-      if (prev && document.activeElement && el?.contains(document.activeElement)) prev.focus?.();
+      // Closed with focus inside (or already dropped on the page): hand it back once the
+      // popover has gone, unless something else (an onClose, the action) moves it first.
+      const now = document.activeElement;
+      if (!byPointer && now && (now === document.body || el?.contains(now)))
+        handBack.current = prev && prev !== document.body && prev.isConnected ? prev : trigger;
     };
   }, [open, anchor, initialFocus]);
 
-  if (!mounted || typeof document === "undefined") return null;
+  if (!shown || typeof document === "undefined") return null;
   return createPortal(
     <div
       ref={ref}

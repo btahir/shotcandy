@@ -443,12 +443,12 @@ function MobileExport() {
       app.ui.set({ mobileExport: false });
     };
     window.addEventListener("keydown", onKey, true);
-    const raf = focusNextFrame(() =>
+    const cancelFocus = focusNextFrame(() =>
       sheetRef.current?.querySelector<HTMLElement>("[data-autofocus], button"),
     );
     return () => {
       window.removeEventListener("keydown", onKey, true);
-      cancelAnimationFrame(raf);
+      cancelFocus();
     };
   }, [open, app]);
   if (!open && !closing) return null;
