@@ -403,12 +403,34 @@ export class ScreensController {
     this.report(note, "", slots, replaced);
   }
 
-  /** Swap two screens (image, crop and its marks move together). */
-  swap(a: number, b: number): void {
+  /**
+   * Whether screens `a` and `b` can trade places: screen 1 is the design's own
+   * screenshot, so an empty screen never moves into it.
+   */
+  canSwap(a: number, b: number): boolean {
     const lay = this.active();
-    if (!lay || a === b || Math.max(a, b) >= lay.count || Math.min(a, b) < 0) return;
+    if (!lay || a === b || Math.max(a, b) >= lay.count || Math.min(a, b) < 0) return false;
+    const filled = (i: number) => !!screenContent(this.scene, i)?.assetId;
+    // Two empty screens have nothing to trade.
+    if (!filled(a) && !filled(b)) return false;
+    return (a !== 0 || filled(b)) && (b !== 0 || filled(a));
+  }
+
+  /** Swap two screens (image, crop and its marks move together); whether they moved. */
+  swap(a: number, b: number): boolean {
+    const lay = this.active();
+    if (!lay || a === b || Math.max(a, b) >= lay.count || Math.min(a, b) < 0) return false;
+    if (!this.canSwap(a, b)) {
+      const empty = (i: number) => !screenContent(this.scene, i)?.assetId;
+      this.app.announce(
+        empty(a) && empty(b)
+          ? "Both screens are empty"
+          : "Screen 1 can't be empty. Choose an image for the empty screen instead.",
+      );
+      return false;
+    }
     const [lo, hi] = a < b ? [a, b] : [b, a];
-    if (!this.edit((s) => swapSlots(s, a, b), `Swap screens ${lo + 1} and ${hi + 1}`)) return;
+    if (!this.edit((s) => swapSlots(s, a, b), `Swap screens ${lo + 1} and ${hi + 1}`)) return false;
     this.flash([a, b]);
     const title = `Swapped screens ${lo + 1} and ${hi + 1}`;
     this.app.toast({
@@ -417,6 +439,7 @@ export class ScreensController {
       action: { label: "Undo", run: () => this.app.store.undo() },
     });
     this.app.announce(`${title}. ${this.label(b)}.`);
+    return true;
   }
 
   /** Swap screen `i` with its neighbour (-1 before, +1 after). */
@@ -428,8 +451,7 @@ export class ScreensController {
       this.app.announce(dir < 0 ? "Already the first screen" : "Already the last screen");
       return null;
     }
-    this.swap(i, j);
-    return j;
+    return this.swap(i, j) ? j : null;
   }
 
   /** Empty screen `i` (not screen 1: that is the design's own screenshot). */

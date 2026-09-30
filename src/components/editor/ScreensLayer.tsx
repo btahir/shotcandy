@@ -143,7 +143,9 @@ export function ScreensLayer({
     }
     if (p?.moved) {
       const t = hit(e);
-      app.screens.hover(t !== null && t !== p.index ? t : null, "screen");
+      // Screen 1 never trades places with an empty screen.
+      const ok = t !== null && p.index !== null && app.screens.canSwap(p.index, t);
+      app.screens.hover(ok ? t : null, "screen");
       return;
     }
     if (!p) {
@@ -534,7 +536,7 @@ export function ScreenMenu() {
               type="button"
               role="menuitem"
               className="menu-item"
-              disabled={i === 0}
+              disabled={!app.screens.canSwap(i, i - 1)}
               onClick={run(() => app.screens.move(i, -1))}
             >
               <Icon name="arrowLeft" size="sm" /> Swap with previous
@@ -544,7 +546,7 @@ export function ScreenMenu() {
               type="button"
               role="menuitem"
               className="menu-item"
-              disabled={i >= lay.count - 1}
+              disabled={!app.screens.canSwap(i, i + 1)}
               onClick={run(() => app.screens.move(i, 1))}
             >
               <Icon name="arrowRight" size="sm" /> Swap with next
