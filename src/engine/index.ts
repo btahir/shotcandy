@@ -93,7 +93,11 @@ export {
   type CaptionBlock,
 } from "./layout/caption";
 export {
+  REDACT_ON_DARK,
+  REDACT_ON_LIGHT,
+  redactAutoFill,
   sourceAdvice,
+  surroundLightness,
   themeForLightness,
   topBandLightness,
   type SourceAdvice,

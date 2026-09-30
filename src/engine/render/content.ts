@@ -6,9 +6,10 @@
  * (tweet/testimonial card) renderers here. Each renderer reports the natural
  * pixel size used by layout and draws itself into the content rect.
  */
-import { type AssetResolver, pickImage } from "../assets/types";
+import { type AssetResolver, type AssetSource, pickImage } from "../assets/types";
 import { gaussianBlurRGBA, pixelateRGBA } from "../math/blur";
-import { toCss } from "../math/color";
+import { parseColor, toCss } from "../math/color";
+import { redactAutoFill, surroundLightness } from "../analysis/tone";
 import type { Rect, Size } from "../math/geometry";
 import { stableStringify } from "../math/random";
 import { effectiveCrop } from "../layout/layout";
@@ -86,7 +87,11 @@ export function stepDown(
 function redactionsKey(list: RedactAnnotation[]): string {
   return list.length
     ? stableStringify(
-        list.map(({ x, y, w, h, mode, strength }) => ({ x, y, w, h, mode, strength })),
+        list.map(({ x, y, w, h, mode, strength, fill }) =>
+          mode === "solid"
+            ? { x, y, w, h, mode, fill: fill ?? "auto" }
+            : { x, y, w, h, mode, strength },
+        ),
       )
     : "";
 }
@@ -168,15 +173,64 @@ export function processedImage(
   if (!img) return null;
   const key = `content:${src.id}:${img.width}:${W}x${H}:${stableStringify(crop)}:${redactionsKey(redactions)}:${unitPx.toFixed(4)}:${crisp ? 1 : 0}`;
   return cache.get(key, () => {
-    const m = mipSource(env, cache, src.id, img, crop, W);
+    const fills = new Map<RedactAnnotation, string>();
+    for (const r of redactions)
+      if (r.mode === "solid") fills.set(r, solidFill(env, cache, src, crop, r));
+    const base = fills.size ? maskedSource(env, cache, src.id, img, crop, fills) : null;
+    const m = base
+      ? mipSource(env, cache, base.id, base.img, crop, W)
+      : mipSource(env, cache, src.id, img, crop, W);
     const out = env.createCanvas(W, H);
     const g = get2d(out, { willReadFrequently: redactions.length > 0 });
     g.imageSmoothingEnabled = !crisp;
     g.imageSmoothingQuality = "high";
     g.drawImage(m.image, m.x, m.y, m.w, m.h, 0, 0, W, H);
-    for (const r of redactions) applyRedaction(g, r, W, H, unitPx);
+    for (const r of redactions) {
+      const fill = fills.get(r);
+      if (fill) fillRedaction(g, r, W, H, fill);
+      else applyRedaction(g, r, W, H, unitPx);
+    }
     return { value: out, bytes: W * H * 4 };
   });
+}
+
+/**
+ * The source image with its solid boxes already painted over, in whole source
+ * pixels. Downscaling or smoothing then never blends a hidden pixel into the
+ * ones around the box: only the box colour can bleed past its edge.
+ */
+function maskedSource(
+  env: RenderEnvironment,
+  cache: RenderCache,
+  srcId: string,
+  img: { image: ImageLike; width: number; height: number },
+  crop: CropRect,
+  fills: Map<RedactAnnotation, string>,
+): { id: string; img: { image: ImageLike; width: number; height: number } } {
+  const boxes = [...fills].map(([r, fill]) => ({
+    x: crop.x + Math.min(r.x, r.x + r.w) * crop.width,
+    y: crop.y + Math.min(r.y, r.y + r.h) * crop.height,
+    w: Math.abs(r.w) * crop.width,
+    h: Math.abs(r.h) * crop.height,
+    fill,
+  }));
+  const id = `${srcId}#solid:${stableStringify(boxes)}`;
+  const image = cache.get(`masked:${id}:${img.width}`, () => {
+    const c = env.createCanvas(img.width, img.height);
+    const g = get2d(c);
+    g.drawImage(img.image, 0, 0, img.width, img.height);
+    for (const b of boxes) {
+      const x0 = Math.max(0, Math.floor(b.x * img.width));
+      const y0 = Math.max(0, Math.floor(b.y * img.height));
+      const x1 = Math.min(img.width, Math.ceil((b.x + b.w) * img.width));
+      const y1 = Math.min(img.height, Math.ceil((b.y + b.h) * img.height));
+      if (x1 <= x0 || y1 <= y0) continue;
+      g.fillStyle = b.fill;
+      g.fillRect(x0, y0, x1 - x0, y1 - y0);
+    }
+    return { value: c, bytes: img.width * img.height * 4 };
+  });
+  return { id, img: { image, width: img.width, height: img.height } };
 }
 
 /**
@@ -200,12 +254,63 @@ function inRect(list: RedactAnnotation[], notes: Rect | undefined, rect: Rect): 
   return out;
 }
 
-function applyRedaction(g: Ctx2D, r: RedactAnnotation, W: number, H: number, unitPx: number): void {
+/** A redaction's pixel bounds in a W x H raster, rounded outwards (null when empty). */
+function redactionBounds(r: RedactAnnotation, W: number, H: number) {
   const x0 = Math.max(0, Math.floor(Math.min(r.x, r.x + r.w) * W));
   const y0 = Math.max(0, Math.floor(Math.min(r.y, r.y + r.h) * H));
   const x1 = Math.min(W, Math.ceil(Math.max(r.x, r.x + r.w) * W));
   const y1 = Math.min(H, Math.ceil(Math.max(r.y, r.y + r.h) * H));
-  if (x1 - x0 < 1 || y1 - y0 < 1) return;
+  return x1 - x0 < 1 || y1 - y0 < 1 ? null : { x0, y0, x1, y1 };
+}
+
+/**
+ * A solid redaction's colour, always opaque. "auto" reads the source pixels
+ * around the box (in source coordinates, so it is the same in every layout,
+ * crop and output size).
+ */
+export function solidFill(
+  env: RenderEnvironment,
+  cache: RenderCache,
+  src: AssetSource,
+  crop: CropRect,
+  r: RedactAnnotation,
+): string {
+  if (r.fill && r.fill !== "auto") {
+    const c = parseColor(r.fill);
+    return toCss({ ...c, a: 1 });
+  }
+  const u = (v: number) => Math.min(1, Math.max(0, crop.x + v * crop.width));
+  const v = (w: number) => Math.min(1, Math.max(0, crop.y + w * crop.height));
+  const L = surroundLightness(env, cache, src, {
+    x0: u(Math.min(r.x, r.x + r.w)),
+    y0: v(Math.min(r.y, r.y + r.h)),
+    x1: u(Math.max(r.x, r.x + r.w)),
+    y1: v(Math.max(r.y, r.y + r.h)),
+  });
+  return toCss(redactAutoFill(L));
+}
+
+/**
+ * Solid box: every pixel of the region (rounded outwards to whole pixels, so
+ * no edge pixel is part-covered) replaced by an opaque colour. Nothing of what
+ * was underneath survives in the raster the card is drawn from.
+ */
+function fillRedaction(g: Ctx2D, r: RedactAnnotation, W: number, H: number, fill: string): void {
+  const b = redactionBounds(r, W, H);
+  if (!b) return;
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalAlpha = 1;
+  g.globalCompositeOperation = "source-over";
+  g.fillStyle = fill;
+  g.fillRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  g.restore();
+}
+
+function applyRedaction(g: Ctx2D, r: RedactAnnotation, W: number, H: number, unitPx: number): void {
+  const b = redactionBounds(r, W, H);
+  if (!b) return;
+  const { x0, y0, x1, y1 } = b;
   const strengthPx = Math.max(1, r.strength * unitPx);
   if (r.mode === "pixelate") {
     const img = g.getImageData(x0, y0, x1 - x0, y1 - y0);

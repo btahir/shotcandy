@@ -590,9 +590,15 @@ export interface RedactAnnotation extends AnnotationBase {
   y: number;
   w: number;
   h: number;
-  mode: "blur" | "pixelate";
-  /** Blur sigma or pixel block size, in cu. */
+  /** solid: an opaque box, the only mode that can't be reversed. */
+  mode: "blur" | "pixelate" | "solid";
+  /** Blur sigma or pixel block size, in cu (unused by solid). */
   strength: number;
+  /**
+   * Solid mode's colour, always drawn opaque. "auto" (the default) picks a
+   * dark or light tone from the pixels around the box.
+   */
+  fill?: "auto" | Color;
 }
 
 export type Annotation = TextAnnotation | ArrowAnnotation | RectAnnotation | RedactAnnotation;

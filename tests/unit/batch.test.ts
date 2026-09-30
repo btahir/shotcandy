@@ -299,6 +299,16 @@ describe("batch model", () => {
     expect(customCount(r)).toBe(0);
   });
 
+  it("stores a solid redaction with its image", () => {
+    let b = batchOf(2);
+    const r = { ...createAnnotation("redact", "r"), mode: "solid" as const, fill: "#000000" };
+    b = edit(b, "all", (s) => ({ ...s, annotations: [r] }));
+    const back = normalizeBatch(JSON.parse(JSON.stringify(b))) as Batch;
+    expect(back.items[0]!.annotations).toEqual([r]);
+    expect(back.items[1]!.annotations).toEqual([]);
+    expect(itemScene(back, back.items[0]!).annotations).toEqual([r]);
+  });
+
   it("lists the assets it needs", () => {
     const b = batchOf(3);
     expect(batchAssetIds(b).sort()).toEqual(["img_a", "img_b", "img_c"]);

@@ -56,6 +56,78 @@ export function topBandLightness(
   });
 }
 
+/** Colours of a solid redaction whose colour is "auto", on light and on dark surroundings. */
+export const REDACT_ON_LIGHT = "#1c1c1e";
+export const REDACT_ON_DARK = "#f2f2f7";
+
+/**
+ * Mean OKLab lightness (0..1) of the pixels around a box on the source image
+ * (a ring half the box's short side wide, clipped to the image), or null when
+ * they are mostly transparent. The box itself is used when it covers the whole
+ * image. `box` is in normalized source coordinates, so the answer doesn't
+ * depend on crop, layout or output size; sampled from the smallest decoded
+ * image at a fixed 48 x 48 grid, so preview and export agree.
+ */
+export function surroundLightness(
+  env: RenderEnvironment,
+  cache: RenderCache,
+  src: AssetSource,
+  box: { x0: number; y0: number; x1: number; y1: number },
+): number | null {
+  src = src.still ?? src;
+  const img = pickImage(src, 0);
+  if (!img) return null;
+  const q = (n: number) => n.toFixed(5);
+  const key = `surround:${src.id}:${img.width}:${q(box.x0)},${q(box.y0)},${q(box.x1)},${q(box.y1)}`;
+  return cache.get(key, () => {
+    const N = 48;
+    const bx0 = box.x0 * img.width;
+    const by0 = box.y0 * img.height;
+    const bx1 = box.x1 * img.width;
+    const by1 = box.y1 * img.height;
+    const m = Math.max(2, 0.5 * Math.min(bx1 - bx0, by1 - by0));
+    const sx0 = Math.max(0, bx0 - m);
+    const sy0 = Math.max(0, by0 - m);
+    const sx1 = Math.min(img.width, bx1 + m);
+    const sy1 = Math.min(img.height, by1 + m);
+    if (sx1 - sx0 < 0.5 || sy1 - sy0 < 0.5) return { value: null, bytes: 64 };
+    const c = env.createCanvas(N, N);
+    const g = get2d(c, { willReadFrequently: true });
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = "high";
+    g.drawImage(img.image, sx0, sy0, sx1 - sx0, sy1 - sy0, 0, 0, N, N);
+    const d = g.getImageData(0, 0, N, N).data;
+    let ringSum = 0;
+    let ringWeight = 0;
+    let allSum = 0;
+    let allWeight = 0;
+    for (let j = 0; j < N; j++) {
+      const y = sy0 + ((j + 0.5) / N) * (sy1 - sy0);
+      for (let i = 0; i < N; i++) {
+        const x = sx0 + ((i + 0.5) / N) * (sx1 - sx0);
+        const k = (j * N + i) * 4;
+        const a = d[k + 3]! / 255;
+        if (a < 0.05) continue;
+        const L = rgbToOklab(d[k]!, d[k + 1]!, d[k + 2]!).L * a;
+        allSum += L;
+        allWeight += a;
+        if (x < bx0 || x >= bx1 || y < by0 || y >= by1) {
+          ringSum += L;
+          ringWeight += a;
+        }
+      }
+    }
+    // Judge by the ring when there is one; else the box covers (nearly) everything.
+    const [sum, weight] = ringWeight >= 8 ? [ringSum, ringWeight] : [allSum, allWeight];
+    return { value: weight < 4 ? null : sum / weight, bytes: 64 };
+  });
+}
+
+/** A solid redaction's "auto" colour: dark on light surroundings, light on dark ones. */
+export function redactAutoFill(L: number | null): string {
+  return L !== null && L < DARK_TOP_THRESHOLD ? REDACT_ON_DARK : REDACT_ON_LIGHT;
+}
+
 /** Light or dark window chrome for a screenshot whose top band has lightness L. */
 export function themeForLightness(L: number | null): FrameTheme {
   return L !== null && L < DARK_TOP_THRESHOLD ? "dark" : "light";
