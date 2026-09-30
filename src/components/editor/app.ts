@@ -2780,7 +2780,18 @@ export class EditorApp {
       db.settings.get<{ batch?: unknown }>(BATCH_KEY).catch(() => undefined),
     ]);
     const stashed = Object.values(this.stash).map((x) => x.doc);
-    const open = [this.store.getState().doc, ...stashed];
+    // Undo and redo can bring back any document in the histories (a batch the
+    // user just collapsed, the image a paste replaced), so their images stay too.
+    const { past, future } = this.store.history();
+    const history = [
+      ...past,
+      ...future,
+      ...Object.values(this.stash).flatMap((x) => [
+        ...(x.history?.past ?? []),
+        ...(x.history?.future ?? []),
+      ]),
+    ];
+    const open = [this.store.getState().doc, ...stashed, ...history];
     return collectKeepIds({
       scenes: [...scenes, this.scene, ...stashed.filter((d) => !isBatch(d)).map(docScene)],
       patches: presets.map((p) => p.patch),

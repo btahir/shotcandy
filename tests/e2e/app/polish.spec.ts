@@ -4,7 +4,7 @@
  */
 import { type Page, expect, test } from "@playwright/test";
 import { loadSample, open } from "./helpers";
-import { SHOTS, dropFiles } from "./batch-helpers";
+import { SHOTS, b64, dropFiles, info, waitForCount } from "./batch-helpers";
 import { design, pickLayout, screenPoint } from "./screens-helpers";
 
 type App = {
@@ -89,5 +89,59 @@ test.describe("modes during an import", () => {
       () => (window as unknown as { __shotcandy: { app: App } }).__shotcandy.app.scene.content.kind,
     );
     expect(kind).toBe("image");
+  });
+});
+
+test.describe("storage clean-up", () => {
+  test.setTimeout(90_000);
+  test("images a batch needs survive recents trimming while the batch is one undo away", async ({
+    page,
+  }) => {
+    await open(page);
+    await loadSample(page);
+    // Fill Recent designs to the brim: every loaded screenshot is a new recent.
+    await page.evaluate(async (data) => {
+      const a = (window as unknown as { __shotcandy: { app: App } }).__shotcandy.app;
+      const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+      for (let i = 0; i < 13; i++) {
+        await a.loadBlob(new File([bytes], `r${i}.png`, { type: "image/png" }));
+        await a.autosave();
+      }
+    }, b64(SHOTS[4]));
+    await dropFiles(page, [
+      { name: "b.png", from: SHOTS[1] },
+      { name: "c.png", from: SHOTS[2] },
+    ]);
+    await waitForCount(page, 3);
+    const ids = await page.evaluate(() => {
+      const a = (window as unknown as { __shotcandy: { app: App } }).__shotcandy.app;
+      return a.store.getState().doc.items!.map((x) => x.content.assetId);
+    });
+    // Remove two: back to one design, which autosaves as a new recent and trims the oldest.
+    await page.getByTestId("batch-tile").nth(2).click();
+    await page
+      .getByTestId("batch-tile")
+      .nth(1)
+      .click({ modifiers: ["Shift"] });
+    await page.keyboard.press("Delete");
+    await expect(page.getByTestId("batch-rail")).toHaveCount(0);
+    await page.evaluate(async () => {
+      const a = (window as unknown as { __shotcandy: { app: App } }).__shotcandy.app;
+      await new Promise<void>((resolve) => {
+        const off = a.on("autosaved", () => {
+          off();
+          resolve();
+        });
+      });
+    });
+    await page.evaluate(() =>
+      (window as unknown as { __shotcandy: { app: App } }).__shotcandy.app.store.undo(),
+    );
+    expect((await info(page)).kind).toBe("batch");
+    const stored = await page.evaluate(async (list) => {
+      const a = (window as unknown as { __shotcandy: { app: App } }).__shotcandy.app;
+      return Promise.all(list.map(async (id) => !!(await a.db!.assets.get(id))));
+    }, ids);
+    expect(stored).toEqual([true, true, true]);
   });
 });
