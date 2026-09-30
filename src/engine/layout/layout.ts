@@ -170,8 +170,16 @@ function growShape(s: Shape, d: number): Shape {
 
 /** Assemble the card: content, inset plate, frame and border ring. */
 export function computeCardGeometry(scene: Scene, contentPx: Size): CardGeometry {
+  return cardGeometryForUnits(scene, contentUnits(contentPx));
+}
+
+/**
+ * The card around content of an explicit size in card units. Multi-screen
+ * layouts size every screen in one shared unit this way, so frame chrome,
+ * radius, border and shadow match across screens.
+ */
+export function cardGeometryForUnits(scene: Scene, c: Size): CardGeometry {
   const { card } = scene;
-  const c = contentUnits(contentPx);
   const resolved = resolveFrame(card.frame.id);
   // Device frames have no inset plate: the screen is the content.
   const inset = resolved && !resolved.kind.supportsInset ? 0 : card.inset.width;
@@ -272,37 +280,66 @@ export function contentPixelSize(scene: Scene, assetSize: Size | null): Size {
  * canvases keep their size and fit the card into what's left.
  */
 export function computeLayout(scene: Scene, assetSize: Size | null): SceneLayout {
-  if (!captionActive(scene)) return computeLayoutBase(scene, assetSize);
+  return withCaption(
+    scene,
+    (s) => computeLayoutBase(s, assetSize),
+    (l) => l.cardQuad.map((p) => p.y),
+    shiftLayout,
+  );
+}
+
+/** Move a layout down by `dy` on a canvas of the given size, attaching the caption. */
+export function shiftLayout(
+  l: SceneLayout,
+  canvas: Size,
+  dy: number,
+  caption: CaptionLayout,
+): SceneLayout {
+  const cardToCanvas = multiply(translation(0, dy), l.cardToCanvas);
+  return {
+    ...l,
+    canvas,
+    cardToCanvas,
+    canvasToCard: invert(cardToCanvas),
+    cardQuad: l.cardQuad.map((p) => ({ x: p.x, y: p.y + dy })) as SceneLayout["cardQuad"],
+    caption,
+  };
+}
+
+/**
+ * The caption card: the text takes the top of the canvas and the design is
+ * composed in the space below. `base` lays out a scene without a caption,
+ * `ys` lists the vertical extent of what it placed (card corners), and
+ * `shift` moves a placement down. Shared by single cards and screen groups.
+ */
+export function withCaption<L extends { canvas: Size }>(
+  scene: Scene,
+  base: (s: Scene) => L,
+  ys: (l: L) => number[],
+  shift: (l: L, canvas: Size, dy: number, caption: CaptionLayout) => L,
+): L {
+  if (!captionActive(scene)) return base(scene);
   const { caption: spec, ...plain } = scene;
-  const base = computeLayoutBase(plain, assetSize);
-  const W = base.canvas.width;
-  const H0 = base.canvas.height;
+  const first0 = base(plain);
+  const W = first0.canvas.width;
+  const H0 = first0.canvas.height;
   const cap = captionLayout(spec!, W, H0);
   const top = Math.round(cap.height);
-  const shiftBy = (l: SceneLayout, canvasH: number, dy = top, c = cap): SceneLayout => {
-    const cardToCanvas = multiply(translation(0, dy), l.cardToCanvas);
-    return {
-      ...l,
-      canvas: { width: W, height: canvasH },
-      cardToCanvas,
-      canvasToCard: invert(cardToCanvas),
-      cardQuad: l.cardQuad.map((p) => ({ x: p.x, y: p.y + dy })) as SceneLayout["cardQuad"],
-      caption: c,
-    };
-  };
-  if (plain.canvas.size.kind === "auto") return shiftBy(base, H0 + top);
+  const shiftBy = (l: L, canvasH: number, dy = top, c = cap): L =>
+    shift(l, { width: W, height: canvasH }, dy, c);
+  if (plain.canvas.size.kind === "auto") return shiftBy(first0, H0 + top);
   const regionH = Math.max(1, H0 - top);
   const region: Scene = {
     ...plain,
     canvas: { ...plain.canvas, size: { kind: "fixed", width: W, height: regionH } },
   };
-  const inner = computeLayoutBase(region, assetSize);
+  const inner = base(region);
   // Balance the group: when the card has room around it, pull it up under the
   // caption and move the caption down, so text and card sit together with
   // equal space above and below (instead of text at the top, card mid-way).
-  const ys = inner.cardQuad.map((p) => p.y);
-  const t0 = Math.min(...ys);
-  const b0 = Math.max(...ys);
+  const yList = ys(inner);
+  const t0 = Math.min(...yList);
+  const b0 = Math.max(...yList);
   const first = cap.blocks[0]!;
   const last = cap.blocks[cap.blocks.length - 1]!;
   const y0 = first.box.y;
@@ -442,6 +479,11 @@ const ANCHORS: Record<CanvasAnchor, [number, number]> = {
   "bottom-right": [1, 1],
 };
 
+/** Direction of an anchor: -1 (left/top), 0 (centre) or 1 (right/bottom) per axis. */
+export function anchorVector(anchor: CanvasAnchor): [number, number] {
+  return ANCHORS[anchor] ?? [0, 0];
+}
+
 /** Composition result in card units: canvas size and the card bbox's top-left. */
 export interface Composition {
   width: number;
@@ -454,7 +496,7 @@ export interface Composition {
 }
 
 /** Visible drop of the card's shadow (cu), used to lift the card optically. */
-function shadowDrop(scene: Scene): number {
+export function shadowDrop(scene: Scene): number {
   let drop = 0;
   for (const l of resolveShadowLayers(scene.card.shadow)) drop = Math.max(drop, l.y * l.opacity);
   return drop;
@@ -477,7 +519,16 @@ const AUTO_GROW_MAX = 1.5;
  * Place a card (bbox bw x bh cu) with padding p on the canvas described by the
  * scene: returns the canvas size in cu and the bbox position.
  */
-export function compose(scene: Scene, bw: number, bh: number, drop = 0): Composition {
+export function compose(
+  scene: Scene,
+  bw: number,
+  bh: number,
+  drop = 0,
+  opts: {
+    /** Whether "auto"/"fill" may bleed the card off an edge on its own (default: by content). */
+    croppable?: boolean;
+  } = {},
+): Composition {
   const p = scene.canvas.padding;
   const [ax0, ay0] = ANCHORS[scene.canvas.anchor ?? "center"] ?? [0, 0];
   const bleed = Math.min(0.7, Math.max(0, scene.canvas.bleed ?? 0));
@@ -533,8 +584,9 @@ export function compose(scene: Scene, bw: number, bh: number, drop = 0): Composi
     // their own; code, cards and devices stay whole unless a style bleeds them.
     const device = resolveFrame(scene.card.frame.id)?.kind.supportsInset === false;
     const croppable =
-      (scene.content.kind === "image" || scene.content.kind === "placeholder") &&
-      (!device || fit === "fill");
+      opts.croppable ??
+      ((scene.content.kind === "image" || scene.content.kind === "placeholder") &&
+        (!device || fit === "fill"));
     if (croppable && !tightBled && (fit === "fill" || bandAfter > 0.22 || looseBled)) {
       const minVisible = fit === "fill" ? 0.45 : 0.7;
       const gBleedMin = Ct / (0.9 * bt + p); // at least 10 % actually bleeds

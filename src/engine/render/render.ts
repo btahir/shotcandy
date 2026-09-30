@@ -9,9 +9,21 @@
  */
 import { type AssetResolver, pickImage } from "../assets/types";
 import { type SceneLayout, computeLayout, outputSize } from "../layout/layout";
+import { type GroupLayout, type SlotLayout, computeGroupLayout } from "../layout/group";
+import type { CaptionLayout } from "../layout/caption";
+import { type Point, type Rect, type Size, boundsOfPoints, rectCorners } from "../math/geometry";
+import { type ActiveLayout, activeLayout, screenContent } from "../scene/layouts";
 import { themeForLightness, topBandLightness } from "../analysis/tone";
 import { effectiveCrop } from "../layout/layout";
-import { type Mat3, isAffine, multiply, rotation, scaling, translation } from "../math/matrix";
+import {
+  type Mat3,
+  applyMat3,
+  isAffine,
+  multiply,
+  rotation,
+  scaling,
+  translation,
+} from "../math/matrix";
 import { type Path, projectPath, tracePath } from "../math/path";
 import { type Palette, extractPalette } from "../palette/extract";
 import { resolveShadowLayers } from "../presets/shadows";
@@ -22,7 +34,7 @@ import { drawBackground } from "./background";
 import { RenderCache } from "./cache";
 import { drawCaption, fillTone } from "../layout/caption";
 import { drawCard } from "./card";
-import { getContentRenderer } from "./content";
+import { getContentRenderer, imageContent } from "./content";
 import { shapePath } from "./draw";
 import {
   type CanvasLike,
@@ -47,6 +59,12 @@ export interface RenderOptions {
   cache?: RenderCache;
   /** Opaque colour painted under everything (JPEG has no alpha). */
   matte?: string | null;
+  /**
+   * Empty screens of a multi-screen design: "skip" leaves their place empty
+   * (exports, default); "placeholder" draws a faint dashed card to drop an
+   * image on (the editor preview).
+   */
+  emptySlots?: "skip" | "placeholder";
 }
 
 export interface RenderResult {
@@ -61,8 +79,15 @@ function defaultCache(): RenderCache {
   return sharedCache;
 }
 
-/** Layout for a scene given its assets (natural content size resolved via the content registry). */
+/**
+ * Layout for a scene given its assets (natural content size resolved via the
+ * content registry). For a multi-screen design this is screen 0's card on the
+ * group's canvas, so single-card helpers (annotations, hit-testing, export
+ * sizing) keep working; layoutGroupScene has every screen.
+ */
 export function layoutScene(scene: Scene, assets: AssetResolver): SceneLayout {
+  const group = layoutGroupScene(scene, assets);
+  if (group) return primaryLayout(group);
   const renderer = getContentRenderer(scene.content.kind);
   const natural = renderer ? renderer.naturalSize(scene.content as never, assets) : null;
   return computeLayout(scene, natural);
@@ -169,39 +194,63 @@ export function renderScene(
   const scale = options.scale ?? 1;
   const env = options.env ?? defaultEnvironment();
   const cache = options.cache ?? defaultCache();
+  const lay = activeLayout(scene);
+  if (lay) return renderGroup(ctx, scene, lay, assets, options, scale, env, cache);
   scene = resolveFrameTheme(scene, assets, env, cache);
   const layout = layoutScene(scene, assets);
   const { width: W, height: H } = outputSize(layout, scale);
   const unit = layout.k * scale;
   const palette = needsPalette(scene) ? scenePalette(scene, assets, env, cache) : null;
+  const deps = { env, cache, assets, palette };
 
-  ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = "source-over";
-  ctx.clearRect(0, 0, W, H);
-  if (options.matte) {
-    ctx.fillStyle = toCss(options.matte);
-    ctx.fillRect(0, 0, W, H);
-  }
-
-  // Card-local cu -> device px.
-  const D: Mat3 = multiply([scale, 0, 0, 0, scale, 0, 0, 0, 1], layout.cardToCanvas);
-  const affine = !layout.perspective;
-  const through =
-    (M: Mat3) =>
-    (p: Path): Path =>
-      isAffine(M, 1e-12)
-        ? affinePath(p, { a: M[0], b: M[3], c: M[1], d: M[4], e: M[2], f: M[5] })
-        : projectPath(p, M, 16);
-  const toDevice = through(D);
+  beginFrame(ctx, W, H, options.matte);
   const quad = layout.cardQuad;
   const focus = {
     x: ((quad[0].x + quad[1].x + quad[2].x + quad[3].x) / 4) * scale,
     y: ((quad[0].y + quad[1].y + quad[2].y + quad[3].y) / 4) * scale,
   };
+  drawScenery(ctx, scene, layout.canvas, layout.caption, W, H, unit, scale, focus, deps);
+  drawCardPass(ctx, scene, layout, scale, W, H, deps, { stack: true, reflection: true });
+  drawCanvasAnnotations(ctx, scene, layout.canvas, layout.k, scale);
+  ctx.restore();
+  cache.trim();
+  return { layout, width: W, height: H };
+}
 
-  // Background (painted across all slides of a set when it spans them).
+interface PassDeps {
+  env: RenderEnvironment;
+  cache: RenderCache;
+  assets: AssetResolver;
+  palette: Palette | null;
+}
+
+/** Reset the context and clear the canvas (plus the matte for formats without alpha). */
+function beginFrame(ctx: Ctx2D, W: number, H: number, matte: string | null | undefined): void {
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+  ctx.clearRect(0, 0, W, H);
+  if (matte) {
+    ctx.fillStyle = toCss(matte);
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+/** Background (painted across all slides of a set when it spans them) and the caption. */
+function drawScenery(
+  ctx: Ctx2D,
+  scene: Scene,
+  canvas: Size,
+  caption: CaptionLayout | undefined,
+  W: number,
+  H: number,
+  unit: number,
+  scale: number,
+  focus: Point,
+  deps: PassDeps,
+): void {
+  const { env, cache, assets, palette } = deps;
   const span = scene.background.span;
   if (span && span.count > 1) {
     ctx.save();
@@ -232,26 +281,53 @@ export function renderScene(
   }
 
   // Caption card text, in the space above the card.
-  if (layout.caption && scene.caption) {
+  if (caption && scene.caption) {
     drawCaption(
       ctx as never,
       scene.caption,
-      layout.caption,
+      caption,
       scale,
-      layout.canvas.width,
+      canvas.width,
       fillTone(scene.background.fill, palette, assets),
     );
   }
+}
+
+/** Card-local cu -> device px paths, affine when possible. */
+const through =
+  (M: Mat3) =>
+  (p: Path): Path =>
+    isAffine(M, 1e-12)
+      ? affinePath(p, { a: M[0], b: M[3], c: M[1], d: M[4], e: M[2], f: M[5] })
+      : projectPath(p, M, 16);
+
+/** One card: its reflection, stack ghosts, shadows and the card itself. */
+function drawCardPass(
+  ctx: Ctx2D,
+  scene: Scene,
+  layout: SceneLayout,
+  scale: number,
+  W: number,
+  H: number,
+  deps: PassDeps,
+  opts: { stack: boolean; reflection: boolean },
+): void {
+  const { palette } = deps;
+  const unit = layout.k * scale;
+  // Card-local cu -> device px.
+  const D: Mat3 = multiply([scale, 0, 0, 0, scale, 0, 0, 0, 1], layout.cardToCanvas);
+  const affine = !layout.perspective;
+  const toDevice = through(D);
 
   // Reflection on a glossy floor, under everything else.
   const reflection = scene.card.reflection;
-  if (reflection && reflection.opacity > 0) {
-    drawReflection(ctx, scene, layout, D, W, H, reflection, { env, cache, assets, palette });
+  if (opts.reflection && reflection && reflection.opacity > 0) {
+    drawReflection(ctx, scene, layout, D, W, H, reflection, deps);
   }
 
   // Stacked ghost cards behind the card, far to near.
   const stack = scene.card.stack;
-  if (stack && stack.count > 0) {
+  if (opts.stack && stack && stack.count > 0) {
     const cw = layout.card.size.width;
     const chh = layout.card.size.height;
     const base = stack.color === "auto" ? (palette?.edge ?? "#ffffff") : stack.color;
@@ -313,33 +389,242 @@ export function renderScene(
     ctx.save();
     ctx.setTransform(D[0], D[3], D[1], D[4], D[2], D[5]);
     drawCard(ctx, scene, layout, {
-      env,
-      cache,
-      assets,
-      palette,
+      ...deps,
       pixelRatio: Math.sqrt(Math.abs(D[0] * D[4] - D[1] * D[3])),
     });
     ctx.restore();
   } else {
-    drawTiltedCard(ctx, scene, layout, D, W, H, { env, cache, assets, palette });
+    drawTiltedCard(ctx, scene, layout, D, W, H, deps);
   }
+}
 
-  // Canvas-anchored annotations (on top of everything).
+/** Canvas-anchored annotations (on top of everything). */
+function drawCanvasAnnotations(
+  ctx: Ctx2D,
+  scene: Scene,
+  canvas: Size,
+  k: number,
+  scale: number,
+): void {
   const canvasAnnotations = scene.annotations.filter((a) => a.anchor === "canvas");
-  if (canvasAnnotations.length) {
-    ctx.save();
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    const box = {
-      rect: { x: 0, y: 0, width: layout.canvas.width, height: layout.canvas.height },
-      unit: layout.k,
-    };
-    for (const a of canvasAnnotations) drawAnnotation(ctx, a, box);
-    ctx.restore();
-  }
+  if (!canvasAnnotations.length) return;
+  ctx.save();
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  const box = {
+    rect: { x: 0, y: 0, width: canvas.width, height: canvas.height },
+    unit: k,
+  };
+  for (const a of canvasAnnotations) drawAnnotation(ctx, a, box);
+  ctx.restore();
+}
 
+// ----------------------------------------------------------------------------
+// Multi-screen designs
+// ----------------------------------------------------------------------------
+
+/** Natural pixel size of each shown screen's image (null when empty or not loaded). */
+function screenSizes(scene: Scene, lay: ActiveLayout, assets: AssetResolver): (Size | null)[] {
+  const out: (Size | null)[] = [];
+  for (let i = 0; i < lay.count; i++) {
+    const c = screenContent(scene, i);
+    out.push(c ? imageContent.naturalSize(c, assets) : null);
+  }
+  return out;
+}
+
+/** Layout of every screen of a multi-screen scene, or null for a single screen. */
+export function layoutGroupScene(scene: Scene, assets: AssetResolver): GroupLayout | null {
+  const lay = activeLayout(scene);
+  return lay ? computeGroupLayout(scene, lay, screenSizes(scene, lay, assets)) : null;
+}
+
+/** The scene one screen of a group is drawn from: its image, its annotations, no stack. */
+export function slotScene(scene: Scene, slot: SlotLayout): Scene {
+  const annotations =
+    slot.index === 0 ? scene.annotations : (scene.slots?.[slot.index - 1]?.annotations ?? []);
+  const { stack: _ghosts, ...card } = scene.card;
+  return { ...scene, content: slot.content, annotations, card };
+}
+
+function renderGroup(
+  ctx: Ctx2D,
+  scene: Scene,
+  lay: ActiveLayout,
+  assets: AssetResolver,
+  options: RenderOptions,
+  scale: number,
+  env: RenderEnvironment,
+  cache: RenderCache,
+): RenderResult {
+  const group = computeGroupLayout(scene, lay, screenSizes(scene, lay, assets));
+  const primary = primaryLayout(group);
+  const { width: W, height: H } = outputSize(primary, scale);
+  // Background colours come from screen 0, like a single design.
+  const palette = needsPalette(scene) ? scenePalette(scene, assets, env, cache) : null;
+  const deps: PassDeps = { env, cache, assets, palette };
+  const b = group.bounds;
+  const focus = { x: (b.x + b.width / 2) * scale, y: (b.y + b.height / 2) * scale };
+
+  beginFrame(ctx, W, H, options.matte);
+  drawScenery(ctx, scene, group.canvas, group.caption, W, H, group.k * scale, scale, focus, deps);
+  const placeholders = options.emptySlots === "placeholder";
+  for (const i of group.order) {
+    const slot = group.slots[i]!;
+    if (slot.empty) {
+      if (placeholders)
+        drawEmptySlot(ctx, slot, scale, fillTone(scene.background.fill, palette, assets));
+      continue;
+    }
+    // Each screen resolves its own frame chrome and edge colours.
+    const s = resolveFrameTheme(slotScene(scene, slot), assets, env, cache);
+    const pal = needsPalette(s) ? scenePalette(s, assets, env, cache) : null;
+    drawCardPass(
+      ctx,
+      s,
+      slot,
+      scale,
+      W,
+      H,
+      { ...deps, palette: pal },
+      {
+        stack: false,
+        reflection: group.reflection,
+      },
+    );
+  }
+  drawCanvasAnnotations(ctx, scene, group.canvas, group.k, scale);
   ctx.restore();
   cache.trim();
-  return { layout, width: W, height: H };
+  return { layout: primary, width: W, height: H };
+}
+
+/** Screen 0's layout on the group's canvas: what single-card helpers (hit-testing, annotations) use. */
+function primaryLayout(group: GroupLayout): SceneLayout {
+  const s = group.slots[0]!;
+  const out: SceneLayout = {
+    canvas: group.canvas,
+    k: s.k,
+    card: s.card,
+    cardToCanvas: s.cardToCanvas,
+    canvasToCard: s.canvasToCard,
+    perspective: s.perspective,
+    cardQuad: s.cardQuad,
+    contentPixels: s.contentPixels,
+  };
+  if (group.caption) out.caption = group.caption;
+  return out;
+}
+
+/**
+ * An empty screen in the editor: the card's silhouette, faintly filled, with a
+ * dashed edge and a plus, in the ink that reads on the background.
+ */
+function drawEmptySlot(ctx: Ctx2D, layout: SlotLayout, scale: number, tone: string): void {
+  const D: Mat3 = multiply([scale, 0, 0, 0, scale, 0, 0, 0, 1], layout.cardToCanvas);
+  const toDevice = through(D);
+  const unit = layout.k * scale;
+  const dark = isDark(tone);
+  const ink = dark ? "255, 255, 255" : "15, 23, 42";
+  const path = silhouetteShapes(layout).flatMap((s) => toDevice(shapePath(s)));
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.beginPath();
+  tracePath(ctx, path);
+  ctx.fillStyle = `rgba(${ink}, ${dark ? 0.1 : 0.05})`;
+  ctx.fill();
+  ctx.setLineDash([16 * unit, 12 * unit]);
+  ctx.lineWidth = Math.max(1, 4 * unit);
+  ctx.strokeStyle = `rgba(${ink}, ${dark ? 0.45 : 0.28})`;
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // A plus in the middle of the screen area.
+  const c = layout.card.content;
+  const arm = Math.min(c.width, c.height) * 0.06;
+  const mid = { x: c.x + c.width / 2, y: c.y + c.height / 2 };
+  const plus = [
+    [
+      { x: mid.x - arm, y: mid.y },
+      { x: mid.x + arm, y: mid.y },
+    ],
+    [
+      { x: mid.x, y: mid.y - arm },
+      { x: mid.x, y: mid.y + arm },
+    ],
+  ].map((seg) => seg.map((p) => applyMat3(D, p)));
+  ctx.beginPath();
+  for (const [a, b] of plus) {
+    ctx.moveTo(a!.x, a!.y);
+    ctx.lineTo(b!.x, b!.y);
+  }
+  ctx.lineCap = "round";
+  ctx.lineWidth = Math.max(1.5, arm * 0.14 * unit);
+  ctx.strokeStyle = `rgba(${ink}, ${dark ? 0.6 : 0.36})`;
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Where a screen sits on the canvas, for hit-testing and drop targets. */
+export interface SlotRect {
+  /** Screen index (0 = the content). */
+  index: number;
+  empty: boolean;
+  /** Card corners in canvas px at scale 1 (tl, tr, br, bl), rotation and tilt included. */
+  quad: [Point, Point, Point, Point];
+  /** Axis-aligned bounds of `quad`. */
+  bounds: Rect;
+  /** Screen content corners in canvas px (tl, tr, br, bl). */
+  contentQuad: [Point, Point, Point, Point];
+  /** Position in the draw order (0 = back). */
+  depth: number;
+}
+
+/**
+ * Every shown screen's card on the canvas (scale 1), by screen index. A
+ * single design reports its one card, so the editor can use one code path.
+ */
+export function slotRects(scene: Scene, assets: AssetResolver): SlotRect[] {
+  const group = layoutGroupScene(scene, assets);
+  const layouts: { index: number; empty: boolean; layout: SceneLayout }[] = group
+    ? group.slots.map((s) => ({ index: s.index, empty: s.empty, layout: s }))
+    : [
+        {
+          index: 0,
+          empty: scene.content.kind === "image" && !scene.content.assetId,
+          layout: layoutScene(scene, assets),
+        },
+      ];
+  return layouts.map(({ index, empty, layout }) => {
+    const c = layout.card.content;
+    return {
+      index,
+      empty,
+      quad: layout.cardQuad,
+      bounds: boundsOfPoints(layout.cardQuad),
+      contentQuad: rectCorners(c).map((p) => applyMat3(layout.cardToCanvas, p)) as SlotRect["quad"],
+      depth: group ? group.order.indexOf(index) : 0,
+    };
+  });
+}
+
+/** Topmost screen whose card contains canvas point (x, y) at scale 1, or null. */
+export function slotAt(scene: Scene, assets: AssetResolver, x: number, y: number): number | null {
+  const hits = slotRects(scene, assets).filter((r) => insideQuad(r.quad, x, y));
+  if (!hits.length) return null;
+  return hits.reduce((a, b) => (b.depth > a.depth ? b : a)).index;
+}
+
+function insideQuad(q: readonly Point[], x: number, y: number): boolean {
+  let sign = 0;
+  for (let i = 0; i < q.length; i++) {
+    const a = q[i]!;
+    const b = q[(i + 1) % q.length]!;
+    const cross = (b.x - a.x) * (y - a.y) - (b.y - a.y) * (x - a.x);
+    if (Math.abs(cross) < 1e-9) continue;
+    const s = Math.sign(cross);
+    if (sign === 0) sign = s;
+    else if (s !== sign) return false;
+  }
+  return true;
 }
 
 function drawTiltedCard(

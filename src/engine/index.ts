@@ -74,6 +74,15 @@ export {
   type CardGeometry,
 } from "./layout/layout";
 export {
+  computeGroupLayout,
+  balanceSizes,
+  fanPositions,
+  GROUP_MAX_SIDE,
+  type GroupLayout,
+  type SlotLayout,
+  type Placement,
+} from "./layout/group";
+export {
   captionLayout,
   captionActive,
   DEFAULT_CAPTION,
@@ -93,10 +102,15 @@ export {
   renderScene,
   renderToCanvas,
   layoutScene,
+  layoutGroupScene,
+  slotRects,
+  slotAt,
+  slotScene,
   scenePalette,
   resolveFrameTheme,
   type RenderOptions,
   type RenderResult,
+  type SlotRect,
 } from "./render/render";
 export { RenderCache } from "./render/cache";
 export {
