@@ -172,11 +172,12 @@ function reveal(scene: Scene, def: LayoutDef | undefined, index: number): Scene 
 }
 
 /**
- * Put an image into screen `index`. A replaced extra screen starts fresh (its
- * crop and annotations belonged to the old image); screen 0 keeps its
- * annotations, like dropping a new screenshot on a single design does.
+ * Put an image into screen `index` (with its file name, for labels). A
+ * replaced extra screen starts fresh (its crop and annotations belonged to
+ * the old image); screen 0 keeps its annotations, like dropping a new
+ * screenshot on a single design does.
  */
-export function fillSlot(scene: Scene, index: number, assetId: string): Scene {
+export function fillSlot(scene: Scene, index: number, assetId: string, name?: string): Scene {
   if (!editable(scene) || !Number.isInteger(index) || index < 0) return scene;
   const def = scene.layout ? getLayoutDef(scene.layout.id) : undefined;
   const max = Math.max(def?.maxCount ?? 1, screenCount(scene));
@@ -186,7 +187,9 @@ export function fillSlot(scene: Scene, index: number, assetId: string): Scene {
     if (c.assetId === assetId && !c.crop) return scene;
     return { ...scene, content: { kind: "image", assetId } };
   }
-  return reveal(withScreen(scene, index, { assetId }), def, index);
+  const slot: ScreenSlot = { assetId };
+  if (name) slot.name = name;
+  return reveal(withScreen(scene, index, slot), def, index);
 }
 
 /**

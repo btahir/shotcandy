@@ -426,10 +426,11 @@ export function duplicateItems(b: Batch, ids: readonly string[]): Batch {
 export const COMBINE_MIN = 2;
 export const COMBINE_MAX = 6;
 
-/** An item's screenshot as a screen: its image, crop and content marks (redactions stay on it). */
+/** An item's screenshot as a screen: its image, name, crop and content marks (redactions stay on it). */
 export function itemScreen(item: BatchItem): ScreenSlot {
   const c = item.content;
   const out: ScreenSlot = { assetId: c.assetId };
+  if (item.name) out.name = item.name;
   if (c.crop) out.crop = c.crop;
   if (c.tall !== undefined) out.tall = c.tall;
   if (c.fade !== undefined) out.fade = c.fade;

@@ -84,6 +84,8 @@ export interface LayoutSpec {
 export interface ScreenSlot {
   /** Null = an empty slot. */
   assetId: string | null;
+  /** The image's file name ("login.png"), for labels. Screen 0 is named by its design. */
+  name?: string;
   crop?: CropRect;
   tall?: ImageContent["tall"];
   fade?: number;

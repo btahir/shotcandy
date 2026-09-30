@@ -48,6 +48,19 @@ export interface ScreensUi {
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/** Name the images in extra screens (screen 0 is named by its design). */
+function withNames(scene: Scene, names: ReadonlyMap<number, string | null>): Scene {
+  let slots = scene.slots;
+  if (!slots) return scene;
+  for (const [i, name] of names) {
+    const cur = slots[i - 1];
+    if (i <= 0 || !cur?.assetId || !name || cur.name === name) continue;
+    if (slots === scene.slots) slots = slots.slice();
+    slots[i - 1] = { ...cur, name };
+  }
+  return slots === scene.slots ? scene : { ...scene, slots };
+}
+
 export class ScreensController {
   readonly ui: Store<ScreensUi>;
   /** File names by asset id, for labels and announcements (kept for this session only). */
@@ -122,6 +135,9 @@ export class ScreensController {
   name(i: number, scene: Scene = this.scene): string | null {
     const id = screenContent(scene, i)?.assetId;
     if (!id) return null;
+    // Extra screens keep their file name in the design (it survives reloads and project files).
+    const own = i > 0 ? scene.slots?.[i - 1]?.name : undefined;
+    if (own) return own;
     const known = this.names.get(id);
     if (known) return known;
     const doc = this.app.store.getState().doc;
@@ -309,7 +325,7 @@ export class ScreensController {
           : `Fill ${placed.length} screens`;
       this.edit((s) => {
         let next = s;
-        added.forEach((a, k) => (next = fillSlot(next, slots[k]!, a.id)));
+        added.forEach((a, k) => (next = fillSlot(next, slots[k]!, a.id, a.name)));
         return next;
       }, label);
       if (placed.includes(0) && !isBatch(app.store.getState().doc))
@@ -438,7 +454,15 @@ export class ScreensController {
       return false;
     }
     const [lo, hi] = a < b ? [a, b] : [b, a];
-    if (!this.edit((s) => swapSlots(s, a, b), `Swap screens ${lo + 1} and ${hi + 1}`)) return false;
+    // Names travel with their images (screen 1's is its design's, so it is looked up).
+    const moved = new Map([
+      [a, this.name(b)],
+      [b, this.name(a)],
+    ]);
+    const incoming = screenContent(this.scene, lo === 0 ? hi : lo)?.assetId;
+    if (lo === 0 && incoming && moved.get(0)) this.names.set(incoming, moved.get(0)!);
+    const swapped = (s: Scene) => withNames(swapSlots(s, a, b), moved);
+    if (!this.edit(swapped, `Swap screens ${lo + 1} and ${hi + 1}`)) return false;
     this.flash([a, b]);
     const title = `Swapped screens ${lo + 1} and ${hi + 1}`;
     this.app.toast({

@@ -7,13 +7,17 @@ import {
   computeLayout,
   createScene,
   exportScaleCap,
+  fillSlot,
   layoutScene,
   maxExportScale,
+  normalizeScene,
   setIn,
+  setLayout,
+  swapSlots,
   type Scene,
 } from "@/engine";
 import { DESKTOP_LIMITS, SAFARI_LIMITS } from "@/engine/export/formats";
-import { type Batch, addItems, selectItems } from "@/engine/batch/batch";
+import { type Batch, addItems, combineItems, itemScreen, selectItems } from "@/engine/batch/batch";
 import { exportTag, getDestination, planExport } from "@/components/editor/export-plan";
 import { createEditorStore } from "@/state/editor-store";
 
@@ -118,5 +122,45 @@ describe("undo steps", () => {
     store.updateDoc((d) => d + 1, { coalesce: "slider" });
     store.undo();
     expect(store.getState().doc).toBe(101);
+  });
+});
+
+describe("screen names", () => {
+  it("extra screens keep their file names through normalizing, swaps and combine", () => {
+    let s: Scene = createScene({ content: { kind: "image", assetId: "a" } });
+    s = setLayout(s, "cascade");
+    s = fillSlot(s, 1, "b", "login.png");
+    s = fillSlot(s, 2, "c");
+    expect(s.slots).toEqual([{ assetId: "b", name: "login.png" }, { assetId: "c" }]);
+    expect(normalizeScene(s).scene.slots).toEqual(s.slots);
+    // Junk names are dropped; long ones are cut.
+    const raw = {
+      ...s,
+      slots: [
+        { assetId: "b", name: 7 },
+        { assetId: "c", name: "x".repeat(300) },
+      ],
+    };
+    const n = normalizeScene(raw).scene.slots!;
+    expect(n[0]).toEqual({ assetId: "b" });
+    expect(n[1]!.name).toHaveLength(255);
+    // Swapping extra screens moves the names along.
+    expect(swapSlots(s, 1, 2).slots).toEqual([
+      { assetId: "c" },
+      { assetId: "b", name: "login.png" },
+    ]);
+    // Screen 0 has no name field: it is named by its design.
+    expect(swapSlots(s, 0, 1).content).toEqual({ kind: "image", assetId: "b" });
+  });
+
+  it("images placed from the batch or combined carry their names", () => {
+    const b = addItems(createScene({ content: { kind: "image", assetId: null } }), [
+      { name: "home.png", content: { kind: "image", assetId: "h" }, id: "h" },
+      { name: "login.png", content: { kind: "image", assetId: "l" }, id: "l" },
+    ]) as Batch;
+    expect(itemScreen(b.items[1]!).name).toBe("login.png");
+    const c = combineItems(b, ["h", "l"], "c");
+    const combined = c.items.find((x) => x.id === "c")!;
+    expect(combined.slots).toEqual([{ assetId: "l", name: "login.png" }]);
   });
 });

@@ -726,6 +726,8 @@ function screenSlots(c: Ctx, v: unknown, ids: Set<string>): ScreenSlot[] | undef
     const slot: ScreenSlot = {
       assetId: typeof raw.assetId === "string" && raw.assetId ? raw.assetId.slice(0, 200) : null,
     };
+    const name = typeof raw.name === "string" ? raw.name.trim().slice(0, 255) : "";
+    if (name && slot.assetId) slot.name = name;
     cropField(c, p, raw, slot);
     imageFields(c, p, raw, slot);
     if (raw.annotations !== undefined) {
