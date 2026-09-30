@@ -145,6 +145,32 @@ const d: ToolPageData = {
         </p>
       ),
     },
+    {
+      title: "Taking the screenshot first",
+      body: (
+        <>
+          <p>
+            Without an extension, the screenshot comes from your system. Copy it to the clipboard
+            and paste it straight into the editor:
+          </p>
+          <ul>
+            <li>
+              <b>Mac</b>: <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>⌃</kbd> <kbd>4</kbd> copies a selection;
+              press Space after it to copy one window.
+            </li>
+            <li>
+              <b>Windows</b>: <kbd>Win</kbd> <kbd>⇧</kbd> <kbd>S</kbd> opens the Snipping Tool and
+              copies what you pick.
+            </li>
+            <li>
+              <b>A whole web page</b>: in Chrome&apos;s developer tools, run &quot;Capture full size
+              screenshot&quot; from the command menu, then drop the file in. Very tall pages are
+              shown from the top, with a soft fade, unless you ask for all of it.
+            </li>
+          </ul>
+        </>
+      ),
+    },
   ],
   compare: {
     title: "Shotcandy vs Screely",

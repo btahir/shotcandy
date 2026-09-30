@@ -141,6 +141,32 @@ const d: ToolPageData = {
         </ul>
       ),
     },
+    {
+      title: "Rebuilding a Shots.so look in Shotcandy",
+      body: (
+        <>
+          <p>Most Shots.so designs map onto a few Shotcandy controls:</p>
+          <ul>
+            <li>
+              <b>Device mockups</b>: pick the phone, tablet or laptop frame (press <kbd>F</kbd> to
+              cycle), then add 3D tilt under Layout for an angled look.
+            </li>
+            <li>
+              <b>Backgrounds</b>: gradients, meshes, 12 wallpapers, your own image, or{" "}
+              <b>From your shot</b>, which builds a palette from the screenshot itself.
+            </li>
+            <li>
+              <b>Several items on one canvas</b>: use a multi-screen layout instead of placing each
+              item by hand; the spacing, tilt and overlap are sliders.
+            </li>
+            <li>
+              <b>Animation</b>: the Motion tray has eight presets, exported as MP4, WebM or GIF at
+              up to 4K.
+            </li>
+          </ul>
+        </>
+      ),
+    },
   ],
   compare: {
     title: "Shotcandy vs Shots.so",
