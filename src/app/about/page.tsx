@@ -2,30 +2,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Icon } from "@/components/icons";
 import { SiteFooter, SiteNav } from "@/components/site/Site";
-import { GITHUB_URL, SUPPORT_URL } from "@/config/site";
+import { Breadcrumbs, pageMetadata } from "@/components/site/ToolLanding";
+import { CHANGELOG_URL, CREATOR, GITHUB_URL, SUPPORT_URL } from "@/config/site";
 import { STYLE_PRESETS } from "@/engine/presets/styles";
+import { CODE_LANGUAGE_COUNT, jsonLd, webPageGraph } from "@/lib/jsonld";
 
-const TITLE = "About Shotcandy — sweet screenshots, free forever";
 const DESC =
-  "Shotcandy is a free, open-source screenshot and screen recording beautifier that runs entirely in your browser: no account, no upload, no watermark, no paywall.";
+  "Shotcandy is a free, open-source screenshot and screen recording beautifier that runs in your browser. No account, no upload, no watermark.";
 
-export const metadata: Metadata = {
-  title: { absolute: TITLE },
+export const metadata: Metadata = pageMetadata({
+  path: "/about/",
+  title: "About Shotcandy: free, open-source screenshot tool",
+  social: "About Shotcandy: sweet screenshots, free forever",
   description: DESC,
-  alternates: { canonical: "/about/" },
-  openGraph: {
-    title: TITLE,
-    description: DESC,
-    url: "/about/",
-    images: [{ url: "/og/about.png", width: 1200, height: 630 }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: TITLE,
-    description: DESC,
-    images: ["/og/about.png"],
-  },
-};
+  image: "/og/about.png",
+});
+
+const CRUMBS = [
+  { label: "Home", href: "/" },
+  { label: "About", href: "/about/" },
+];
 
 const FEATURES: [string, string][] = [
   ["Paste, drop or pick", "PNG, JPEG and WebP screenshots"],
@@ -39,9 +35,13 @@ const FEATURES: [string, string][] = [
   ["Gradients, mesh and wallpapers", "plus colours picked from your image"],
   ["Minimal styles", "plain white, soft grey, outline, graphite and a design-canvas look"],
   ["Frames", "macOS window, browser, phone, tablet, laptop, design canvas"],
-  ["Annotations", "text, arrows, highlights, blur"],
+  ["Annotations", "text, arrows and highlights"],
+  ["Redaction", "blur, pixelate or a solid box over anything private"],
+  ["Code images", `${CODE_LANGUAGE_COUNT} languages, 8 themes, highlighted lines`],
+  ["App Store sets", "3 to 10 slides at Apple's exact sizes, exported as a ZIP"],
+  ["Post and testimonial cards", "a name, handle, avatar and your words, no third-party API"],
   ["Motion", "zoom, float, 3D sweep and more, exported as MP4, WebM or GIF"],
-  ["Every social size", "Open Graph, X, LinkedIn, Instagram, App Store"],
+  ["Every social size", "Open Graph, X, LinkedIn, Instagram, Product Hunt, App Store"],
   ["Export 1× to 4×", "PNG, JPEG, WebP, MP4, WebM or GIF, or copy to clipboard"],
   ["Save your own styles", "and back up projects as a file"],
   ["Keyboard friendly", "every control reachable, shortcuts for the rest"],
@@ -86,6 +86,7 @@ export default function AboutPage() {
       <main>
         <section className="wrap about-hero">
           <div>
+            <Breadcrumbs trail={CRUMBS} />
             <span className="eyebrow">
               <span className="dot">MIT</span> Free and open source
             </span>
@@ -93,9 +94,9 @@ export default function AboutPage() {
               Sweet screenshots, <em>free forever.</em>
             </h1>
             <p className="lede" style={{ marginTop: 16, maxWidth: 500 }}>
-              Shotcandy turns a plain screenshot or screen recording into a share-ready image or
-              video in a few seconds. It runs entirely in your browser: no account, no upload, no
-              watermark, no paywall.
+              Shotcandy is a free, open-source screenshot beautifier that runs in your browser. It
+              turns a plain screenshot or screen recording into a share-ready image or video in a
+              few seconds: no account, no upload, no watermark, no paywall.
             </p>
             <div style={{ display: "flex", gap: 10, marginTop: 28, flexWrap: "wrap" }}>
               <Link className="btn btn-primary btn-xl" href="/">
@@ -261,7 +262,7 @@ export default function AboutPage() {
         <section className="section">
           <div className="wrap split-2">
             <div>
-              <h2 className="h2">Questions</h2>
+              <h2 className="h2">Questions about Shotcandy</h2>
             </div>
             <div className="faq">
               {FAQ.map(([q, a], i) => (
@@ -276,7 +277,42 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section className="wrap" style={{ paddingBottom: 64 }}>
+        <section className="section alt">
+          <div className="wrap split-2 tight">
+            <h2 className="h2">Who makes it</h2>
+            <div className="prose">
+              <p>
+                Shotcandy is made by{" "}
+                <a href={CREATOR.url} target="_blank" rel="noreferrer">
+                  {CREATOR.name}
+                </a>{" "}
+                and maintained in the open on{" "}
+                <a href={GITHUB_URL} target="_blank" rel="noreferrer">
+                  GitHub
+                </a>
+                , where issues, style ideas and pull requests are welcome.
+              </p>
+              <p>
+                What changed and when is in the{" "}
+                <a href={CHANGELOG_URL} target="_blank" rel="noreferrer">
+                  changelog
+                </a>
+                . The latest version added batches of up to 100 screenshots and multi-screen
+                designs.
+              </p>
+              <h3>How it compares</h3>
+              <p>
+                There are good paid and free tools in this space. Shotcandy&apos;s differences are
+                that everything is free, nothing is uploaded, and the code is MIT licensed. If you
+                need 3D device scenes or screen capture built in, another tool may suit you better;
+                the <Link href="/alternatives/">alternatives page</Link> compares them fairly. Every
+                tool Shotcandy has is listed on the <Link href="/tools/">tools page</Link>.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="wrap" style={{ paddingTop: 56, paddingBottom: 64 }}>
           <h2 className="h3" style={{ marginBottom: 12 }}>
             Credits
           </h2>
@@ -310,6 +346,20 @@ export default function AboutPage() {
         </section>
       </main>
       <SiteFooter />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            webPageGraph({
+              path: "/about/",
+              type: "AboutPage",
+              name: "About Shotcandy",
+              description: DESC,
+              crumbs: CRUMBS,
+            }),
+          ),
+        }}
+      />
     </div>
   );
 }

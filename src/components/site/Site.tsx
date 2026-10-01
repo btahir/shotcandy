@@ -1,6 +1,6 @@
 /** Shared chrome for content pages: nav (with Tools menu) and footer. */
 import Link from "next/link";
-import { GITHUB_URL, SUPPORT_URL, TOOL_PAGES } from "@/config/site";
+import { COMPARE_PAGES, GITHUB_URL, SUPPORT_URL, TOOL_PAGES } from "@/config/site";
 import { Icon, LogoMark } from "../icons";
 import { ThemeToggle, ToolsMenu } from "./SiteClient";
 
@@ -28,15 +28,9 @@ export function SiteNav({ active }: { active?: "about" | "tools" | "editor" }) {
         </a>
       </nav>
       <div className="spacer" />
-      <a
-        className="support-link"
-        href={SUPPORT_URL}
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Support this project"
-      >
+      <Link className="support-link" href={SUPPORT_URL} aria-label="Support this project">
         <Icon name="heart" /> <span className="support-text">Support</span>
-      </a>
+      </Link>
       <Link
         className="btn btn-primary btn-sm"
         href="/"
@@ -76,6 +70,15 @@ export function SiteFooter() {
               {t.label}
             </Link>
           ))}
+          <Link href="/tools/">All tools</Link>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          {COMPARE_PAGES.map((t) => (
+            <Link key={t.href} href={t.href}>
+              {t.label}
+            </Link>
+          ))}
         </div>
         <div>
           <h2>Project</h2>
@@ -86,14 +89,9 @@ export function SiteFooter() {
           <a href={`${GITHUB_URL}/releases`} target="_blank" rel="noreferrer">
             Changelog
           </a>
-          <a
-            href={SUPPORT_URL}
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: "var(--sc-accent-text)", fontWeight: 700 }}
-          >
+          <Link href={SUPPORT_URL} style={{ color: "var(--sc-accent-text)", fontWeight: 700 }}>
             Support this project
-          </a>
+          </Link>
         </div>
         <div>
           <h2>Privacy</h2>

@@ -1,19 +1,12 @@
 import type { MetadataRoute } from "next";
-import { SITE_URL, TOOL_PAGES } from "@/config/site";
+import { INDEXED_PAGES, SITE_URL } from "@/config/site";
 
 export const dynamic = "force-static";
 
+/** Each page's lastmod is its own `updated` date (Google ignores priority and changefreq). */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date("2026-09-26");
-  return [
-    { url: `${SITE_URL}/`, lastModified: now, changeFrequency: "monthly", priority: 1 },
-    { url: `${SITE_URL}/about/`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${SITE_URL}/support/`, lastModified: now, changeFrequency: "yearly", priority: 0.4 },
-    ...TOOL_PAGES.map((t) => ({
-      url: `${SITE_URL}${t.href}`,
-      lastModified: now,
-      changeFrequency: "monthly" as const,
-      priority: 0.8,
-    })),
-  ];
+  return INDEXED_PAGES.map((p) => ({
+    url: `${SITE_URL}${p.href}`,
+    lastModified: p.updated,
+  }));
 }

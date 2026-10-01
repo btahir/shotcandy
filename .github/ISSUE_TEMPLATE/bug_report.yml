@@ -1,0 +1,31 @@
+name: Bug report
+description: Something doesn't work or looks wrong.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what you saw instead.
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and system
+      placeholder: Chrome 140 on Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot or file
+      description: Attach the image or recording you were styling, or a screenshot of the problem, if you can share it.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Paste a screenshot
+        2. Pick the Fan layout
+        3. ...

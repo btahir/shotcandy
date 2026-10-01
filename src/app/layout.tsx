@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { preload } from "react-dom";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/config/site";
+import { jsonLd, siteGraph } from "@/lib/jsonld";
 import { THEME_INIT_SCRIPT } from "@/lib/theme-script";
 import "./globals.css";
 
@@ -75,7 +76,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLd(siteGraph()) }}
+        />
+      </body>
     </html>
   );
 }

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { preload } from "react-dom";
 import { Editor } from "@/components/editor/Editor";
+import { STYLE_PRESETS } from "@/engine/presets/styles";
 
 export const metadata: Metadata = {
-  title: { absolute: "Shotcandy — make your screenshots look lovely" },
+  title: { absolute: "Shotcandy — free screenshot beautifier" },
+  description: `Paste a screenshot and get a share-ready image: ${STYLE_PRESETS.length} styles, device frames, batch export and multi-screen mockups. Free, open source, nothing uploaded.`,
 };
 
 export default function Home() {
