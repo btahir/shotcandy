@@ -300,6 +300,7 @@ describe.skipIf(!RUN)("seo page art", () => {
     save("brand/showcase/redact-before.webp", redacted(null, 0), 720);
     save("brand/showcase/redact-blur.webp", redacted("blur", 14), 720);
     save("brand/showcase/redact-pixelate.webp", redacted("pixelate", 14), 720);
+    save("brand/showcase/redact-solid.webp", redacted("solid", 14), 720);
     const hero = styled("sherbet", "dashboard-light", aspect(16, 11));
     save(
       "brand/showcase/redact-hero.webp",

@@ -278,7 +278,7 @@ export function ToolLanding({ d }: { d: ToolPageData }) {
                 <Icon name="chevronRight" size="sm" />
               </Link>
             </div>
-            <div className="grid-3 examples">
+            <div className={`${d.examples.length === 4 ? "grid-2" : "grid-3"} examples`}>
               {d.examples.map((e) => (
                 <figure key={e.src} style={{ margin: 0 }}>
                   <div className="ex">

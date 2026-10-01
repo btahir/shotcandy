@@ -25,7 +25,7 @@ export const GITHUB_URL = "https://github.com/btahir/shotcandy";
 /** Canonical origin for metadata, sitemap and robots (update when the domain is known). */
 export const SITE_URL = "https://shotcandy.app";
 export const SITE_NAME = "Shotcandy";
-export const APP_VERSION = "0.1.0";
+export const APP_VERSION = "0.2.0";
 /** The one-line definition, used word for word on the site, README and listings. */
 export const SITE_DEFINITION =
   "Shotcandy is a free, open-source screenshot beautifier that runs in your browser. Nothing is uploaded, and there's no account.";

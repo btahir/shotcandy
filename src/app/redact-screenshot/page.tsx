@@ -7,7 +7,7 @@ const DESC =
 export const metadata = pageMetadata({
   path: "/redact-screenshot/",
   title: "Redact a screenshot: blur, pixelate or box · Shotcandy",
-  social: "Blur or pixelate private details in a screenshot",
+  social: "Blur, pixelate or cover private details in a screenshot",
   description: DESC,
   image: "/og/redact-screenshot.png",
 });
@@ -19,7 +19,7 @@ const d: ToolPageData = {
   ogImage: "/og/redact-screenshot.png",
   h1: (
     <>
-      Blur or pixelate <em>private details</em> in a screenshot
+      Blur, pixelate or cover <em>private details</em> in a screenshot
     </>
   ),
   lede: "Redact a screenshot online without sending it anywhere: drag a box over an email, a name or an API key, choose blur, pixelate or a solid box, and export a clean copy.",
@@ -77,6 +77,14 @@ const d: ToolPageData = {
       width: 720,
       height: 360,
       alt: "The same dashboard corner with the name, email and visitor numbers pixelated into large blocks",
+    },
+    {
+      src: "/showcase/redact-solid.webp",
+      name: "Solid",
+      note: "auto colour",
+      width: 720,
+      height: 360,
+      alt: "The same dashboard corner with the name, email and visitor numbers covered by solid dark boxes",
     },
   ],
   uses: {
