@@ -239,8 +239,7 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
             </button>
           )}
           <div className="privacy-line">
-            <Icon name="lock" size="sm" /> Free, open-source screenshot beautifier. Stays on your
-            phone.
+            <Icon name="lock" size="sm" /> Free and open source. No upload.
           </div>
           <ModePicks narrow />
         </div>
@@ -297,8 +296,8 @@ export function EmptyState({ narrow }: { narrow?: boolean }) {
             <SampleButtons order={SAMPLES} />
           </div>
           <div className="privacy">
-            <Icon name="lock" size="sm" /> Free, open-source screenshot beautifier. Your image never
-            leaves this browser.
+            <Icon name="lock" size="sm" /> Free, open-source screenshot beautifier. Nothing is
+            uploaded.
           </div>
           {recents > 0 && (
             <button
