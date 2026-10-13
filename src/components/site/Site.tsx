@@ -96,7 +96,7 @@ export function SiteFooter() {
         <div>
           <h2>Privacy</h2>
           <p style={{ maxWidth: 220, lineHeight: "21px" }}>
-            No accounts, no tracking, no uploads. Your images stay on your device.
+            No accounts, no uploads. Your images stay on your device.
           </p>
         </div>
       </div>

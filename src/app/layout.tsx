@@ -1,9 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { preload } from "react-dom";
+import { SiteAnalytics } from "@/components/site/SiteAnalytics";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/config/site";
 import { jsonLd, siteGraph } from "@/lib/jsonld";
 import { THEME_INIT_SCRIPT } from "@/lib/theme-script";
 import "./globals.css";
+
+/** GA4 measurement ID, inlined at build time. No ID, no tag; it only loads on shotcandy.app. */
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -83,6 +87,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           dangerouslySetInnerHTML={{ __html: jsonLd(siteGraph()) }}
         />
       </body>
+      {GA_ID && <SiteAnalytics gaId={GA_ID} />}
     </html>
   );
 }

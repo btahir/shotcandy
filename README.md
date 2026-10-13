@@ -205,7 +205,7 @@ Everything has a key. Press <kbd>?</kbd> in the app for the full sheet.
 
 ## Privacy
 
-Shotcandy is a static site. Your screenshots are decoded, rendered and encoded on your own device, in your browser, and are never uploaded anywhere. There are no accounts, no analytics and no server-side code. Recent designs, presets and uploaded backgrounds are kept in your browser's IndexedDB, and you can export any design as a `.shotcandy` project file to back it up or move it to another machine. After the page loads, the only network requests are for fonts.
+Shotcandy is a static site. Your screenshots are decoded, rendered and encoded on your own device, in your browser, and are never uploaded anywhere. There are no accounts and no server-side code. Recent designs, presets and uploaded backgrounds are kept in your browser's IndexedDB, and you can export any design as a `.shotcandy` project file to back it up or move it to another machine. The live site uses Google Analytics to count visits; it sees page views, never your images. Self-hosted builds load it only if `NEXT_PUBLIC_GA_ID` is set at build time.
 
 ## Run it locally
 
