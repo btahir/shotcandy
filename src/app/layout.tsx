@@ -6,9 +6,6 @@ import { jsonLd, siteGraph } from "@/lib/jsonld";
 import { THEME_INIT_SCRIPT } from "@/lib/theme-script";
 import "./globals.css";
 
-/** GA4 measurement ID, inlined at build time. No ID, no GA tag. Analytics only load on shotcandy.app. */
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
-
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -87,7 +84,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           dangerouslySetInnerHTML={{ __html: jsonLd(siteGraph()) }}
         />
       </body>
-      <SiteAnalytics gaId={GA_ID} />
+      <SiteAnalytics />
     </html>
   );
 }
