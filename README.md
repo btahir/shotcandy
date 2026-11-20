@@ -60,7 +60,7 @@ Every "after" below is a real export from Shotcandy's engine, one click from the
 
 ## Why Shotcandy
 
-- **Instant.** Press <kbd>⌘</kbd> <kbd>V</kbd>. Your screenshot lands already styled, and every style thumbnail previews *your* image, not a sample.
+- **Instant.** Press <kbd>⌘</kbd> <kbd>V</kbd>. Your screenshot lands already styled, and every style thumbnail previews _your_ image, not a sample.
 - **Private.** Nothing leaves your browser. There is no server to upload to.
 - **Free, for real.** No account, no paywall, no locked styles, no watermark. MIT licensed.
 - **Made for sharing.** Exports are sized and compressed for the place you are posting, and they can move.
@@ -185,18 +185,18 @@ Tell Shotcandy where the image is going (X, LinkedIn, Instagram, Product Hunt, a
 
 Everything has a key. Press <kbd>?</kbd> in the app for the full sheet.
 
-| Action | Keys |
-| --- | --- |
-| Paste a screenshot | <kbd>⌘</kbd> <kbd>V</kbd> |
-| Copy the image | <kbd>⌘</kbd> <kbd>C</kbd> |
-| Download / export options | <kbd>⌘</kbd> <kbd>S</kbd> / <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>S</kbd> |
-| Candy Shuffle | <kbd>S</kbd> |
-| Candy Jar (all styles) | <kbd>G</kbd> |
-| Previous / next style | <kbd>[</kbd> <kbd>]</kbd> |
-| Cycle frames / padding | <kbd>F</kbd> / <kbd>P</kbd> |
-| Text, arrow, highlight, blur | <kbd>T</kbd> <kbd>A</kbd> <kbd>R</kbd> <kbd>B</kbd> |
-| Play or pause motion | <kbd>M</kbd> |
-| Size menu | <kbd>K</kbd> |
+| Action                       | Keys                                                               |
+| ---------------------------- | ------------------------------------------------------------------ |
+| Paste a screenshot           | <kbd>⌘</kbd> <kbd>V</kbd>                                          |
+| Copy the image               | <kbd>⌘</kbd> <kbd>C</kbd>                                          |
+| Download / export options    | <kbd>⌘</kbd> <kbd>S</kbd> / <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>S</kbd> |
+| Candy Shuffle                | <kbd>S</kbd>                                                       |
+| Candy Jar (all styles)       | <kbd>G</kbd>                                                       |
+| Previous / next style        | <kbd>[</kbd> <kbd>]</kbd>                                          |
+| Cycle frames / padding       | <kbd>F</kbd> / <kbd>P</kbd>                                        |
+| Text, arrow, highlight, blur | <kbd>T</kbd> <kbd>A</kbd> <kbd>R</kbd> <kbd>B</kbd>                |
+| Play or pause motion         | <kbd>M</kbd>                                                       |
+| Size menu                    | <kbd>K</kbd>                                                       |
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/media/feature-shortcuts-dark.webp">
@@ -288,9 +288,9 @@ Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for
 - Built with [Next.js](https://nextjs.org), [React](https://react.dev) and [Tailwind CSS](https://tailwindcss.com) (all MIT).
 - The logo, wallpapers, frames, sample screenshots and launch media are original work, released under this project's MIT license. The sample apps and people in them are made up.
 
-## Support
+## Recording your screen
 
-Shotcandy is free and always will be. If it saves you time, you can [support the project](https://shotcandy.app/support/) with a one-off tip or a small monthly contribution.
+Shotcandy styles screenshots and recordings you already have. To make the recording, try [Reelbird](https://reelbird.app/), a free, open-source screen recorder for macOS from the same maker: stop recording and a share link is already on your clipboard.
 
 ## License
 

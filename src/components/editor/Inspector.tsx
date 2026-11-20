@@ -19,7 +19,7 @@ import {
   isVideoScene,
   resolveFrame,
 } from "@/engine";
-import { SUPPORT_URL } from "@/config/site";
+import { REELBIRD_URL } from "@/config/site";
 import { fillToCss } from "@/lib/fill-css";
 import { Icon, type IconName } from "../icons";
 import { ColorPicker } from "../ui/ColorPicker";
@@ -1440,8 +1440,14 @@ export function Inspector() {
           <ModeTrays />
           <div className="foot-note">
             Free and open source ·{" "}
-            <a href={SUPPORT_URL} target="_blank" rel="noreferrer">
-              <Icon name="heart" size="xs" /> Support
+            <a
+              href={REELBIRD_URL}
+              target="_blank"
+              rel="noopener"
+              data-umami-event="reelbird-click"
+              data-umami-event-from="inspector"
+            >
+              <Icon name="film" size="xs" /> Screen recorder
             </a>
           </div>
         </div>

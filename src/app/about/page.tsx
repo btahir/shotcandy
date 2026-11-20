@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Icon } from "@/components/icons";
 import { SiteFooter, SiteNav } from "@/components/site/Site";
 import { Breadcrumbs, pageMetadata } from "@/components/site/ToolLanding";
-import { CHANGELOG_URL, CREATOR, GITHUB_URL, SUPPORT_URL } from "@/config/site";
+import { CHANGELOG_URL, CREATOR, GITHUB_URL, REELBIRD_URL } from "@/config/site";
 import { STYLE_PRESETS } from "@/engine/presets/styles";
 import { CODE_LANGUAGE_COUNT, jsonLd, webPageGraph } from "@/lib/jsonld";
 
@@ -69,10 +69,7 @@ const FAQ: [string, string][] = [
     "Can I use the images commercially?",
     "Yes. Your exports are yours. The built-in wallpapers and frames are part of the project and MIT licensed.",
   ],
-  [
-    "Is there a watermark or a paid plan?",
-    "No watermark, no plan, no locked features. Support is optional and changes nothing in the app.",
-  ],
+  ["Is there a watermark or a paid plan?", "No watermark, no plan, no locked features."],
   [
     "How do I report a bug or suggest a style?",
     "Open an issue on the repository. Style suggestions with a screenshot are very welcome.",
@@ -198,41 +195,45 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section className="wrap" style={{ paddingBottom: 72 }} id="support">
-          <div className="support">
+        <section className="wrap" style={{ paddingBottom: 72 }} id="reelbird">
+          <div className="promo">
             <div style={{ position: "relative", zIndex: 1 }}>
               <span className="eyebrow">
                 <span className="dot">
-                  <Icon name="heart" size="xs" />
+                  <Icon name="film" size="xs" />
                 </span>{" "}
-                Support this project
+                From the same maker
               </span>
               <h2 className="h2" style={{ marginTop: 16 }}>
-                Keep the candy jar full
+                Need the recording first?
               </h2>
               <p className="body-copy" style={{ marginTop: 12, maxWidth: 480 }}>
-                Shotcandy costs nothing to use and never will. If it saves you time, a small one-off
-                tip helps pay for the domain and the evenings spent maintaining it. Thank you!
+                Reelbird is a free, open-source screen recorder for macOS. Stop recording and a
+                share link is already on your clipboard. Then bring the clip here to style it.
               </p>
               <div style={{ display: "flex", gap: 10, marginTop: 22, flexWrap: "wrap" }}>
-                <Link className="btn btn-primary btn-xl" href={SUPPORT_URL}>
-                  <Icon name="heart" /> Support this project
-                </Link>
+                <a
+                  className="btn btn-primary btn-xl"
+                  href={REELBIRD_URL}
+                  target="_blank"
+                  rel="noopener"
+                  data-umami-event="reelbird-click"
+                  data-umami-event-from="about"
+                >
+                  <Icon name="film" /> Get Reelbird
+                </a>
                 <a
                   className="btn btn-secondary btn-xl"
                   href={GITHUB_URL}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Star the repo
+                  Star Shotcandy on GitHub
                 </a>
               </div>
-              <p className="muted" style={{ fontSize: 13, marginTop: 12 }}>
-                Pay what you like, once. Monthly support is optional.
-              </p>
             </div>
             <div className="jar-illo">
-              <img src="/icons/icon-512.png" alt="" width={220} height={220} loading="lazy" />
+              <img src="/reelbird-icon.png" alt="" width={220} height={220} loading="lazy" />
             </div>
           </div>
         </section>

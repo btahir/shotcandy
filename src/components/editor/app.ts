@@ -112,12 +112,13 @@ import {
 } from "@/engine/batch/batch";
 import { type PickedFile, fileKind } from "@/engine/input/files";
 import { planImport } from "@/engine/batch/plan";
-import { APP_VERSION } from "@/config/site";
+import { APP_VERSION, REELBIRD_URL } from "@/config/site";
 import { loadCanvasFonts, registerBrandFonts } from "@/lib/fonts";
 import { GHOST_H, GHOST_ID, GHOST_W, loadGhost } from "@/lib/ghost";
 import { createStore, type Store } from "@/lib/store";
 import { ThumbService } from "@/lib/thumbs/service";
 import { sprinkle } from "@/lib/sprinkles";
+import { track } from "@/lib/analytics";
 import { HANDOFF_NAMES_KEY, parseHandoff } from "@/lib/handoff";
 import type { LayoutId } from "@/engine/scene/types";
 import { prefersReducedMotion } from "@/lib/platform";
@@ -2162,6 +2163,13 @@ export class EditorApp {
         detail: `${r.duration.toFixed(1)} s · ${r.width} × ${r.height} · ${r.fps} fps · ${formatBytes(r.blob.size)}${r.warnings?.length ? `. ${r.warnings.join(" ")}` : ""}`,
         thumb: await this.posterUrl(scene),
         duration: 4200,
+        action: {
+          label: "Record with Reelbird",
+          run: () => {
+            track("reelbird-click", { from: "video-export" });
+            window.open(REELBIRD_URL, "_blank", "noopener");
+          },
+        },
       });
       this.announce(`Saved ${name}`);
     } catch (e) {

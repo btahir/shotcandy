@@ -24,6 +24,7 @@ import { Stage } from "./Stage";
 import { ScreenMenu } from "./ScreensLayer";
 import { BatchRail } from "./BatchRail";
 import { RAIL_COLLAPSED, useRailCollapsed } from "./batch-ui";
+import { trackExports } from "@/lib/analytics";
 
 const NARROW = "(max-width: 767px)";
 
@@ -190,6 +191,7 @@ export function Editor() {
       },
       loadBlob: (b: Blob) => app.loadBlob(b),
     };
+    return trackExports(app);
   }, [app]);
 
   useShortcuts(app);

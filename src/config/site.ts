@@ -1,26 +1,10 @@
-/**
- * Site-wide constants. Every "Support this project" link goes to our own
- * /support/ page, which reads its payment links from DONATION_LINKS below.
- */
-export const SUPPORT_URL = "/support/";
+/** Site-wide constants. */
 
 /**
- * Owner: paste the Stripe payment links here. An empty href shows the button
- * as "coming soon" instead of a broken link.
+ * Reelbird, our free screen recorder for macOS. It takes the recording that
+ * Shotcandy then styles, so it's the one outside link we promote.
  */
-export const DONATION_LINKS = {
-  once: "https://buy.stripe.com/fZu14m0FO3v050PfqP3ks00",
-  monthly: [
-    { label: "$5", note: "Supporter", href: "https://buy.stripe.com/9B68wOewEaXsgJxdiH3ks01" },
-    { label: "$15", note: "Backer", href: "https://buy.stripe.com/7sYbJ088g3v0gJx4Mb3ks02" },
-    { label: "$50", note: "Sponsor", href: "https://buy.stripe.com/28EeVc88g5D80Kz2E33ks03" },
-    {
-      label: "$100",
-      note: "Company sponsor",
-      href: "https://buy.stripe.com/00w14m6088PkbpdceD3ks04",
-    },
-  ],
-} as const;
+export const REELBIRD_URL = "https://reelbird.app/";
 export const GITHUB_URL = "https://github.com/btahir/shotcandy";
 /** Canonical origin for metadata, sitemap and robots (update when the domain is known). */
 export const SITE_URL = "https://shotcandy.app";

@@ -270,7 +270,7 @@ export function ToolLanding({ d }: { d: ToolPageData }) {
             >
               <h2 className="h2">{d.examplesTitle ?? "Made with this tool"}</h2>
               <Link
-                className="support-link"
+                className="promo-link"
                 href={d.more?.href ?? "/?gallery=1"}
                 style={{ color: "var(--sc-ink-2)" }}
               >

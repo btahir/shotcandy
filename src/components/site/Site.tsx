@@ -1,6 +1,6 @@
 /** Shared chrome for content pages: nav (with Tools menu) and footer. */
 import Link from "next/link";
-import { COMPARE_PAGES, GITHUB_URL, SUPPORT_URL, TOOL_PAGES } from "@/config/site";
+import { COMPARE_PAGES, GITHUB_URL, REELBIRD_URL, TOOL_PAGES } from "@/config/site";
 import { Icon, LogoMark } from "../icons";
 import { ThemeToggle, ToolsMenu } from "./SiteClient";
 
@@ -28,9 +28,17 @@ export function SiteNav({ active }: { active?: "about" | "tools" | "editor" }) {
         </a>
       </nav>
       <div className="spacer" />
-      <Link className="support-link" href={SUPPORT_URL} aria-label="Support this project">
-        <Icon name="heart" /> <span className="support-text">Support</span>
-      </Link>
+      <a
+        className="promo-link"
+        href={REELBIRD_URL}
+        target="_blank"
+        rel="noopener"
+        aria-label="Reelbird, our free screen recorder"
+        data-umami-event="reelbird-click"
+        data-umami-event-from="nav"
+      >
+        <Icon name="film" /> <span className="promo-text">Screen recorder</span>
+      </a>
       <Link
         className="btn btn-primary btn-sm"
         href="/"
@@ -89,9 +97,16 @@ export function SiteFooter() {
           <a href={`${GITHUB_URL}/releases`} target="_blank" rel="noreferrer">
             Changelog
           </a>
-          <Link href={SUPPORT_URL} style={{ color: "var(--sc-accent-text)", fontWeight: 700 }}>
-            Support this project
-          </Link>
+          <a
+            href={REELBIRD_URL}
+            target="_blank"
+            rel="noopener"
+            style={{ color: "var(--sc-accent-text)", fontWeight: 700 }}
+            data-umami-event="reelbird-click"
+            data-umami-event-from="footer"
+          >
+            Reelbird screen recorder
+          </a>
         </div>
         <div>
           <h2>Privacy</h2>

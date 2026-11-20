@@ -34,7 +34,7 @@ const INDEXED = [
   "/alternatives/screely/",
   "/about/",
 ];
-const ALL = [...INDEXED, "/support/"];
+const ALL = INDEXED;
 /** Content pages with a visible breadcrumb trail. */
 const CRUMBED = INDEXED.filter((p) => p !== "/");
 
@@ -141,11 +141,8 @@ test.describe("static HTML", () => {
       expect(h.links, `${h.path} links home`).toContain("/");
   });
 
-  test("support is noindex; every other page is indexable", () => {
-    for (const h of heads) {
-      if (h.path === "/support/") expect(h.robots, "support robots").toMatch(/noindex/);
-      else expect(h.robots ?? "", `${h.path} robots`).not.toMatch(/noindex/);
-    }
+  test("every page is indexable", () => {
+    for (const h of heads) expect(h.robots ?? "", `${h.path} robots`).not.toMatch(/noindex/);
   });
 
   test("no internal link is broken", async ({ request }) => {
@@ -190,13 +187,10 @@ test.describe("static HTML", () => {
 test.describe("sitemap, robots and llms.txt", () => {
   test.skip(({ browserName }) => browserName !== "chromium", "runs once, in Chromium");
 
-  test("the sitemap lists every indexable page, with dates, and not support", async ({
-    request,
-  }) => {
+  test("the sitemap lists every indexable page, with dates", async ({ request }) => {
     const xml = await (await request.get("/sitemap.xml")).text();
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!.replace(ORIGIN, ""));
     expect(locs.sort()).toEqual([...INDEXED].sort());
-    expect(xml).not.toContain("/support/");
     expect(xml).not.toMatch(/changefreq|priority/);
     const dates = [...xml.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map((m) => m[1]!);
     expect(dates.length).toBe(INDEXED.length);

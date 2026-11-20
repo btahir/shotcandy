@@ -13,7 +13,7 @@ import {
   maxExportScale,
   rotateSize,
 } from "@/engine";
-import { GITHUB_URL, SUPPORT_URL } from "@/config/site";
+import { GITHUB_URL, REELBIRD_URL } from "@/config/site";
 import { useModKey } from "@/lib/platform";
 import { setTheme, useThemePref } from "@/lib/theme";
 import { Icon, LogoMark } from "../icons";
@@ -1063,13 +1063,15 @@ function MoreMenu({ anchor, open }: { anchor: RefObject<HTMLElement | null>; ope
           <a
             role="menuitem"
             className="menu-item"
-            href={SUPPORT_URL}
+            href={REELBIRD_URL}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener"
             style={{ color: "var(--sc-accent-text)", fontWeight: 700 }}
+            data-umami-event="reelbird-click"
+            data-umami-event-from="menu"
           >
-            <Icon name="heart" size="sm" style={{ color: "var(--sc-accent-text)" }} /> Support this
-            project
+            <Icon name="film" size="sm" style={{ color: "var(--sc-accent-text)" }} /> Record your
+            screen with Reelbird
           </a>
         </div>
       </div>
